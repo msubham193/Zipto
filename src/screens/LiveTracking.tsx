@@ -13,6 +13,7 @@ import {
   Easing,
   Vibration,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -509,7 +510,7 @@ const LiveTracking = () => {
           </View>
         </Mapbox.PointAnnotation>
 
-        {/* Drop Marker */}
+        {/* Drop Marker with vehicle icon */}
         <Mapbox.PointAnnotation
           id="drop-marker"
           coordinate={dropCenter}
@@ -517,7 +518,7 @@ const LiveTracking = () => {
         >
           <View style={styles.markerContainer}>
             <View style={[styles.marker, styles.dropMarker]}>
-              <Icon name="place" size={16} color="#FFFFFF" />
+              <Icon name={getVehicleIcon()} size={16} color="#FFFFFF" />
             </View>
           </View>
         </Mapbox.PointAnnotation>
@@ -743,124 +744,132 @@ const LiveTracking = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.cancelModalContainer}>
-            <View style={styles.cancelModalHeader}>
-              <View style={styles.cancelModalIconWrap}>
-                <Icon name="warning" size={28} color="#F59E0B" />
+            <ScrollView
+              style={styles.cancelModalScroll}
+              contentContainerStyle={styles.cancelModalScrollContent}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.cancelModalHeader}>
+                <View style={styles.cancelModalIconWrap}>
+                  <Icon name="warning" size={28} color="#F59E0B" />
+                </View>
+                <Text style={styles.cancelModalTitle}>Cancel Booking</Text>
+                <Text style={styles.cancelModalSubtitle}>
+                  Booking #{bookingId?.slice(0, 8)}
+                </Text>
               </View>
-              <Text style={styles.cancelModalTitle}>Cancel Booking</Text>
-              <Text style={styles.cancelModalSubtitle}>
-                Booking #{bookingId?.slice(0, 8)}
-              </Text>
-            </View>
 
-            <Text style={styles.cancelReasonLabel}>Select a reason:</Text>
-            <View style={styles.reasonList}>
-              {CANCEL_REASONS.map(reason => (
+              <Text style={styles.cancelReasonLabel}>Select a reason:</Text>
+              <View style={styles.reasonList}>
+                {CANCEL_REASONS.map(reason => (
+                  <TouchableOpacity
+                    key={reason}
+                    style={[
+                      styles.reasonOption,
+                      cancelReason === reason && styles.reasonOptionSelected,
+                    ]}
+                    onPress={() => setCancelReason(reason)}
+                    activeOpacity={0.7}
+                    disabled={cancelling}
+                  >
+                    <View
+                      style={[
+                        styles.reasonRadio,
+                        cancelReason === reason && styles.reasonRadioSelected,
+                      ]}
+                    >
+                      {cancelReason === reason && <View style={styles.reasonRadioDot} />}
+                    </View>
+                    <Text
+                      style={[
+                        styles.reasonOptionText,
+                        cancelReason === reason && styles.reasonOptionTextSelected,
+                      ]}
+                    >
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
                 <TouchableOpacity
-                  key={reason}
                   style={[
                     styles.reasonOption,
-                    cancelReason === reason && styles.reasonOptionSelected,
+                    cancelReason === 'custom' && styles.reasonOptionSelected,
                   ]}
-                  onPress={() => setCancelReason(reason)}
+                  onPress={() => setCancelReason('custom')}
                   activeOpacity={0.7}
                   disabled={cancelling}
                 >
                   <View
                     style={[
                       styles.reasonRadio,
-                      cancelReason === reason && styles.reasonRadioSelected,
+                      cancelReason === 'custom' && styles.reasonRadioSelected,
                     ]}
                   >
-                    {cancelReason === reason && <View style={styles.reasonRadioDot} />}
+                    {cancelReason === 'custom' && <View style={styles.reasonRadioDot} />}
                   </View>
                   <Text
                     style={[
                       styles.reasonOptionText,
-                      cancelReason === reason && styles.reasonOptionTextSelected,
+                      cancelReason === 'custom' && styles.reasonOptionTextSelected,
                     ]}
                   >
-                    {reason}
+                    Other reason
                   </Text>
                 </TouchableOpacity>
-              ))}
 
-              <TouchableOpacity
-                style={[
-                  styles.reasonOption,
-                  cancelReason === 'custom' && styles.reasonOptionSelected,
-                ]}
-                onPress={() => setCancelReason('custom')}
-                activeOpacity={0.7}
-                disabled={cancelling}
-              >
-                <View
-                  style={[
-                    styles.reasonRadio,
-                    cancelReason === 'custom' && styles.reasonRadioSelected,
-                  ]}
-                >
-                  {cancelReason === 'custom' && <View style={styles.reasonRadioDot} />}
-                </View>
-                <Text
-                  style={[
-                    styles.reasonOptionText,
-                    cancelReason === 'custom' && styles.reasonOptionTextSelected,
-                  ]}
-                >
-                  Other reason
-                </Text>
-              </TouchableOpacity>
-
-              {cancelReason === 'custom' && (
-                <TextInput
-                  style={styles.customReasonInput}
-                  placeholder="Type your reason..."
-                  placeholderTextColor="#94A3B8"
-                  value={customCancelReason}
-                  onChangeText={setCustomCancelReason}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                  editable={!cancelling}
-                />
-              )}
-            </View>
-
-            <View style={styles.cancelModalActions}>
-              <TouchableOpacity
-                style={styles.cancelModalKeep}
-                onPress={() => setCancelModalVisible(false)}
-                disabled={cancelling}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.cancelModalKeepText}>Keep Booking</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.cancelModalConfirm,
-                  (!cancelReason ||
-                    (cancelReason === 'custom' && !customCancelReason.trim())) &&
-                    styles.cancelModalConfirmDisabled,
-                ]}
-                onPress={handleConfirmCancel}
-                disabled={
-                  cancelling ||
-                  !cancelReason ||
-                  (cancelReason === 'custom' && !customCancelReason.trim())
-                }
-                activeOpacity={0.7}
-              >
-                {cancelling ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Icon name="close" size={18} color="#FFFFFF" />
-                    <Text style={styles.cancelModalConfirmText}>Cancel Booking</Text>
-                  </>
+                {cancelReason === 'custom' && (
+                  <TextInput
+                    style={styles.customReasonInput}
+                    placeholder="Type your reason..."
+                    placeholderTextColor="#94A3B8"
+                    value={customCancelReason}
+                    onChangeText={setCustomCancelReason}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                    editable={!cancelling}
+                  />
                 )}
-              </TouchableOpacity>
-            </View>
+              </View>
+
+              <View style={styles.cancelModalActions}>
+                <TouchableOpacity
+                  style={styles.cancelModalKeep}
+                  onPress={() => setCancelModalVisible(false)}
+                  disabled={cancelling}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.cancelModalKeepText}>Keep Booking</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.cancelModalConfirm,
+                    (!cancelReason ||
+                      (cancelReason === 'custom' && !customCancelReason.trim())) &&
+                      styles.cancelModalConfirmDisabled,
+                  ]}
+                  onPress={handleConfirmCancel}
+                  disabled={
+                    cancelling ||
+                    !cancelReason ||
+                    (cancelReason === 'custom' && !customCancelReason.trim())
+                  }
+                  activeOpacity={0.7}
+                >
+                  {cancelling ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Icon name="close" size={18} color="#FFFFFF" />
+                      <Text style={styles.cancelModalConfirmText}>Cancel Booking</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1310,10 +1319,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    maxHeight: height * 0.78,
+    overflow: 'hidden',
+  },
+  cancelModalScroll: {
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  cancelModalScrollContent: {
     paddingBottom: 34,
-    maxHeight: height * 0.78,
   },
   cancelModalHeader: {
     alignItems: 'center',
@@ -1345,7 +1359,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   reasonList: {
-    maxHeight: 280,
     marginBottom: 14,
   },
   reasonOption: {

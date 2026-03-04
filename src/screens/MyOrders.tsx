@@ -597,111 +597,119 @@ const MyOrders = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.cancelModalContainer}>
-            {/* Modal Header */}
-            <View style={styles.cancelModalHeader}>
-              <View style={styles.cancelModalIconWrap}>
-                <MaterialIcons name="warning" size={28} color="#F59E0B" />
+            <ScrollView
+              style={styles.cancelModalScroll}
+              contentContainerStyle={styles.cancelModalScrollContent}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Modal Header */}
+              <View style={styles.cancelModalHeader}>
+                <View style={styles.cancelModalIconWrap}>
+                  <MaterialIcons name="warning" size={28} color="#F59E0B" />
+                </View>
+                <Text style={styles.cancelModalTitle}>Cancel Order</Text>
+                <Text style={styles.cancelModalSubtitle}>
+                  Order #{cancelModal?.orderId}
+                </Text>
               </View>
-              <Text style={styles.cancelModalTitle}>Cancel Order</Text>
-              <Text style={styles.cancelModalSubtitle}>
-                Order #{cancelModal?.orderId}
-              </Text>
-            </View>
 
-            {/* Reason Selection */}
-            <Text style={styles.cancelReasonLabel}>Select a reason:</Text>
-            <ScrollView style={styles.reasonList} showsVerticalScrollIndicator={false}>
-              {CANCEL_REASONS.map(reason => (
+              {/* Reason Selection */}
+              <Text style={styles.cancelReasonLabel}>Select a reason:</Text>
+              <View style={styles.reasonList}>
+                {CANCEL_REASONS.map(reason => (
+                  <TouchableOpacity
+                    key={reason}
+                    style={[
+                      styles.reasonOption,
+                      cancelReason === reason && styles.reasonOptionSelected,
+                    ]}
+                    onPress={() => setCancelReason(reason)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[
+                      styles.reasonRadio,
+                      cancelReason === reason && styles.reasonRadioSelected,
+                    ]}>
+                      {cancelReason === reason && <View style={styles.reasonRadioDot} />}
+                    </View>
+                    <Text style={[
+                      styles.reasonOptionText,
+                      cancelReason === reason && styles.reasonOptionTextSelected,
+                    ]}>
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                {/* Custom reason */}
                 <TouchableOpacity
-                  key={reason}
                   style={[
                     styles.reasonOption,
-                    cancelReason === reason && styles.reasonOptionSelected,
+                    cancelReason === 'custom' && styles.reasonOptionSelected,
                   ]}
-                  onPress={() => setCancelReason(reason)}
+                  onPress={() => setCancelReason('custom')}
                   activeOpacity={0.7}
                 >
                   <View style={[
                     styles.reasonRadio,
-                    cancelReason === reason && styles.reasonRadioSelected,
+                    cancelReason === 'custom' && styles.reasonRadioSelected,
                   ]}>
-                    {cancelReason === reason && <View style={styles.reasonRadioDot} />}
+                    {cancelReason === 'custom' && <View style={styles.reasonRadioDot} />}
                   </View>
                   <Text style={[
                     styles.reasonOptionText,
-                    cancelReason === reason && styles.reasonOptionTextSelected,
+                    cancelReason === 'custom' && styles.reasonOptionTextSelected,
                   ]}>
-                    {reason}
+                    Other reason
                   </Text>
                 </TouchableOpacity>
-              ))}
 
-              {/* Custom reason */}
-              <TouchableOpacity
-                style={[
-                  styles.reasonOption,
-                  cancelReason === 'custom' && styles.reasonOptionSelected,
-                ]}
-                onPress={() => setCancelReason('custom')}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.reasonRadio,
-                  cancelReason === 'custom' && styles.reasonRadioSelected,
-                ]}>
-                  {cancelReason === 'custom' && <View style={styles.reasonRadioDot} />}
-                </View>
-                <Text style={[
-                  styles.reasonOptionText,
-                  cancelReason === 'custom' && styles.reasonOptionTextSelected,
-                ]}>
-                  Other reason
-                </Text>
-              </TouchableOpacity>
-
-              {cancelReason === 'custom' && (
-                <TextInput
-                  style={styles.customReasonInput}
-                  placeholder="Type your reason..."
-                  placeholderTextColor="#94A3B8"
-                  value={customReason}
-                  onChangeText={setCustomReason}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              )}
-            </ScrollView>
-
-            {/* Actions */}
-            <View style={styles.cancelModalActions}>
-              <TouchableOpacity
-                style={styles.cancelModalKeep}
-                onPress={() => setCancelModal(null)}
-                disabled={cancelling}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.cancelModalKeepText}>Keep Order</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.cancelModalConfirm,
-                  (!cancelReason || (cancelReason === 'custom' && !customReason.trim())) && styles.cancelModalConfirmDisabled,
-                ]}
-                onPress={handleCancelOrder}
-                disabled={cancelling || !cancelReason || (cancelReason === 'custom' && !customReason.trim())}
-                activeOpacity={0.7}
-              >
-                {cancelling ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialIcons name="close" size={18} color="#FFFFFF" />
-                    <Text style={styles.cancelModalConfirmText}>Cancel Order</Text>
-                  </>
+                {cancelReason === 'custom' && (
+                  <TextInput
+                    style={styles.customReasonInput}
+                    placeholder="Type your reason..."
+                    placeholderTextColor="#94A3B8"
+                    value={customReason}
+                    onChangeText={setCustomReason}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
                 )}
-              </TouchableOpacity>
-            </View>
+              </View>
+
+              {/* Actions */}
+              <View style={styles.cancelModalActions}>
+                <TouchableOpacity
+                  style={styles.cancelModalKeep}
+                  onPress={() => setCancelModal(null)}
+                  disabled={cancelling}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.cancelModalKeepText}>Keep Order</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.cancelModalConfirm,
+                    (!cancelReason || (cancelReason === 'custom' && !customReason.trim())) && styles.cancelModalConfirmDisabled,
+                  ]}
+                  onPress={handleCancelOrder}
+                  disabled={cancelling || !cancelReason || (cancelReason === 'custom' && !customReason.trim())}
+                  activeOpacity={0.7}
+                >
+                  {cancelling ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <MaterialIcons name="close" size={18} color="#FFFFFF" />
+                      <Text style={styles.cancelModalConfirmText}>Cancel Order</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1110,10 +1118,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  cancelModalScroll: {
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  cancelModalScrollContent: {
     paddingBottom: 34,
-    maxHeight: '80%',
   },
   cancelModalHeader: {
     alignItems: 'center',
@@ -1145,7 +1158,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   reasonList: {
-    maxHeight: 280,
+    marginBottom: 8,
   },
   reasonOption: {
     flexDirection: 'row',

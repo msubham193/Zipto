@@ -80,38 +80,61 @@ export const mapboxApi = {
    * Uses Mapbox Geocoding API v6
    */
   reverseGeocode: async (lat: number, lng: number) => {
+    const coordinateFallback = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
     try {
-      // Use reverse geocoding endpoint
-      const url = `/reverse?longitude=${lng}&latitude=${lat}&access_token=${MAPBOX_ACCESS_TOKEN}&country=IN&language=en&types=address,poi,street,locality`;
+      const response = await geocodingClient.get('/reverse', {
+        params: {
+          longitude: lng,
+          latitude: lat,
+          access_token: MAPBOX_ACCESS_TOKEN,
+          language: 'en',
+          limit: 1,
+          // Geocoding v6 does not support `poi` in types.
+          types:
+            'address,street,neighborhood,locality,place,district,region',
+        },
+      });
 
-      const response = await geocodingClient.get(url);
-
-      const features = response.data.features;
+      const features = response.data?.features;
       if (features && features.length > 0) {
-        // Prioritize address or POI types for better accuracy
-        const specificAddress = features.find(
-          (f: any) =>
-            f.properties?.feature_type === 'address' ||
-            f.properties?.feature_type === 'poi' ||
-            f.properties?.feature_type === 'street',
-        );
+        const selectedFeature = features[0];
 
-        const selectedFeature = specificAddress || features[0];
-
-        // Return formatted address
         return (
           selectedFeature.properties?.full_address ||
           selectedFeature.properties?.place_formatted ||
           selectedFeature.properties?.name ||
-          `${lat}, ${lng}`
+          selectedFeature.place_name ||
+          coordinateFallback
         );
       }
-      return `${lat}, ${lng}`; // Fallback to coordinates
     } catch (error) {
-      console.error('Mapbox reverse geocode error:', error);
-      // Fallback to coordinates on error
-      return `${lat}, ${lng}`;
+      console.error('Mapbox reverse geocode v6 error:', error);
     }
+
+    // Fallback: legacy geocoding endpoint is still widely supported for reverse lookups.
+    try {
+      const response = await axios.get(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`,
+        {
+          params: {
+            access_token: MAPBOX_ACCESS_TOKEN,
+            language: 'en',
+            limit: 1,
+            types: 'address,place,locality,neighborhood',
+          },
+        },
+      );
+
+      const feature = response.data?.features?.[0];
+      if (feature) {
+        return feature.place_name || feature.text || coordinateFallback;
+      }
+    } catch (error) {
+      console.error('Mapbox reverse geocode v5 fallback error:', error);
+    }
+
+    return coordinateFallback;
   },
 
   /**

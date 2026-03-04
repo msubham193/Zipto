@@ -129,18 +129,6 @@ const Home = () => {
     return () => Geolocation.clearWatch(watchId);
   };
 
-  const centerOnUserLocation = () => {
-    if (userLocation && cameraRef.current) {
-      cameraRef.current.setCamera({
-        centerCoordinate: userLocation,
-        zoomLevel: 15,
-        animationDuration: 500,
-      });
-    } else {
-      startLocationTracking();
-    }
-  };
-
   const services = [
     {
       id: 1,
@@ -281,15 +269,6 @@ const Home = () => {
 
       {/* Bottom Navigation Bar */}
       <BottomTabBar />
-
-      {/* Center on User Location Button */}
-      <TouchableOpacity
-        style={styles.locationButton}
-        onPress={centerOnUserLocation}
-        activeOpacity={0.8}
-      >
-        <MaterialIcons name="my-location" size={24} color="#3B82F6" />
-      </TouchableOpacity>
 
       {/* Floating Action Button */}
       <TouchableOpacity
@@ -471,24 +450,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
-  },
-  locationButton: {
-    position: 'absolute',
-    bottom: 170,
-    right: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   fab: {
     position: 'absolute',

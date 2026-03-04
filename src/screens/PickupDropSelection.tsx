@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Geolocation from '@react-native-community/geolocation';
 import { mapboxApi } from '../api/mapbox';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -60,12 +59,7 @@ const PickupDropSelection = () => {
   const [selectedCity, setSelectedCity] = useState<CityName | ''>('');
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
   const [filteredCities, setFilteredCities] = useState<CityName[]>(CITIES);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showCitySelection, setShowCitySelection] = useState(true);
-  const [currentLocationCoords, setCurrentLocationCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
   // New states for sender details
@@ -123,62 +117,6 @@ const PickupDropSelection = () => {
       setSenderMobile(mobile);
     }
   }, [user, senderName, senderMobile]);
-
-  const getCurrentLocation = () => {
-    setIsLoadingLocation(true);
-    console.log('📍 Requesting location...');
-
-    // Use low accuracy first - it's faster and more reliable
-    Geolocation.getCurrentPosition(
-      async position => {
-        const { latitude, longitude } = position.coords;
-        console.log('📍 Location obtained:', { latitude, longitude });
-        setCurrentLocationCoords({ latitude, longitude });
-
-        try {
-          const address = await mapboxApi.reverseGeocode(latitude, longitude);
-
-          if (address) {
-            if (activeInput === 'pickup') {
-              setPickup(address);
-              setPickupCoords({ latitude, longitude });
-            } else {
-              setDrop(address);
-              setDropCoords({ latitude, longitude });
-            }
-
-            const detectedCity = CITIES.find(city =>
-              address.toLowerCase().includes(city.toLowerCase()),
-            );
-
-            if (detectedCity && !selectedCity) {
-              setSelectedCity(detectedCity);
-            }
-          }
-        } catch (error) {
-          console.error('Reverse geocoding error:', error);
-          Alert.alert('Error', 'Could not get your current location address');
-        } finally {
-          setIsLoadingLocation(false);
-        }
-      },
-      err => {
-        console.log('Location error:', err);
-        Alert.alert(
-          'Location Error',
-          err.code === 1
-            ? 'Location permission denied. Please enable location access.'
-            : 'Could not fetch location. Please try again.',
-        );
-        setIsLoadingLocation(false);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000,
-      },
-    );
-  };
 
   const handleCitySelect = (city: CityName) => {
     setSelectedCity(city);
@@ -279,18 +217,10 @@ const PickupDropSelection = () => {
         // Add city context to query if selected
         const query = selectedCity ? `${text}, ${selectedCity}` : text;
 
-        // Use current location for proximity-based search if available
-        const proximity = currentLocationCoords
-          ? {
-              lat: currentLocationCoords.latitude,
-              lng: currentLocationCoords.longitude,
-            }
-          : undefined;
-
         // Search with session token for analytics
         const results = await mapboxApi.searchPlaces(
           query,
-          proximity,
+          undefined,
           sessionTokenRef.current,
         );
 
@@ -356,7 +286,7 @@ const PickupDropSelection = () => {
         drop,
         pickupCoords,
         dropCoords,
-        currentLocationCoords,
+        currentLocationCoords: null,
         senderName,
         senderMobile,
         city: selectedCity,
@@ -501,21 +431,6 @@ const PickupDropSelection = () => {
                   onChangeText={handleSearchLocation}
                   onFocus={() => setActiveInput('pickup')}
                 />
-                <TouchableOpacity
-                  onPress={getCurrentLocation}
-                  style={styles.gpsButton}
-                  disabled={isLoadingLocation}
-                >
-                  {isLoadingLocation && activeInput === 'pickup' ? (
-                    <ActivityIndicator size="small" color="#3B82F6" />
-                  ) : (
-                    <MaterialIcons
-                      name="my-location"
-                      size={20}
-                      color="#3B82F6"
-                    />
-                  )}
-                </TouchableOpacity>
               </View>
 
               {/* Pickup Suggestions - Appears immediately below pickup input */}
@@ -611,21 +526,6 @@ const PickupDropSelection = () => {
                   onChangeText={handleSearchLocation}
                   onFocus={() => setActiveInput('drop')}
                 />
-                <TouchableOpacity
-                  onPress={getCurrentLocation}
-                  style={styles.gpsButton}
-                  disabled={isLoadingLocation}
-                >
-                  {isLoadingLocation && activeInput === 'drop' ? (
-                    <ActivityIndicator size="small" color="#3B82F6" />
-                  ) : (
-                    <MaterialIcons
-                      name="my-location"
-                      size={20}
-                      color="#3B82F6"
-                    />
-                  )}
-                </TouchableOpacity>
               </View>
 
               {/* Drop Suggestions - Appears immediately below drop input */}
@@ -1065,10 +965,6 @@ const styles = StyleSheet.create({
   },
   activeInput: {
     color: '#1E293B',
-  },
-  gpsButton: {
-    padding: 8,
-    marginLeft: 8,
   },
   suggestionsSection: {
     paddingHorizontal: 20,

@@ -4,7 +4,14 @@
       "Bash(npm install:*)",
       "Bash(npx react-native run-android:*)",
       "Bash(gradlew.bat app:installDebug:*)",
-      "Bash(.gradlew.bat app:installDebug:*)"
+      "Bash(.gradlew.bat app:installDebug:*)",
+      "Bash(while read hash msg)",
+      "Bash(do git show $hash)",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(/c/Users/subha/Desktop/DESKTOP/sandeep/Zipto/src/config/mapboxToken.ts:*)"
     ]
   }
 }
