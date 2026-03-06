@@ -35,7 +35,8 @@ const VehicleSelection = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-  const [withHelper, setWithHelper] = useState(false);
+  const [helperCount, setHelperCount] = useState(0);
+  const HELPER_RATE = 200;
   const [vehicles, setVehicles] = useState<UIVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,14 +82,15 @@ const VehicleSelection = () => {
   const handleBook = () => {
     if (selectedVehicle) {
       const vehicle = vehicles.find((v: UIVehicle) => v.id === selectedVehicle);
-      const helperCost = withHelper ? 300 : 0;
+      const helperCost = helperCount * HELPER_RATE;
       navigation.navigate('FareEstimate', {
         vehicle,
         pickup,
         drop,
         pickupCoords,
         dropCoords,
-        withHelper,
+        hasHelper: helperCount > 0,
+        helperCount,
         helperCost,
         city,
         serviceCategory,
@@ -101,7 +103,7 @@ const VehicleSelection = () => {
   const calculateTotalPrice = () => {
     if (!selectedVehicle) return '₹0';
     const vehicle = vehicles.find((v: UIVehicle) => v.id === selectedVehicle);
-    const helperCost = withHelper ? 300 : 0;
+    const helperCost = helperCount * HELPER_RATE;
     return `₹${(vehicle?.basePrice || 0) + helperCost}`;
   };
 
@@ -153,27 +155,48 @@ const VehicleSelection = () => {
   const renderListFooter = () => (
     <View style={styles.helperSection}>
       <Text style={styles.sectionTitle}>Additional Services</Text>
-      <TouchableOpacity
-        style={[styles.helperCard, withHelper && styles.helperCardSelected]}
-        onPress={() => setWithHelper(!withHelper)}
-        activeOpacity={0.7}
+      <View
+        style={[
+          styles.helperCard,
+          helperCount > 0 && styles.helperCardSelected,
+        ]}
       >
         <View style={styles.helperIconContainer}>
           <Text style={styles.helperEmoji}>👷</Text>
         </View>
         <View style={styles.helperInfo}>
-          <Text style={styles.helperTitle}>Add Helper</Text>
+          <Text style={styles.helperTitle}>Add Labour</Text>
           <Text style={styles.helperDescription}>
-            Get assistance with loading & unloading
+            ₹{HELPER_RATE} per person
           </Text>
         </View>
-        <View style={styles.helperPriceContainer}>
-          <Text style={styles.helperPrice}>+₹300</Text>
-          <View style={[styles.checkbox, withHelper && styles.checkboxSelected]}>
-            {withHelper && <Icon name="check" size={16} color="#FFFFFF" />}
-          </View>
+        <View style={styles.counterContainer}>
+          {helperCount > 0 ? (
+            <>
+              <TouchableOpacity
+                onPress={() => setHelperCount(h => Math.max(0, h - 1))}
+                style={styles.counterButton}
+              >
+                <Icon name="remove" size={20} color="#3B82F6" />
+              </TouchableOpacity>
+              <Text style={styles.counterText}>{helperCount}</Text>
+              <TouchableOpacity
+                onPress={() => setHelperCount(h => h + 1)}
+                style={styles.counterButton}
+              >
+                <Icon name="add" size={20} color="#3B82F6" />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setHelperCount(1)}
+              style={styles.addButton}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -411,28 +434,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748B',
   },
-  helperPriceContainer: {
-    alignItems: 'flex-end',
-  },
-  helperPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#10B981',
-    marginBottom: 8,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    justifyContent: 'center',
+  counterContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+    padding: 4,
   },
-  checkboxSelected: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+  counterButton: {
+    padding: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 4,
+  },
+  counterText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginHorizontal: 12,
+  },
+  addButton: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  addButtonText: {
+    color: '#3B82F6',
+    fontWeight: '600',
+    fontSize: 14,
   },
 
   /* Footer */

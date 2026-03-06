@@ -36,8 +36,19 @@ const FareEstimate = () => {
   } | null>(null);
 
   const { user } = useAuthStore();
-  const { vehicle, pickup, drop, pickupCoords, dropCoords, city, serviceCategory, senderName, senderMobile } =
-    route.params || {};
+  const {
+    vehicle,
+    pickup,
+    drop,
+    pickupCoords,
+    dropCoords,
+    city,
+    serviceCategory,
+    senderName,
+    senderMobile,
+    helperCount,
+    helperCost,
+  } = route.params || {};
 
   const fetchFareEstimate = useCallback(async () => {
     try {
@@ -98,16 +109,23 @@ const FareEstimate = () => {
             pickupCoords,
             dropCoords,
             vehicleType: vehicle?.id || 'bike',
-            fare: estimateData?.estimated_fare || 0,
+            fare: (estimateData?.estimated_fare || 0) + (helperCost || 0),
             showBookingSuccess,
             paymentMethod,
+            helperCount,
+            helperCost,
           },
         },
       ],
     });
   };
 
-  const buildRazorpayHTML = (orderId: string, amount: number, currency: string, key: string) => `
+  const buildRazorpayHTML = (
+    orderId: string,
+    amount: number,
+    currency: string,
+    key: string,
+  ) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -155,7 +173,6 @@ const FareEstimate = () => {
 </body>
 </html>`;
 
-
   const handleWebViewMessage = async (event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
@@ -173,14 +190,23 @@ const FareEstimate = () => {
         setBookingLoading(false);
 
         if (!verifyResponse.success) {
-          Alert.alert('Verification Failed', 'Payment collected but verification failed. Contact support.');
+          Alert.alert(
+            'Verification Failed',
+            'Payment collected but verification failed. Contact support.',
+          );
           return;
         }
         navigateToTracking(bookingId, true, 'online');
       } else if (message.type === 'PAYMENT_CANCELLED') {
-        Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
+        Alert.alert(
+          'Payment Cancelled',
+          'Your booking is saved. You can retry payment later.',
+        );
       } else if (message.type === 'PAYMENT_FAILED') {
-        Alert.alert('Payment Failed', message.error?.description || 'Payment could not be completed.');
+        Alert.alert(
+          'Payment Failed',
+          message.error?.description || 'Payment could not be completed.',
+        );
       }
     } catch {
       setPaymentModal(null);
@@ -215,12 +241,16 @@ const FareEstimate = () => {
       const bookingResponse = await vehicleApi.createBooking(bookingData);
 
       if (!bookingResponse.success) {
-        Alert.alert('Booking Failed', bookingResponse.message || 'Failed to create booking. Please try again.');
+        Alert.alert(
+          'Booking Failed',
+          bookingResponse.message ||
+            'Failed to create booking. Please try again.',
+        );
         return;
       }
 
       const bookingId = bookingResponse.data?.id;
-      const amount = estimateData?.estimated_fare || 0;
+      const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
 
       if (selectedPayment === 'online') {
         const orderResponse = await vehicleApi.createPaymentOrder({
@@ -229,12 +259,20 @@ const FareEstimate = () => {
         });
 
         if (!orderResponse.success || !orderResponse.data?.order_id) {
-          Alert.alert('Payment Error', 'Failed to create payment order. Please try again.');
+          Alert.alert(
+            'Payment Error',
+            'Failed to create payment order. Please try again.',
+          );
           return;
         }
 
         const { order_id, currency, key } = orderResponse.data;
-        const html = buildRazorpayHTML(order_id, amount, currency || 'INR', key);
+        const html = buildRazorpayHTML(
+          order_id,
+          amount,
+          currency || 'INR',
+          key,
+        );
         setBookingLoading(false);
         setPaymentModal({ html, bookingId });
       } else {
@@ -244,7 +282,9 @@ const FareEstimate = () => {
       console.error('Booking error:', err);
       Alert.alert(
         'Error',
-        err.response?.data?.message || err.message || 'Something went wrong. Please try again.',
+        err.response?.data?.message ||
+          err.message ||
+          'Something went wrong. Please try again.',
       );
     } finally {
       setBookingLoading(false);
@@ -373,12 +413,21 @@ const FareEstimate = () => {
             </View>
           )}
 
+          {(helperCount || 0) > 0 && (
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>
+                Labour Charge ({helperCount}x)
+              </Text>
+              <Text style={styles.rowValue}>₹{helperCost || 0}</Text>
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Estimate</Text>
             <Text style={styles.totalValue}>
-              ₹{estimateData?.estimated_fare || 0}
+              ₹{(estimateData?.estimated_fare || 0) + (helperCost || 0)}
             </Text>
           </View>
         </View>
@@ -481,7 +530,7 @@ const FareEstimate = () => {
         <View style={styles.priceContainer}>
           <Text style={styles.finalPriceLabel}>Final Amount</Text>
           <Text style={styles.finalPrice}>
-            ₹{estimateData?.estimated_fare || 0}
+            ₹{(estimateData?.estimated_fare || 0) + (helperCost || 0)}
           </Text>
         </View>
         <Button
@@ -499,7 +548,10 @@ const FareEstimate = () => {
         animationType="slide"
         onRequestClose={() => {
           setPaymentModal(null);
-          Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
+          Alert.alert(
+            'Payment Cancelled',
+            'Your booking is saved. You can retry payment later.',
+          );
         }}
       >
         <SafeAreaView style={styles.paymentModalContainer}>
@@ -507,17 +559,20 @@ const FareEstimate = () => {
             <TouchableOpacity
               onPress={() => {
                 setPaymentModal(null);
-                Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
+                Alert.alert(
+                  'Payment Cancelled',
+                  'Your booking is saved. You can retry payment later.',
+                );
               }}
             >
               <Icon name="close" size={24} color="#1F2937" />
             </TouchableOpacity>
             <Text style={styles.paymentModalTitle}>Complete Payment</Text>
-            <View style={{width: 24}} />
+            <View style={{ width: 24 }} />
           </View>
           {paymentModal?.html && (
             <WebView
-              source={{html: paymentModal.html}}
+              source={{ html: paymentModal.html }}
               onMessage={handleWebViewMessage}
               javaScriptEnabled
               domStorageEnabled
