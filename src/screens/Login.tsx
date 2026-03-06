@@ -25,7 +25,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
-  const [heroHeight, setHeroHeight] = useState(180);
+  const [heroHeight, setHeroHeight] = useState(250);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
@@ -35,7 +35,7 @@ const Login = () => {
 
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
-      setHeroHeight(180);
+      setHeroHeight(250);
     });
 
     return () => {
@@ -56,7 +56,6 @@ const Login = () => {
       await login(countryCode + phoneNumber);
       navigation.navigate('OTPVerification', { mobile: phoneNumber, fullMobile: countryCode + phoneNumber });
     } catch (err) {
-      // Error handling is managed by store state or caught here
       console.log('Login error', err);
     }
   };
@@ -133,7 +132,6 @@ const Login = () => {
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
 
-
                 <View>
                   <TouchableOpacity
                     style={styles.otpButton}
@@ -141,7 +139,10 @@ const Login = () => {
                     activeOpacity={0.8}
                   >
                     <Text style={styles.otpButtonText}>{isLoading ? 'Sending...' : 'Get OTP'}</Text>
-                    <Text style={styles.arrow}>→</Text>
+                    <Image
+                      source={require('../assets/images/arrow.png')}
+                      style={styles.arrowIcon}
+                    />
                   </TouchableOpacity>
                 </View>
 
@@ -192,15 +193,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
   keyboardView: {
     flex: 1,
   },
-
   scrollContent: {
     flexGrow: 1,
   },
-
   contentWrapper: {
     flex: 1,
     paddingHorizontal: 20,
@@ -212,18 +210,17 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   heroCard: {
+    height: 250,
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
-    position: 'relative',
   },
   heroImage: {
     width: '100%',
-    height: '120%',
+    height: '110%',
     position: 'absolute',
-    // top:'0%',
   },
   heroOverlay: {
     position: 'absolute',
@@ -231,7 +228,6 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
   },
-
   heroText: {
     fontSize: 20,
     fontFamily: 'Poppins-Regular',
@@ -251,7 +247,6 @@ const styles = StyleSheet.create({
   formSection: {
     flex: 1,
   },
-
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -281,12 +276,10 @@ const styles = StyleSheet.create({
   numberLabel: {
     flex: 2.5,
   },
-
   inputRow: {
     flexDirection: 'row',
     gap: 12,
   },
-
   codeInput: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -300,7 +293,6 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontSize: 16,
   },
-
   phoneInputContainer: {
     flex: 2.5,
     flexDirection: 'row',
@@ -320,7 +312,6 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     paddingVertical: 16,
   },
-
   inputError: {
     borderColor: '#EF4444',
   },
@@ -348,9 +339,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     marginRight: 8,
   },
-  arrow: {
-    color: '#FFFFFF',
-    fontSize: 18,
+  arrowIcon: {
+    width: 22,
+    height: 22,
+    tintColor: '#eaecf1',
   },
 
   /* Divider */

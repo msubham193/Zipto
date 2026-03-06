@@ -77,7 +77,10 @@ const LanguageSelection = () => {
                   <Text style={styles.languageName}>English</Text>
                   <Text style={styles.languageSubtext}>English</Text>
                 </View>
-                <Text style={styles.checkIcon}>→</Text>
+                <Image
+  source={require('../assets/images/arrow.png')}
+  style={styles.arrowIcon}
+/>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -92,7 +95,10 @@ const LanguageSelection = () => {
                   <Text style={styles.languageName}>ଓଡ଼ିଆ</Text>
                   <Text style={styles.languageSubtext}>Odia</Text>
                 </View>
-                <Text style={styles.checkIcon}>→</Text>
+               <Image
+  source={require('../assets/images/arrow.png')}
+  style={styles.arrowIcon}
+/>
               </TouchableOpacity>
             </View>
           </View>
@@ -150,7 +156,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   heroCard: {
-    height: 200,
+    height: 250,
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
@@ -286,7 +292,11 @@ const styles = StyleSheet.create({
     color: '#2563EB',
     fontWeight: 'bold',
   },
-
+arrowIcon: {
+  width: 22,
+  height: 22,
+  tintColor: '#2563EB', // optional if icon is black
+},
   /* Footer text */
   termsText: {
     fontSize: 11,

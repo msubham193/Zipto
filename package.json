@@ -31,7 +31,7 @@
     "react-native-vector-icons": "^10.3.0",
     "react-native-webview": "^13.16.0",
     "react-redux": "^9.2.0",
-    "zustand": "^5.0.10"
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

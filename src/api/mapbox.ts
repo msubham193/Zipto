@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken';
+import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken.ts';
 
 const MAPBOX_ACCESS_TOKEN = MAPBOX_PUBLIC_TOKEN;
 

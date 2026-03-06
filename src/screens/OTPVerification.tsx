@@ -49,6 +49,54 @@ const SuccessModal = ({
   </Modal>
 );
 
+/* OTP Box Component */
+const OTPInput = ({
+  value,
+  onChange,
+  hasError,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  hasError: boolean;
+}) => {
+  const inputRef = useRef<TextInput>(null);
+  const digits = value.split('');
+
+  return (
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={() => inputRef.current?.focus()}
+      style={styles.otpBoxesWrapper}
+    >
+      {/* Hidden real input */}
+      <TextInput
+        ref={inputRef}
+        value={value}
+        onChangeText={onChange}
+        keyboardType="number-pad"
+        maxLength={6}
+        style={styles.hiddenInput}
+        caretHidden={true}
+        autoCorrect={false}
+      />
+      {/* 6 visual boxes */}
+      {[0, 1, 2, 3, 4, 5].map(i => (
+        <View
+          key={i}
+          style={[
+            styles.otpBox,
+            hasError && styles.otpBoxError,
+            digits[i] ? styles.otpBoxFilled : null,
+            value.length === i && styles.otpBoxActive,
+          ]}
+        >
+          <Text style={styles.otpBoxText}>{digits[i] || ''}</Text>
+        </View>
+      ))}
+    </TouchableOpacity>
+  );
+};
+
 const OTPVerification = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -61,10 +109,8 @@ const OTPVerification = () => {
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [heroHeight, setHeroHeight] = useState(250);
 
-  const [heroHeight, setHeroHeight] = useState(180);
-
-  // Animated values
   const heroScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -75,12 +121,10 @@ const OTPVerification = () => {
       setKeyboardOpen(true);
       setHeroHeight(120);
     });
-
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
-      setHeroHeight(180);
+      setHeroHeight(250);
     });
-
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -92,15 +136,10 @@ const OTPVerification = () => {
       setError('Please enter 6-digit OTP');
       return;
     }
-
     setError('');
-
     try {
       const phoneToVerify = fullMobile || mobile;
       await verifyOtp(phoneToVerify, otp);
-
-      // Show success modal - navigation will happen automatically
-      // because Zustand sets isAuthenticated: true and RootNavigator listens to it
       setShowSuccessModal(true);
     } catch (err: any) {
       console.log('Verification error', err);
@@ -110,7 +149,6 @@ const OTPVerification = () => {
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    // Navigation happens automatically via RootNavigator when isAuthenticated becomes true
   };
 
   const handleResendOTP = () => {
@@ -119,10 +157,7 @@ const OTPVerification = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <SuccessModal
-        visible={showSuccessModal}
-        onClose={handleSuccessModalClose}
-      />
+      <SuccessModal visible={showSuccessModal} onClose={handleSuccessModalClose} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -133,30 +168,19 @@ const OTPVerification = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* HERO SECTION */}
-          <Animated.View
-            style={[
-              styles.heroContainer,
-              { transform: [{ scale: heroScale }] },
-            ]}
-          >
-            <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
+          <Animated.View style={[styles.heroContainer, { transform: [{ scale: heroScale }] }]}>
+            <View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
                 source={require('../assets/images/heroimg3.jpg')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
-            </Animated.View>
+            </View>
           </Animated.View>
 
           <View style={styles.contentWrapper}>
             <Animated.View
-              style={[
-                styles.content,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }],
-                },
-              ]}
+              style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
             >
               <View style={styles.formSection}>
                 <Text style={styles.title}>Verify OTP</Text>
@@ -167,38 +191,20 @@ const OTPVerification = () => {
                 {/* OTP Input */}
                 <View style={styles.otpContainer}>
                   <Text style={styles.label}>Enter OTP</Text>
-                  <View
-                    style={[
-                      styles.otpInputContainer,
-                      error && styles.inputError,
-                    ]}
-                  >
-                    <Text style={styles.otpIcon}>🔒</Text>
-                    <TextInput
-                      style={styles.otpInput}
-                      placeholder="000000"
-                      placeholderTextColor="#6B7280"
-                      keyboardType="number-pad"
-                      maxLength={6}
-                      value={otp}
-                      onChangeText={text => {
-                        setOtp(text);
-                        setError('');
-                      }}
-                    />
-                  </View>
+                  <OTPInput
+                    value={otp}
+                    onChange={text => {
+                      setOtp(text);
+                      setError('');
+                    }}
+                    hasError={!!error}
+                  />
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                  {authError ? (
-                    <Text style={styles.errorText}>{authError}</Text>
-                  ) : null}
+                  {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
                 </View>
 
                 {/* Resend OTP */}
-                <TouchableOpacity
-                  onPress={handleResendOTP}
-                  style={styles.resendButton}
-                  activeOpacity={0.7}
-                >
+                <TouchableOpacity onPress={handleResendOTP} style={styles.resendButton} activeOpacity={0.7}>
                   <Text style={styles.resendText}>
                     Didn't receive code?{' '}
                     <Text style={styles.resendLink}>Resend OTP</Text>
@@ -216,22 +222,25 @@ const OTPVerification = () => {
                     <Text style={styles.verifyButtonText}>
                       {isLoading ? 'Verifying...' : 'Verify & Continue'}
                     </Text>
-                    <Text style={styles.arrow}>→</Text>
+                     <Image
+                                          source={require('../assets/images/arrow.png')}
+                                          style={styles.arrowIcon}
+                                        />
                   </TouchableOpacity>
                 </Animated.View>
 
-                {/* Back - Only show when keyboard is closed */}
                 {!keyboardOpen && (
-                  <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={styles.backButton}
-                  >
-                    <Text style={styles.backText}>← Back to Login</Text>
+                  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+
+                      <Image
+    source={require('../assets/images/back.png')} 
+    style={styles.backIcon}
+  />
+  <Text style={styles.backText}>Back to Login</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
-              {/* Terms - Only show when keyboard is closed */}
               {!keyboardOpen && (
                 <Text style={styles.termsText}>
                   By continuing, you agree to our{' '}
@@ -252,39 +261,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
-  keyboardView: {
-    flex: 1,
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-  },
-
-  contentWrapper: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  contentWrapper: { flex: 1, paddingHorizontal: 20 },
 
   /* Hero */
-  heroContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
+  heroContainer: { paddingHorizontal: 20, paddingTop: 10 },
   heroCard: {
+    height: 250,
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
-    position: 'relative',
   },
   heroImage: {
     width: '100%',
-    height: '114%',
+    height: '110%',
     position: 'absolute',
   },
-
   heroText: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -296,15 +291,8 @@ const styles = StyleSheet.create({
   },
 
   /* Content */
-  content: {
-    flex: 1,
-    paddingTop: 20,
-    paddingBottom: 20,
-  },
-  formSection: {
-    flex: 1,
-  },
-
+  content: { flex: 1, paddingTop: 20, paddingBottom: 20 },
+  formSection: { flex: 1 },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -320,42 +308,66 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
 
-  /* OTP input */
-  otpContainer: {
-    marginBottom: 20,
-  },
+  /* OTP */
+  otpContainer: { marginBottom: 20 },
   label: {
     fontSize: 13,
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     fontWeight: '600',
-    marginBottom: 8,
-  },
-  otpInputContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  otpIcon: {
-    fontSize: 18,
-    marginRight: 12,
-  },
-  otpInput: {
-    flex: 1,
-    fontSize: 22,
-    color: '#0F172A',
-    paddingVertical: 16,
-    letterSpacing: 8,
-    textAlign: 'center',
+    marginBottom: 12,
   },
 
-  inputError: {
+  /* OTP Boxes */
+  otpBoxesWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
+  },
+  otpBox: {
+    flex: 1,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  otpBoxActive: {
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
+  },
+  otpBoxFilled: {
+    borderColor: '#2563EB',
+    backgroundColor: '#FFFFFF',
+  },
+  otpBoxError: {
     borderColor: '#EF4444',
   },
+  otpBoxText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0F172A',
+    fontFamily: 'Poppins-Regular',
+  },
+ arrowIcon: {
+    width: 22,
+    height: 22,
+    tintColor: '#eaecf1',
+  },
+  backIcon:{
+      width: 22,
+    height: 22,
+    tintColor: '#eaecf1',
+  },
+  inputError: { borderColor: '#EF4444' },
   errorText: {
     color: '#EF4444',
     fontSize: 12,
@@ -365,20 +377,9 @@ const styles = StyleSheet.create({
   },
 
   /* Resend */
-  resendButton: {
-    alignSelf: 'center',
-    marginBottom: 30,
-  },
-  resendText: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-  },
-  resendLink: {
-    color: '#2563EB',
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-  },
+  resendButton: { alignSelf: 'center', marginBottom: 30 },
+  resendText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: '#64748B' },
+  resendLink: { color: '#2563EB', fontWeight: '600', fontFamily: 'Poppins-Regular' },
 
   /* Verify */
   verifyButton: {
@@ -397,22 +398,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginRight: 8,
   },
-  arrow: {
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
+  arrow: { fontSize: 18, color: '#FFFFFF' },
 
   /* Back */
-  backButton: {
-    alignSelf: 'center',
-    paddingVertical: 12,
-  },
-  backText: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-    fontWeight: '500',
-  },
+  backButton: { alignSelf: 'center', paddingVertical: 12 },
+  backText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: '#64748B', fontWeight: '500' },
 
   /* Footer */
   termsText: {
@@ -424,11 +414,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
-  link: {
-    color: '#2563EB',
-  },
+  link: { color: '#2563EB' },
 
-  /* Modal Styles */
+  /* Modal */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -456,11 +444,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  successIcon: {
-    fontSize: 32,
-    color: 'white',
-    fontWeight: 'bold',
-  },
+  successIcon: { fontSize: 32, color: 'white', fontWeight: 'bold' },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -484,12 +468,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  modalButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-  },
+  modalButtonText: { color: 'white', fontSize: 16, fontWeight: '600', fontFamily: 'Poppins-Regular' },
 });
 
 export default OTPVerification;
