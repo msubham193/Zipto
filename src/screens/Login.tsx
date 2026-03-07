@@ -113,7 +113,11 @@ const Login = () => {
                       error && styles.inputError,
                     ]}
                   >
-                    <Text style={styles.phoneIcon}>📱</Text>
+                    <Image
+  source={require('../assets/images/cell-phone.png')}
+  style={styles.phoneIcon}
+  resizeMode="contain"
+/>
                     <TextInput
                       style={styles.phoneInput}
                       placeholder="98765 43210"
@@ -303,10 +307,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  phoneIcon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
+ phoneIcon: {
+  width: 28,
+  height: 28,
+},
   phoneInput: {
     flex: 1,
     color: '#0F172A',

@@ -41,23 +41,23 @@ const Splash = () => {
           />
 
           {/* Gradient Zipto Text */}
-          <MaskedView
-            maskElement={
-              <Text style={styles.ziptoTextMask}>
-                Zipto
-              </Text>
-            }
-          >
-            <LinearGradient
-              colors={['#2563EB', '#7C3AED', '#EC4899']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={[styles.ziptoTextMask, { opacity: 0 }]}>
-                Zipto
-              </Text>
-            </LinearGradient>
-          </MaskedView>
+         <MaskedView
+  maskElement={
+    <Text style={styles.ziptoTextMask}>
+      Zipto
+    </Text>
+  }
+>
+  {/* <LinearGradient
+    colors={['#2563EB', '#7C3AED', '#EC4899']}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 0 }}
+  >
+    <Text style={[styles.ziptoTextMask, { opacity: 0 }]}>
+      Zipto
+    </Text>
+  </LinearGradient> */}
+</MaskedView>
 
         </View>
       </View>
