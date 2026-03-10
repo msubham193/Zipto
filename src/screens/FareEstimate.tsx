@@ -11,6 +11,8 @@ import {
   StatusBar,
   Modal,
   Image,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
@@ -18,6 +20,38 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { WebView } from 'react-native-webview';
+
+// ─── Responsive Utilities ────────────────────────────────────────────────────
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base design dimensions (iPhone 14 Pro / 393pt wide)
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+/** Scale a size relative to screen width */
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+
+/** Scale a size relative to screen height */
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+/** Moderate scale – less aggressive than linear (factor 0–1) */
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+/** Normalize font size accounting for pixel density */
+const nf = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+
+/** Responsive spacing */
+const sp = (size: number) => Math.round(scaleW(size));
+
+// Small screen flag (iPhone SE, older Androids ≤ 360pt wide)
+const isSmallScreen = SCREEN_WIDTH <= 360;
+// Large screen flag (tablets / large phones ≥ 428pt wide)
+const isLargeScreen = SCREEN_WIDTH >= 428;
+
+// ─── Vehicle Image Map ────────────────────────────────────────────────────────
 
 const VEHICLE_IMAGES: Record<string, any> = {
   bike: require('../assets/images/vehicle2.png'),
@@ -29,63 +63,38 @@ const VEHICLE_IMAGES: Record<string, any> = {
   tata_407: require('../assets/images/vehicle3.png'),
 };
 
+// ─── Component ───────────────────────────────────────────────────────────────
+
 const FareEstimate = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'online'>(
-    'cash',
-  );
-  const [estimateData, setEstimateData] = useState<
-    FareEstimateResponse['data'] | null
-  >(null);
+  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'online'>('cash');
+  const [estimateData, setEstimateData] = useState<FareEstimateResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentModal, setPaymentModal] = useState<{
-    html: string;
-    bookingId: string;
-  } | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{ html: string; bookingId: string } | null>(null);
 
   const { user } = useAuthStore();
   const {
-    vehicle,
-    pickup,
-    drop,
-    pickupCoords,
-    dropCoords,
-    city,
-    serviceCategory,
-    senderName,
-    senderMobile,
-    helperCount,
-    helperCost,
+    vehicle, pickup, drop, pickupCoords, dropCoords,
+    city, serviceCategory, senderName, senderMobile,
+    helperCount, helperCost,
   } = route.params || {};
+
   const selectedVehicleType = vehicle?.vehicleType || 'bike';
 
+  // ── Fetch fare estimate ─────────────────────────────────────────────────────
   const fetchFareEstimate = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
-      if (!pickupCoords || !dropCoords) {
-        throw new Error('Location coordinates are required');
-      }
-
-      if (!vehicle?.vehicleType) {
-        throw new Error('Vehicle type is required');
-      }
+      if (!pickupCoords || !dropCoords) throw new Error('Location coordinates are required');
+      if (!vehicle?.vehicleType) throw new Error('Vehicle type is required');
 
       const response = await vehicleApi.estimateFare({
-        pickup_location: {
-          latitude: pickupCoords.latitude,
-          longitude: pickupCoords.longitude,
-          address: pickup || '',
-        },
-        drop_location: {
-          latitude: dropCoords.latitude,
-          longitude: dropCoords.longitude,
-          address: drop || '',
-        },
+        pickup_location: { latitude: pickupCoords.latitude, longitude: pickupCoords.longitude, address: pickup || '' },
+        drop_location: { latitude: dropCoords.latitude, longitude: dropCoords.longitude, address: drop || '' },
         vehicle_type: selectedVehicleType,
         number_of_helpers: helperCount || 0,
       });
@@ -96,22 +105,15 @@ const FareEstimate = () => {
         throw new Error('Failed to get fare estimate');
       }
     } catch (err: any) {
-      console.error('Error fetching fare estimate:', err);
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          'Failed to calculate fare. Please try again.',
-      );
+      setError(err.response?.data?.message || err.message || 'Failed to calculate fare. Please try again.');
     } finally {
       setLoading(false);
     }
   }, [pickupCoords, dropCoords, vehicle?.vehicleType, helperCount, pickup, drop, selectedVehicleType]);
 
-  // Fetch fare estimate on mount
-  useEffect(() => {
-    fetchFareEstimate();
-  }, [fetchFareEstimate]);
+  useEffect(() => { fetchFareEstimate(); }, [fetchFareEstimate]);
 
+  // ── Navigation helper ───────────────────────────────────────────────────────
   const navigateToTracking = (
     bookingId: string,
     showBookingSuccess = false,
@@ -124,29 +126,18 @@ const FareEstimate = () => {
         {
           name: 'LiveTracking',
           params: {
-            bookingId,
-            pickup: pickup || '',
-            drop: drop || '',
-            pickupCoords,
-            dropCoords,
-            vehicleType: selectedVehicleType,
+            bookingId, pickup: pickup || '', drop: drop || '',
+            pickupCoords, dropCoords, vehicleType: selectedVehicleType,
             fare: (estimateData?.estimated_fare || 0) + (helperCost || 0),
-            showBookingSuccess,
-            paymentMethod,
-            helperCount,
-            helperCost,
+            showBookingSuccess, paymentMethod, helperCount, helperCost,
           },
         },
       ],
     });
   };
 
-  const buildRazorpayHTML = (
-    orderId: string,
-    amount: number,
-    currency: string,
-    key: string,
-  ) => `
+  // ── Razorpay HTML builder ───────────────────────────────────────────────────
+  const buildRazorpayHTML = (orderId: string, amount: number, currency: string, key: string) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -161,21 +152,12 @@ const FareEstimate = () => {
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     var options = {
-      key: "${key}",
-      amount: ${Math.round(amount * 100)},
-      currency: "${currency}",
-      name: "Zipto",
-      description: "Booking Payment",
-      order_id: "${orderId}",
-      prefill: {
-        contact: "${user?.phone || ''}",
-        name: "${user?.name || ''}"
-      },
+      key: "${key}", amount: ${Math.round(amount * 100)}, currency: "${currency}",
+      name: "Zipto", description: "Booking Payment", order_id: "${orderId}",
+      prefill: { contact: "${user?.phone || ''}", name: "${user?.name || ''}" },
       theme: { color: "#2563EB" },
       handler: function(response) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: "PAYMENT_SUCCESS", data: response
-        }));
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_SUCCESS", data: response }));
       },
       modal: {
         ondismiss: function() {
@@ -185,15 +167,14 @@ const FareEstimate = () => {
     };
     var rzp = new Razorpay(options);
     rzp.on("payment.failed", function(response) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: "PAYMENT_FAILED", error: response.error
-      }));
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_FAILED", error: response.error }));
     });
     rzp.open();
   </script>
 </body>
 </html>`;
 
+  // ── WebView message handler ─────────────────────────────────────────────────
   const handleWebViewMessage = async (event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
@@ -209,25 +190,15 @@ const FareEstimate = () => {
           booking_id: bookingId,
         });
         setBookingLoading(false);
-
         if (!verifyResponse.success) {
-          Alert.alert(
-            'Verification Failed',
-            'Payment collected but verification failed. Contact support.',
-          );
+          Alert.alert('Verification Failed', 'Payment collected but verification failed. Contact support.');
           return;
         }
         navigateToTracking(bookingId, true, 'online');
       } else if (message.type === 'PAYMENT_CANCELLED') {
-        Alert.alert(
-          'Payment Cancelled',
-          'Your booking is saved. You can retry payment later.',
-        );
+        Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
       } else if (message.type === 'PAYMENT_FAILED') {
-        Alert.alert(
-          'Payment Failed',
-          message.error?.description || 'Payment could not be completed.',
-        );
+        Alert.alert('Payment Failed', message.error?.description || 'Payment could not be completed.');
       }
     } catch {
       setPaymentModal(null);
@@ -236,84 +207,52 @@ const FareEstimate = () => {
     }
   };
 
+  // ── Confirm booking ─────────────────────────────────────────────────────────
   const handleConfirmBooking = async () => {
     try {
       setBookingLoading(true);
-
       const bookingData = {
         name: senderName || user?.name || '',
         mobile_number: senderMobile || user?.phone || '',
         city: city || 'Bhubaneswar',
         service_category: serviceCategory || 'send_packages',
-        pickup_location: {
-          latitude: pickupCoords.latitude,
-          longitude: pickupCoords.longitude,
-          address: pickup || '',
-        },
-        drop_location: {
-          latitude: dropCoords.latitude,
-          longitude: dropCoords.longitude,
-          address: drop || '',
-        },
+        pickup_location: { latitude: pickupCoords.latitude, longitude: pickupCoords.longitude, address: pickup || '' },
+        drop_location: { latitude: dropCoords.latitude, longitude: dropCoords.longitude, address: drop || '' },
         vehicle_type: selectedVehicleType,
         booking_type: 'instant' as const,
         number_of_helpers: helperCount || 0,
       };
 
       const bookingResponse = await vehicleApi.createBooking(bookingData);
-
       if (!bookingResponse.success) {
-        Alert.alert(
-          'Booking Failed',
-          bookingResponse.message ||
-            'Failed to create booking. Please try again.',
-        );
+        Alert.alert('Booking Failed', bookingResponse.message || 'Failed to create booking. Please try again.');
         return;
       }
 
-      const bookingId =
-        bookingResponse.data?.booking_id || bookingResponse.data?.id;
+      const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
       const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
 
       if (selectedPayment === 'online') {
-        const orderResponse = await vehicleApi.createPaymentOrder({
-          booking_id: bookingId,
-          amount,
-        });
-
+        const orderResponse = await vehicleApi.createPaymentOrder({ booking_id: bookingId, amount });
         if (!orderResponse.success || !orderResponse.data?.order_id) {
-          Alert.alert(
-            'Payment Error',
-            'Failed to create payment order. Please try again.',
-          );
+          Alert.alert('Payment Error', 'Failed to create payment order. Please try again.');
           return;
         }
-
         const { order_id, currency, key } = orderResponse.data;
-        const html = buildRazorpayHTML(
-          order_id,
-          amount,
-          currency || 'INR',
-          key,
-        );
+        const html = buildRazorpayHTML(order_id, amount, currency || 'INR', key);
         setBookingLoading(false);
         setPaymentModal({ html, bookingId });
       } else {
         navigateToTracking(bookingId, true, 'cash');
       }
     } catch (err: any) {
-      console.error('Booking error:', err);
-      Alert.alert(
-        'Error',
-        err.response?.data?.message ||
-          err.message ||
-          'Something went wrong. Please try again.',
-      );
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Something went wrong. Please try again.');
     } finally {
       setBookingLoading(false);
     }
   };
 
+  // ── Loading state ───────────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -323,16 +262,13 @@ const FareEstimate = () => {
     );
   }
 
+  // ── Error state ─────────────────────────────────────────────────────────────
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Icon name="error-outline" size={48} color="#EF4444" />
+        <Icon name="error-outline" size={sp(48)} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={fetchFareEstimate}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.retryButton} onPress={fetchFareEstimate} activeOpacity={0.8}>
           <Text style={styles.retryButtonText}>Retry Estimation</Text>
         </TouchableOpacity>
       </View>
@@ -340,28 +276,25 @@ const FareEstimate = () => {
   }
 
   const breakdown = estimateData?.breakdown;
+  const totalFare = (estimateData?.estimated_fare || 0) + (helperCost || 0);
 
+  // ── Main render ─────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="arrow-back" size={24} color="#1F2937" />
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={sp(24)} color="#1F2937" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Fare Estimate</Text>
         <View style={styles.headerButton} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Route Card */}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* ── Route Card ── */}
         <View style={styles.card}>
           <View style={styles.vehicleInfoRow}>
             <Image
@@ -373,11 +306,13 @@ const FareEstimate = () => {
               style={styles.vehicleImage}
               resizeMode="contain"
             />
-            <View>
-              <Text style={styles.vehicleName}>
+            <View style={styles.vehicleTextWrapper}>
+              <Text style={styles.vehicleName} numberOfLines={1}>
                 {vehicle?.name || 'Vehicle'}
               </Text>
-              <Text style={styles.vehicleCapacity}>{vehicle?.capacity}</Text>
+              <Text style={styles.vehicleCapacity} numberOfLines={1}>
+                {vehicle?.capacity}
+              </Text>
             </View>
           </View>
 
@@ -390,13 +325,13 @@ const FareEstimate = () => {
             <View style={styles.addressContainer}>
               <View style={styles.addressItem}>
                 <Text style={styles.label}>Pickup</Text>
-                <Text style={styles.addressText} numberOfLines={1}>
+                <Text style={styles.addressText} numberOfLines={2}>
                   {pickup || 'Current Location'}
                 </Text>
               </View>
               <View style={styles.addressItem}>
                 <Text style={styles.label}>Drop-off</Text>
-                <Text style={styles.addressText} numberOfLines={1}>
+                <Text style={styles.addressText} numberOfLines={2}>
                   {drop || 'Select Destination'}
                 </Text>
               </View>
@@ -405,32 +340,29 @@ const FareEstimate = () => {
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Icon name="schedule" size={16} color="#6B7280" />
+              <Icon name="schedule" size={sp(16)} color="#6B7280" />
               <Text style={styles.statText}>
-                {estimateData?.duration ? Math.round(estimateData.duration) : 0}{' '}
-                mins
+                {estimateData?.duration ? Math.round(estimateData.duration) : 0} mins
               </Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Icon name="place" size={16} color="#6B7280" />
+              <Icon name="place" size={sp(16)} color="#6B7280" />
               <Text style={styles.statText}>
-                {estimateData?.distance ? estimateData.distance.toFixed(2) : 0}{' '}
-                km
+                {estimateData?.distance ? estimateData.distance.toFixed(2) : 0} km
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Fare Breakdown Card */}
+        {/* ── Fare Breakdown Card ── */}
         <Text style={styles.sectionTitle}>Fare Breakdown</Text>
         <View style={styles.card}>
           {(breakdown?.surge_multiplier || 1) > 1 && (
             <View style={styles.surgeAlert}>
-              <Icon name="trending-up" size={16} color="#B91C1C" />
+              <Icon name="trending-up" size={sp(16)} color="#B91C1C" />
               <Text style={styles.surgeText}>
-                Identify high demand! Fares are slightly higher due to high
-                demand.
+                High demand! Fares are slightly higher right now.
               </Text>
             </View>
           )}
@@ -441,24 +373,17 @@ const FareEstimate = () => {
           </View>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Distance Charge</Text>
-            <Text style={styles.rowValue}>
-              ₹{breakdown?.distance_charge || 0}
-            </Text>
+            <Text style={styles.rowValue}>₹{breakdown?.distance_charge || 0}</Text>
           </View>
           {(breakdown?.time_charge || 0) > 0 && (
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Time Charge</Text>
-              <Text style={styles.rowValue}>
-                ₹{breakdown?.time_charge || 0}
-              </Text>
+              <Text style={styles.rowValue}>₹{breakdown?.time_charge || 0}</Text>
             </View>
           )}
-
           {(helperCount || 0) > 0 && (
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>
-                Labour Charge ({helperCount}x)
-              </Text>
+              <Text style={styles.rowLabel}>Labour Charge ({helperCount}x)</Text>
               <Text style={styles.rowValue}>₹{helperCost || 0}</Text>
             </View>
           )}
@@ -467,111 +392,65 @@ const FareEstimate = () => {
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Estimate</Text>
-            <Text style={styles.totalValue}>
-              ₹{(estimateData?.estimated_fare || 0) + (helperCost || 0)}
-            </Text>
+            <Text style={styles.totalValue}>₹{totalFare}</Text>
           </View>
         </View>
 
-        {/* Payment Method */}
+        {/* ── Payment Method ── */}
         <Text style={styles.sectionTitle}>Payment Method</Text>
         <View style={styles.paymentContainer}>
+          {/* Cash */}
           <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              selectedPayment === 'cash' && styles.selectedPayment,
-            ]}
+            style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
             onPress={() => setSelectedPayment('cash')}
             activeOpacity={0.9}
           >
             <View style={styles.paymentLeft}>
-              <View
-                style={[
-                  styles.iconBox,
-                  selectedPayment === 'cash' && styles.selectedIconBox,
-                ]}
-              >
-                <Icon
-                  name="payments"
-                  size={20}
-                  color={selectedPayment === 'cash' ? '#2563EB' : '#6B7280'}
-                />
+              <View style={[styles.iconBox, selectedPayment === 'cash' && styles.selectedIconBox]}>
+                <Icon name="payments" size={sp(20)} color={selectedPayment === 'cash' ? '#2563EB' : '#6B7280'} />
               </View>
               <View>
-                <Text
-                  style={[
-                    styles.paymentTitle,
-                    selectedPayment === 'cash' && styles.selectedPaymentText,
-                  ]}
-                >
+                <Text style={[styles.paymentTitle, selectedPayment === 'cash' && styles.selectedPaymentText]}>
                   Cash
                 </Text>
                 <Text style={styles.paymentSub}>Pay to driver</Text>
               </View>
             </View>
-            <View
-              style={[
-                styles.radio,
-                selectedPayment === 'cash' && styles.radioSelected,
-              ]}
-            >
+            <View style={[styles.radio, selectedPayment === 'cash' && styles.radioSelected]}>
               {selectedPayment === 'cash' && <View style={styles.radioInner} />}
             </View>
           </TouchableOpacity>
 
+          {/* Online */}
           <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              selectedPayment === 'online' && styles.selectedPayment,
-            ]}
+            style={[styles.paymentOption, selectedPayment === 'online' && styles.selectedPayment]}
             onPress={() => setSelectedPayment('online')}
             activeOpacity={0.9}
           >
             <View style={styles.paymentLeft}>
-              <View
-                style={[
-                  styles.iconBox,
-                  selectedPayment === 'online' && styles.selectedIconBox,
-                ]}
-              >
-                <Icon
-                  name="credit-card"
-                  size={20}
-                  color={selectedPayment === 'online' ? '#2563EB' : '#6B7280'}
-                />
+              <View style={[styles.iconBox, selectedPayment === 'online' && styles.selectedIconBox]}>
+                <Icon name="credit-card" size={sp(20)} color={selectedPayment === 'online' ? '#2563EB' : '#6B7280'} />
               </View>
               <View>
-                <Text
-                  style={[
-                    styles.paymentTitle,
-                    selectedPayment === 'online' && styles.selectedPaymentText,
-                  ]}
-                >
+                <Text style={[styles.paymentTitle, selectedPayment === 'online' && styles.selectedPaymentText]}>
                   Online
                 </Text>
                 <Text style={styles.paymentSub}>UPI, Card, Netbanking</Text>
               </View>
             </View>
-            <View
-              style={[
-                styles.radio,
-                selectedPayment === 'online' && styles.radioSelected,
-              ]}
-            >
-              {selectedPayment === 'online' && (
-                <View style={styles.radioInner} />
-              )}
+            <View style={[styles.radio, selectedPayment === 'online' && styles.radioSelected]}>
+              {selectedPayment === 'online' && <View style={styles.radioInner} />}
             </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       <View style={styles.footer}>
         <View style={styles.priceContainer}>
           <Text style={styles.finalPriceLabel}>Final Amount</Text>
-          <Text style={styles.finalPrice}>
-            ₹{(estimateData?.estimated_fare || 0) + (helperCost || 0)}
+          <Text style={styles.finalPrice} adjustsFontSizeToFit numberOfLines={1}>
+            ₹{totalFare}
           </Text>
         </View>
         <Button
@@ -583,16 +462,13 @@ const FareEstimate = () => {
         />
       </View>
 
-      {/* Razorpay Payment Modal */}
+      {/* ── Razorpay Payment Modal ── */}
       <Modal
         visible={!!paymentModal}
         animationType="slide"
         onRequestClose={() => {
           setPaymentModal(null);
-          Alert.alert(
-            'Payment Cancelled',
-            'Your booking is saved. You can retry payment later.',
-          );
+          Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
         }}
       >
         <SafeAreaView style={styles.paymentModalContainer}>
@@ -600,15 +476,14 @@ const FareEstimate = () => {
             <TouchableOpacity
               onPress={() => {
                 setPaymentModal(null);
-                Alert.alert(
-                  'Payment Cancelled',
-                  'Your booking is saved. You can retry payment later.',
-                );
+                Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
               }}
             >
-              <Icon name="close" size={24} color="#1F2937" />
+              <Icon name="close" size={sp(24)} color="#1F2937" />
             </TouchableOpacity>
             <Text style={styles.paymentModalTitle}>Complete Payment</Text>
+            {/* Spacer to keep title centred */}
+            <View style={{ width: sp(24) }} />
           </View>
           {paymentModal?.html && (
             <WebView
@@ -630,69 +505,48 @@ const FareEstimate = () => {
   );
 };
 
+// ─── Responsive Styles ────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+
+  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: sp(16),
+    paddingVertical: sp(isSmallScreen ? 10 : 12),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: nf(isSmallScreen ? 16 : 18),
     fontWeight: '700',
     color: '#1F2937',
   },
-  vehicleInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  vehicleImage: {
-    width: 60,
-    height: 40,
-    marginRight: 15,
-  },
-  vehicleName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  vehicleCapacity: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
   headerButton: {
-    padding: 8,
-    borderRadius: 8,
+    padding: sp(8),
+    borderRadius: sp(8),
+    minWidth: sp(40),
+    alignItems: 'center',
   },
+
+  // ── Scroll content ───────────────────────────────────────────────────────────
   content: {
-    padding: 16,
-    paddingBottom: 100,
+    padding: sp(16),
+    paddingBottom: sp(100),
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 24,
-    marginBottom: 12,
-    marginLeft: 4,
-  },
+
+  // ── Card ─────────────────────────────────────────────────────────────────────
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: sp(16),
+    padding: sp(isSmallScreen ? 12 : 16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -701,20 +555,60 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F3F4F6',
   },
-  // Route Styles
+
+  sectionTitle: {
+    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: sp(24),
+    marginBottom: sp(12),
+    marginLeft: sp(4),
+  },
+
+  // ── Vehicle row ──────────────────────────────────────────────────────────────
+  vehicleInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: sp(16),
+    paddingBottom: sp(14),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  vehicleImage: {
+    width: sp(isSmallScreen ? 50 : isLargeScreen ? 72 : 60),
+    height: sp(isSmallScreen ? 34 : isLargeScreen ? 48 : 40),
+    marginRight: sp(12),
+    flexShrink: 0,
+  },
+  vehicleTextWrapper: {
+    flex: 1,
+  },
+  vehicleName: {
+    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  vehicleCapacity: {
+    fontSize: nf(isSmallScreen ? 11 : 12),
+    color: '#6B7280',
+    marginTop: sp(2),
+  },
+
+  // ── Route timeline ───────────────────────────────────────────────────────────
   routeContainer: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: sp(14),
   },
   timelineContainer: {
     alignItems: 'center',
-    marginRight: 12,
-    paddingVertical: 4,
+    marginRight: sp(12),
+    paddingVertical: sp(4),
+    width: sp(14),
   },
   dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: sp(12),
+    height: sp(12),
+    borderRadius: sp(6),
     borderWidth: 2,
   },
   pickupDot: {
@@ -723,119 +617,137 @@ const styles = StyleSheet.create({
   },
   dropDot: {
     borderColor: '#059669',
-    backgroundColor: '#059669', // Solid fill for drop
+    backgroundColor: '#059669',
   },
   line: {
     width: 2,
     flex: 1,
     backgroundColor: '#E5E7EB',
-    marginVertical: 4,
+    marginVertical: sp(4),
+    minHeight: sp(24),
   },
   addressContainer: {
     flex: 1,
     justifyContent: 'space-between',
-    height: 80, // Ensure height matches timeline
+    minHeight: sp(80),
   },
   addressItem: {
     flex: 1,
     justifyContent: 'center',
+    paddingVertical: sp(2),
   },
   label: {
-    fontSize: 12,
+    fontSize: nf(isSmallScreen ? 10 : 12),
     color: '#6B7280',
-    marginBottom: 2,
+    marginBottom: sp(2),
   },
   addressText: {
-    fontSize: 15,
+    fontSize: nf(isSmallScreen ? 13 : 15),
     fontWeight: '500',
     color: '#111827',
+    lineHeight: nf(isSmallScreen ? 18 : 20),
   },
+
+  // ── Stats row ────────────────────────────────────────────────────────────────
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
+    borderRadius: sp(8),
+    padding: sp(isSmallScreen ? 10 : 12),
+    marginTop: sp(6),
   },
   statItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: sp(6),
   },
   statText: {
-    fontSize: 14,
+    fontSize: nf(isSmallScreen ? 12 : 14),
     fontWeight: '500',
     color: '#4B5563',
   },
   statDivider: {
     width: 1,
-    height: 20,
+    height: sp(20),
     backgroundColor: '#D1D5DB',
   },
-  // Breakdown Styles
+
+  // ── Breakdown rows ───────────────────────────────────────────────────────────
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: sp(10),
+    flexWrap: 'nowrap',
+    gap: sp(8),
   },
   rowLabel: {
-    fontSize: 14,
+    fontSize: nf(isSmallScreen ? 12 : 14),
     color: '#6B7280',
+    flex: 1,
+    flexShrink: 1,
   },
   rowValue: {
-    fontSize: 14,
+    fontSize: nf(isSmallScreen ? 12 : 14),
     fontWeight: '500',
     color: '#111827',
+    flexShrink: 0,
   },
   divider: {
     height: 1,
     backgroundColor: '#F3F4F6',
-    marginVertical: 12,
+    marginVertical: sp(10),
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'nowrap',
+    gap: sp(8),
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '600',
     color: '#111827',
+    flex: 1,
   },
   totalValue: {
-    fontSize: 20,
+    fontSize: nf(isSmallScreen ? 18 : 20),
     fontWeight: '700',
     color: '#2563EB',
+    flexShrink: 0,
   },
+
+  // ── Surge alert ──────────────────────────────────────────────────────────────
   surgeAlert: {
     flexDirection: 'row',
     backgroundColor: '#FEF2F2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    gap: 8,
+    padding: sp(12),
+    borderRadius: sp(8),
+    marginBottom: sp(14),
+    gap: sp(8),
     alignItems: 'flex-start',
   },
   surgeText: {
-    fontSize: 12,
+    fontSize: nf(isSmallScreen ? 11 : 12),
     color: '#B91C1C',
     flex: 1,
-    lineHeight: 16,
+    lineHeight: nf(16),
   },
-  // Payment Styles
+
+  // ── Payment options ──────────────────────────────────────────────────────────
   paymentContainer: {
-    gap: 12,
+    gap: sp(12),
   },
   paymentOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: sp(isSmallScreen ? 12 : 16),
+    borderRadius: sp(12),
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -846,21 +758,23 @@ const styles = StyleSheet.create({
   paymentLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: sp(12),
+    flex: 1,
   },
   iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: sp(isSmallScreen ? 36 : 40),
+    height: sp(isSmallScreen ? 36 : 40),
+    borderRadius: sp(isSmallScreen ? 18 : 20),
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   selectedIconBox: {
     backgroundColor: '#DBEAFE',
   },
   paymentTitle: {
-    fontSize: 16,
+    fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '500',
     color: '#374151',
   },
@@ -869,65 +783,73 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   paymentSub: {
-    fontSize: 12,
+    fontSize: nf(isSmallScreen ? 11 : 12),
     color: '#9CA3AF',
+    marginTop: sp(1),
   },
   radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: sp(20),
+    height: sp(20),
+    borderRadius: sp(10),
     borderWidth: 2,
     borderColor: '#D1D5DB',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   radioSelected: {
     borderColor: '#2563EB',
   },
   radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: sp(10),
+    height: sp(10),
+    borderRadius: sp(5),
     backgroundColor: '#2563EB',
   },
-  // Footer Styles
+
+  // ── Footer ───────────────────────────────────────────────────────────────────
   footer: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    paddingHorizontal: sp(16),
+    paddingVertical: sp(isSmallScreen ? 10 : 14),
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: sp(14),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 10,
+    // Reserve room for iOS home indicator
+    paddingBottom: sp(isSmallScreen ? 10 : 14),
   },
   priceContainer: {
     flex: 1,
+    minWidth: 0,
   },
   finalPriceLabel: {
-    fontSize: 12,
+    fontSize: nf(isSmallScreen ? 11 : 12),
     color: '#6B7280',
   },
   finalPrice: {
-    fontSize: 24,
+    fontSize: nf(isSmallScreen ? 20 : 24),
     fontWeight: '700',
     color: '#111827',
   },
   bookButton: {
-    flex: 2,
+    flex: isSmallScreen ? 1.6 : 2,
     backgroundColor: '#2563EB',
-    borderRadius: 12,
-    height: 50,
+    borderRadius: sp(12),
+    height: sp(isSmallScreen ? 44 : 50),
   },
   bookButtonText: {
-    fontSize: 16,
+    fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '600',
   },
-  // Loading & Error
+
+  // ── Loading / Error ──────────────────────────────────────────────────────────
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -935,8 +857,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: sp(16),
+    fontSize: nf(16),
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -944,26 +866,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: sp(24),
     backgroundColor: '#F9FAFB',
   },
   errorText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: sp(16),
+    fontSize: nf(16),
     color: '#374151',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: sp(24),
+    lineHeight: nf(24),
   },
   retryButton: {
     backgroundColor: '#2563EB',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: sp(24),
+    paddingVertical: sp(12),
+    borderRadius: sp(8),
   },
   retryButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
+    fontSize: nf(15),
   },
+
+  // ── Payment modal ────────────────────────────────────────────────────────────
   paymentModalContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -972,13 +898,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: sp(16),
+    paddingVertical: sp(12),
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   paymentModalTitle: {
-    fontSize: 18,
+    fontSize: nf(isSmallScreen ? 16 : 18),
     fontWeight: '600',
     color: '#111827',
   },

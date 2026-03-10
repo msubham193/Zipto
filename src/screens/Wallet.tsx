@@ -5,6 +5,8 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -12,49 +14,65 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
+
 const Wallet = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
   const transactions = [
-    { 
-      id: 1, 
-      type: 'credit', 
-      amount: 500, 
-      desc: 'Cashback from order #ZP1234', 
+    {
+      id: 1,
+      type: 'credit',
+      amount: 500,
+      desc: 'Cashback from order #ZP1234',
       date: '15 Jan 2026',
-      time: '02:30 PM'
+      time: '02:30 PM',
     },
-    { 
-      id: 2, 
-      type: 'debit', 
-      amount: 250, 
-      desc: 'Used for order #ZP1235', 
+    {
+      id: 2,
+      type: 'debit',
+      amount: 250,
+      desc: 'Used for order #ZP1235',
       date: '14 Jan 2026',
-      time: '11:45 AM'
+      time: '11:45 AM',
     },
-    { 
-      id: 3, 
-      type: 'credit', 
-      amount: 1000, 
-      desc: 'Added to wallet via UPI', 
+    {
+      id: 3,
+      type: 'credit',
+      amount: 1000,
+      desc: 'Added to wallet via UPI',
       date: '12 Jan 2026',
-      time: '09:15 AM'
+      time: '09:15 AM',
     },
-    { 
-      id: 4, 
-      type: 'debit', 
-      amount: 180, 
-      desc: 'Used for order #ZP1230', 
+    {
+      id: 4,
+      type: 'debit',
+      amount: 180,
+      desc: 'Used for order #ZP1230',
       date: '10 Jan 2026',
-      time: '06:20 PM'
+      time: '06:20 PM',
     },
-    { 
-      id: 5, 
-      type: 'credit', 
-      amount: 300, 
-      desc: 'Referral bonus credited', 
+    {
+      id: 5,
+      type: 'credit',
+      amount: 300,
+      desc: 'Referral bonus credited',
       date: '08 Jan 2026',
-      time: '03:00 PM'
+      time: '03:00 PM',
     },
   ];
 
@@ -67,31 +85,31 @@ const Wallet = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Wallet</Text>
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
         >
           {/* Wallet Balance Card */}
           <View style={styles.walletBalanceCard}>
             <View style={styles.balanceIconContainer}>
-              <MaterialIcons name="account-balance-wallet" size={32} color="#FFFFFF" />
+              <MaterialIcons name="account-balance-wallet" size={ms(32)} color="#FFFFFF" />
             </View>
             <Text style={styles.balanceLabel}>Available Balance</Text>
             <Text style={styles.balanceAmount}>₹1,250</Text>
-            
+
             <View style={styles.walletActions}>
               <TouchableOpacity style={styles.walletActionButton}>
-                <MaterialIcons name="add" size={20} color="#FFFFFF" />
+                <MaterialIcons name="add" size={ms(20)} color="#3B82F6" />
                 <Text style={styles.walletActionButtonText}>Add Money</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.walletActionButton, styles.secondaryButton]}>
-                <MaterialIcons name="send" size={20} color="#3B82F6" />
+                <MaterialIcons name="send" size={ms(20)} color="#FFFFFF" />
                 <Text style={[styles.walletActionButtonText, styles.secondaryButtonText]}>
                   Send
                 </Text>
@@ -103,21 +121,21 @@ const Wallet = () => {
           <View style={styles.quickActions}>
             <TouchableOpacity style={styles.quickActionCard}>
               <View style={[styles.quickActionIcon, { backgroundColor: '#DCFCE7' }]}>
-                <MaterialIcons name="history" size={24} color="#16A34A" />
+                <MaterialIcons name="history" size={ms(24)} color="#16A34A" />
               </View>
               <Text style={styles.quickActionText}>Passbook</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.quickActionCard}>
               <View style={[styles.quickActionIcon, { backgroundColor: '#FEF3C7' }]}>
-                <MaterialIcons name="card-giftcard" size={24} color="#D97706" />
+                <MaterialIcons name="card-giftcard" size={ms(24)} color="#D97706" />
               </View>
               <Text style={styles.quickActionText}>Offers</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.quickActionCard}>
               <View style={[styles.quickActionIcon, { backgroundColor: '#E0E7FF' }]}>
-                <MaterialIcons name="help-outline" size={24} color="#4F46E5" />
+                <MaterialIcons name="help-outline" size={ms(24)} color="#4F46E5" />
               </View>
               <Text style={styles.quickActionText}>Help</Text>
             </TouchableOpacity>
@@ -134,24 +152,30 @@ const Wallet = () => {
 
             {transactions.map((txn) => (
               <View key={txn.id} style={styles.transactionCard}>
-                <View style={[
-                  styles.transactionIcon, 
-                  txn.type === 'credit' ? styles.creditIcon : styles.debitIcon
-                ]}>
-                  <MaterialIcons 
-                    name={txn.type === 'credit' ? 'arrow-downward' : 'arrow-upward'} 
-                    size={20} 
-                    color="#FFFFFF" 
+                <View
+                  style={[
+                    styles.transactionIcon,
+                    txn.type === 'credit' ? styles.creditIcon : styles.debitIcon,
+                  ]}
+                >
+                  <MaterialIcons
+                    name={txn.type === 'credit' ? 'arrow-downward' : 'arrow-upward'}
+                    size={ms(20)}
+                    color="#FFFFFF"
                   />
                 </View>
                 <View style={styles.transactionDetails}>
                   <Text style={styles.transactionDesc}>{txn.desc}</Text>
-                  <Text style={styles.transactionDate}>{txn.date} • {txn.time}</Text>
+                  <Text style={styles.transactionDate}>
+                    {txn.date} • {txn.time}
+                  </Text>
                 </View>
-                <Text style={[
-                  styles.transactionAmount, 
-                  txn.type === 'credit' ? styles.creditAmount : styles.debitAmount
-                ]}>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    txn.type === 'credit' ? styles.creditAmount : styles.debitAmount,
+                  ]}
+                >
                   {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
                 </Text>
               </View>
@@ -162,6 +186,11 @@ const Wallet = () => {
     </View>
   );
 };
+
+// ─── Derived responsive values ────────────────────────────────────────────────
+const balanceIconSize    = ms(64);
+const quickActionIconSize = ms(48);
+const txnIconSize        = ms(44);
 
 const styles = StyleSheet.create({
   container: {
@@ -175,37 +204,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   placeholder: {
-    width: 40,
+    width: ms(40),
   },
   scrollView: {
     flex: 1,
   },
+
+  // ── Balance Card ──
   walletBalanceCard: {
     backgroundColor: '#3B82F6',
-    margin: 16,
-    padding: 28,
-    borderRadius: 20,
+    margin: scaleW(16),
+    padding: ms(28),
+    borderRadius: ms(20),
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#3B82F6',
@@ -214,30 +245,30 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   balanceIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: balanceIconSize,
+    height: balanceIconSize,
+    borderRadius: balanceIconSize / 2,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleH(16),
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#BFDBFE',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   balanceAmount: {
-    fontSize: 44,
+    fontSize: fs(44),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
-    marginBottom: 24,
+    marginBottom: scaleH(24),
   },
   walletActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: scaleW(12),
     width: '100%',
   },
   walletActionButton: {
@@ -245,10 +276,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
+    gap: scaleW(8),
+    paddingVertical: scaleH(14),
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: ms(12),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -261,7 +292,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   walletActionButtonText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
@@ -269,17 +300,19 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#FFFFFF',
   },
+
+  // ── Quick Actions ──
   quickActions: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 8,
+    paddingHorizontal: scaleW(16),
+    gap: scaleW(12),
+    marginBottom: scaleH(8),
   },
   quickActionCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: ms(16),
+    borderRadius: ms(12),
     alignItems: 'center',
     elevation: 1,
     shadowColor: '#000',
@@ -288,36 +321,38 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: quickActionIconSize,
+    height: quickActionIconSize,
+    borderRadius: quickActionIconSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   quickActionText: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontWeight: '500',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
+
+  // ── Transactions ──
   contentPadding: {
-    padding: 16,
+    padding: scaleW(16),
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleH(16),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: fs(18),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   viewAllText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: '500',
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
@@ -326,9 +361,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
+    padding: ms(14),
+    borderRadius: ms(12),
+    marginBottom: scaleH(10),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -336,12 +371,12 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   transactionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: txnIconSize,
+    height: txnIconSize,
+    borderRadius: txnIconSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: scaleW(12),
   },
   creditIcon: {
     backgroundColor: '#10B981',
@@ -353,19 +388,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   transactionDesc: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: '500',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: scaleH(4),
   },
   transactionDate: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
     color: '#94A3B8',
   },
   transactionAmount: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
   },

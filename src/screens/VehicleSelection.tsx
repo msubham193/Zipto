@@ -9,24 +9,40 @@ import {
   Animated,
   ActivityIndicator,
   Image,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, VehiclePricing } from '../api/vehicle';
 
-// Image mapping for vehicle types (lowercase keys to match API)
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
+
 const VEHICLE_IMAGES: Record<string, any> = {
-  bike: require('../assets/images/vehicle2.png'),
-  scooty: require('../assets/images/scooter.png'),
-  auto: require('../assets/images/vehicle1.png'),
-  pickup: require('../assets/images/vehicle3.png'),
+  bike:       require('../assets/images/vehicle2.png'),
+  scooty:     require('../assets/images/scooter.png'),
+  auto:       require('../assets/images/vehicle1.png'),
+  pickup:     require('../assets/images/vehicle3.png'),
   mini_truck: require('../assets/images/vehicle3.png'),
-  tata_ace: require('../assets/images/vehicle3.png'),
-  tata_407: require('../assets/images/vehicle3.png'),
+  tata_ace:   require('../assets/images/vehicle3.png'),
+  tata_407:   require('../assets/images/vehicle3.png'),
 };
 
-// UI Vehicle type (transformed from API)
 export interface UIVehicle {
   id: string;
   vehicleType: string;
@@ -37,7 +53,7 @@ export interface UIVehicle {
   minimumFare: number;
   capacity: string;
   helperCharge: number;
-  helperAvailable: boolean; // Added this
+  helperAvailable: boolean;
   bestFor: string | null;
   city: string;
   perMinuteRate: number;
@@ -45,41 +61,31 @@ export interface UIVehicle {
   multiStopFee: number;
 }
 
-// Helper to format vehicle_type → display name
-const formatVehicleName = (vehicleType: string): string => {
-  return vehicleType
+const formatVehicleName = (vehicleType: string): string =>
+  vehicleType
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-};
 
 const VehicleSelection = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-  const [helperCount, setHelperCount] = useState(0);
-  const [vehicles, setVehicles] = useState<UIVehicle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [helperCount, setHelperCount]         = useState(0);
+  const [vehicles, setVehicles]               = useState<UIVehicle[]>([]);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState<string | null>(null);
 
   const {
-    pickup,
-    drop,
-    pickupCoords,
-    dropCoords,
-    city,
-    serviceCategory,
-    senderName,
-    senderMobile,
+    pickup, drop, pickupCoords, dropCoords,
+    city, serviceCategory, senderName, senderMobile,
   } = route.params || {};
 
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim    = useRef(new Animated.Value(1)).current;
+  const slideAnim   = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    fetchVehicleTypes();
-  }, []);
+  useEffect(() => { fetchVehicleTypes(); }, []);
 
   const fetchVehicleTypes = async () => {
     try {
@@ -89,17 +95,10 @@ const VehicleSelection = () => {
       console.log('Auth Token:', token ? 'Exists' : 'Missing');
 
       const response: any = await vehicleApi.getVehiclePricing();
-      console.log(
-        'Vehicle Pricing Response:',
-        JSON.stringify(response, null, 2),
-      );
 
       let vehiclesData: VehiclePricing[] = [];
-      if (Array.isArray(response)) {
-        vehiclesData = response;
-      } else if (response && Array.isArray(response.data)) {
-        vehiclesData = response.data;
-      }
+      if (Array.isArray(response)) vehiclesData = response;
+      else if (response && Array.isArray(response.data)) vehiclesData = response.data;
 
       if (vehiclesData.length > 0) {
         const transformedVehicles: UIVehicle[] = vehiclesData
@@ -108,15 +107,12 @@ const VehicleSelection = () => {
             const capMin = vehicle.capacity_min || 0;
             const capMax = vehicle.capacity_max || 0;
             const capacity =
-              capMin > 0 && capMax > 0
-                ? `${capMin}–${capMax} kg`
-                : capMax > 0
-                ? `Up to ${capMax} kg`
-                : 'Any load';
-
+              capMin > 0 && capMax > 0 ? `${capMin}–${capMax} kg`
+              : capMax > 0 ? `Up to ${capMax} kg`
+              : 'Any load';
             return {
-              id: vehicle.id, // UUID
-              vehicleType: vehicle.vehicle_type, // raw type string
+              id: vehicle.id,
+              vehicleType: vehicle.vehicle_type,
               name: formatVehicleName(vehicle.vehicle_type),
               priceRange: `From ₹${vehicle.minimum_fare || vehicle.base_fare}`,
               basePrice: parseFloat(vehicle.base_fare),
@@ -128,13 +124,10 @@ const VehicleSelection = () => {
               bestFor: vehicle.best_for,
               city: vehicle.city,
               perMinuteRate: parseFloat(vehicle.per_minute_rate),
-              nightSurchargePercent: parseFloat(
-                vehicle.night_surcharge_percent,
-              ),
+              nightSurchargePercent: parseFloat(vehicle.night_surcharge_percent),
               multiStopFee: parseFloat(vehicle.multi_stop_fee),
             };
           });
-
         setVehicles(transformedVehicles);
       } else {
         throw new Error('No vehicle data received');
@@ -153,33 +146,23 @@ const VehicleSelection = () => {
   const handleBook = () => {
     const vehicle = getSelectedVehicleData();
     if (!vehicle) return;
-
     const helperCost = helperCount * vehicle.helperCharge;
     navigation.navigate('FareEstimate', {
-      vehicle,
-      pickup,
-      drop,
-      pickupCoords,
-      dropCoords,
-      hasHelper: helperCount > 0,
-      helperCount,
-      helperCost,
-      city,
-      serviceCategory,
-      senderName,
-      senderMobile,
+      vehicle, pickup, drop, pickupCoords, dropCoords,
+      hasHelper: helperCount > 0, helperCount, helperCost,
+      city, serviceCategory, senderName, senderMobile,
     });
   };
 
   const calculateTotalPrice = (): string => {
     const vehicle = getSelectedVehicleData();
     if (!vehicle) return '₹0';
-    const helperCost = helperCount * vehicle.helperCharge;
-    return `₹${(vehicle.minimumFare + helperCost).toFixed(0)}`;
+    return `₹${(vehicle.minimumFare + helperCount * vehicle.helperCharge).toFixed(0)}`;
   };
 
+  // ── Vehicle Card ─────────────────────────────────────────────────────────
   const renderVehicleCard = ({ item }: { item: UIVehicle }) => {
-    const isSelected = selectedVehicle === item.id;
+    const isSelected   = selectedVehicle === item.id;
     const vehicleImage = item.vehicleType
       ? VEHICLE_IMAGES[item.vehicleType.toLowerCase()]
       : undefined;
@@ -190,81 +173,62 @@ const VehicleSelection = () => {
         onPress={() => setSelectedVehicle(item.id)}
         activeOpacity={0.7}
       >
-        {/* Vehicle Image */}
-        <View
-          style={[styles.vehicleIcon, isSelected && styles.vehicleIconSelected]}
-        >
-          {vehicleImage ? (
-            <Image
-              source={vehicleImage}
-              style={styles.vehicleImage}
-              resizeMode="contain"
-            />
-          ) : (
-            <Text style={styles.emoji}>🚛</Text>
-          )}
-        </View>
+        <View style={styles.cardTopRow}>
+          <View style={[styles.vehicleIcon, isSelected && styles.vehicleIconSelected]}>
+            {vehicleImage ? (
+              <Image source={vehicleImage} style={styles.vehicleImage} resizeMode="contain" />
+            ) : (
+              <Text style={styles.emoji}>🚛</Text>
+            )}
+          </View>
 
-        {/* Info */}
-        <View style={styles.info}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.details}>
-            {item.capacity}
-            {item.bestFor ? ` • ${item.bestFor}` : ''}
-          </Text>
-          {/* Rate details row */}
-          <View style={styles.rateRow}>
-            <Text style={styles.rateText}>₹{item.perKmRate}/km</Text>
-            <Text style={styles.rateSeparator}> · </Text>
-            <Text style={styles.rateText}>Min ₹{item.minimumFare}</Text>
+          <View style={styles.info}>
+            <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.details} numberOfLines={2}>
+              {item.capacity}{item.bestFor ? ` • ${item.bestFor}` : ''}
+            </Text>
+          </View>
+
+          <View style={styles.priceContainer}>
+            <Text
+              style={[styles.priceRange, isSelected && styles.priceRangeSelected]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
+              {item.priceRange}
+            </Text>
+            {isSelected && (
+              <Icon name="check-circle" size={ms(20)} color="#10B981" style={styles.checkIcon} />
+            )}
           </View>
         </View>
 
-        {/* Price + Checkmark */}
-        <View style={styles.priceContainer}>
-          <Text
-            style={[styles.priceRange, isSelected && styles.priceRangeSelected]}
-          >
-            {item.priceRange}
-          </Text>
-          {isSelected && (
-            <View style={styles.checkmark}>
-              <Icon name="check-circle" size={24} color="#10B981" />
-            </View>
-          )}
+        <View style={styles.rateRow}>
+          <Text style={styles.rateText}>₹{item.perKmRate}/km</Text>
+          <Text style={styles.rateSeparator}> · </Text>
+          <Text style={styles.rateText}>Min ₹{item.minimumFare}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  // Expanded detail panel shown below selected vehicle
+  // ── Detail panel ─────────────────────────────────────────────────────────
   const renderSelectedDetails = () => {
     const vehicle = getSelectedVehicleData();
     if (!vehicle) return null;
-
     return (
       <View style={styles.detailPanel}>
-        <Text style={styles.detailPanelTitle}>
-          {vehicle.name} — Fare Details
-        </Text>
+        <Text style={styles.detailPanelTitle}>{vehicle.name} — Fare Details</Text>
         <View style={styles.detailGrid}>
-          <DetailRow label="Base Fare" value={`₹${vehicle.basePrice}`} />
-          <DetailRow label="Min Fare" value={`₹${vehicle.minimumFare}`} />
-          <DetailRow label="Per KM" value={`₹${vehicle.perKmRate}`} />
-          <DetailRow label="Per Minute" value={`₹${vehicle.perMinuteRate}`} />
-          <DetailRow
-            label="Night Surcharge"
-            value={`${vehicle.nightSurchargePercent}%`}
-          />
-          <DetailRow
-            label="Multi-stop Fee"
-            value={`₹${vehicle.multiStopFee}`}
-          />
-          <DetailRow
-            label="Helper Charge"
-            value={`₹${vehicle.helperCharge}/person`}
-          />
-          <DetailRow label="City" value={vehicle.city} />
+          <DetailRow label="Base Fare"       value={`₹${vehicle.basePrice}`} />
+          <DetailRow label="Min Fare"        value={`₹${vehicle.minimumFare}`} />
+          <DetailRow label="Per KM"          value={`₹${vehicle.perKmRate}`} />
+          <DetailRow label="Per Minute"      value={`₹${vehicle.perMinuteRate}`} />
+          <DetailRow label="Night Surcharge" value={`${vehicle.nightSurchargePercent}%`} />
+          <DetailRow label="Multi-stop Fee"  value={`₹${vehicle.multiStopFee}`} />
+          <DetailRow label="Helper Charge"   value={`₹${vehicle.helperCharge}/person`} />
+          <DetailRow label="City"            value={vehicle.city} />
         </View>
       </View>
     );
@@ -279,20 +243,13 @@ const VehicleSelection = () => {
   const renderListFooter = () => {
     const selectedVehicleData = getSelectedVehicleData();
     const showHelper = selectedVehicleData?.helperAvailable === true;
-
     return (
       <>
         {renderSelectedDetails()}
-
         {showHelper && (
           <View style={styles.helperSection}>
             <Text style={styles.sectionTitle}>Additional Services</Text>
-            <View
-              style={[
-                styles.helperCard,
-                helperCount > 0 && styles.helperCardSelected,
-              ]}
-            >
+            <View style={[styles.helperCard, helperCount > 0 && styles.helperCardSelected]}>
               <View style={styles.helperIconContainer}>
                 <Image
                   source={require('../assets/images/worker.png')}
@@ -313,21 +270,18 @@ const VehicleSelection = () => {
                       onPress={() => setHelperCount(h => Math.max(0, h - 1))}
                       style={styles.counterButton}
                     >
-                      <Icon name="remove" size={20} color="#3B82F6" />
+                      <Icon name="remove" size={ms(20)} color="#3B82F6" />
                     </TouchableOpacity>
                     <Text style={styles.counterText}>{helperCount}</Text>
                     <TouchableOpacity
                       onPress={() => setHelperCount(h => h + 1)}
                       style={styles.counterButton}
                     >
-                      <Icon name="add" size={20} color="#3B82F6" />
+                      <Icon name="add" size={ms(20)} color="#3B82F6" />
                     </TouchableOpacity>
                   </>
                 ) : (
-                  <TouchableOpacity
-                    onPress={() => setHelperCount(1)}
-                    style={styles.addButton}
-                  >
+                  <TouchableOpacity onPress={() => setHelperCount(1)} style={styles.addButton}>
                     <Text style={styles.addButtonText}>ADD</Text>
                   </TouchableOpacity>
                 )}
@@ -341,111 +295,105 @@ const VehicleSelection = () => {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
+      {/* Header sits OUTSIDE SafeAreaView so it is never clipped or blocked */}
+      <SafeAreaView style={styles.safeAreaHeader} edges={['top']}>
         <View style={styles.header}>
+          {/* ✅ FIXED: canGoBack() guard prevents "GO_BACK not handled" error */}
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('PickupDropSelection');
+              }
+            }}
             style={styles.backButton}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            activeOpacity={0.6}
           >
-            <Icon name="arrow-back" size={24} color="#1E293B" />
+            <Icon name="arrow-back" size={ms(24)} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Select Vehicle</Text>
         </View>
-
-        {/* Scrollable Content */}
-        <Animated.View
-          style={[
-            styles.content,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-          ]}
-        >
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#3B82F6" />
-              <Text style={styles.loadingText}>Loading vehicles...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Icon name="error-outline" size={48} color="#EF4444" />
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={fetchVehicleTypes}
-                activeOpacity={0.7}
-              >
-                <Icon name="refresh" size={20} color="#FFFFFF" />
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <FlatList
-              data={vehicles}
-              keyExtractor={item => item.id}
-              renderItem={renderVehicleCard}
-              ListHeaderComponent={renderListHeader}
-              ListFooterComponent={renderListFooter}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-              bounces={true}
-              extraData={selectedVehicle} // re-render on selection change
-            />
-          )}
-        </Animated.View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          {selectedVehicle && (
-            <View style={styles.priceBreakdown}>
-              <View>
-                <Text style={styles.totalLabel}>Estimated Total</Text>
-                {helperCount > 0 && (
-                  <Text style={styles.helperBreakdown}>
-                    +{helperCount} helper{helperCount > 1 ? 's' : ''} (₹
-                    {helperCount *
-                      (getSelectedVehicleData()?.helperCharge ?? 300)}
-                    )
-                  </Text>
-                )}
-              </View>
-              <Text style={styles.totalPrice}>{calculateTotalPrice()}</Text>
-            </View>
-          )}
-          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-            <TouchableOpacity
-              style={[
-                styles.nextButton,
-                !selectedVehicle && styles.nextButtonDisabled,
-              ]}
-              onPress={handleBook}
-              disabled={!selectedVehicle}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.nextButtonText,
-                  !selectedVehicle && styles.nextButtonTextDisabled,
-                ]}
-              >
-                Continue to Book
-              </Text>
-              <Image
-                source={require('../assets/images/arrow.png')}
-                style={[
-                  styles.arrowIcon,
-                  !selectedVehicle && styles.arrowDisabled,
-                ]}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
       </SafeAreaView>
+
+      {/* Body */}
+      <Animated.View
+        style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+      >
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text style={styles.loadingText}>Loading vehicles...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Icon name="error-outline" size={ms(48)} color="#EF4444" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={fetchVehicleTypes}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Icon name="refresh" size={ms(20)} color="#FFFFFF" />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={vehicles}
+            keyExtractor={item => item.id}
+            renderItem={renderVehicleCard}
+            ListHeaderComponent={renderListHeader}
+            ListFooterComponent={renderListFooter}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            bounces={true}
+            extraData={selectedVehicle}
+          />
+        )}
+      </Animated.View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        {selectedVehicle && (
+          <View style={styles.priceBreakdown}>
+            <View>
+              <Text style={styles.totalLabel}>Estimated Total</Text>
+              {helperCount > 0 && (
+                <Text style={styles.helperBreakdown}>
+                  +{helperCount} helper{helperCount > 1 ? 's' : ''} (₹
+                  {helperCount * (getSelectedVehicleData()?.helperCharge ?? 300)})
+                </Text>
+              )}
+            </View>
+            <Text style={styles.totalPrice}>{calculateTotalPrice()}</Text>
+          </View>
+        )}
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <TouchableOpacity
+            style={[styles.nextButton, !selectedVehicle && styles.nextButtonDisabled]}
+            onPress={handleBook}
+            disabled={!selectedVehicle}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.nextButtonText, !selectedVehicle && styles.nextButtonTextDisabled]}>
+              Continue to Book
+            </Text>
+            <Image
+              source={require('../assets/images/arrow.png')}
+              style={[styles.arrowIcon, !selectedVehicle && styles.arrowDisabled]}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
     </View>
   );
 };
 
-// ── Small reusable row for the detail panel ──────────────────────────────────
+// ── Detail row ───────────────────────────────────────────────────────────────
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
   <View style={styles.detailRow}>
     <Text style={styles.detailLabel}>{label}</Text>
@@ -453,52 +401,67 @@ const DetailRow = ({ label, value }: { label: string; value: string }) => (
   </View>
 );
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const vehicleIconW    = ms(72);
+const vehicleIconH    = ms(64);
+const vehicleImageW   = ms(56);
+const vehicleImageH   = ms(50);
+const helperIconSize  = ms(50);
+const helperImageSize = ms(28);
+const backBtnSize     = ms(40);
+const arrowIconSize   = ms(20);
+const priceColWidth   = scaleW(88);
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  safeArea: { flex: 1 },
+  safeAreaHeader: { backgroundColor: '#FFFFFF' },
 
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 20,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(14),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    marginRight: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    marginRight: scaleW(14),
+    width: backBtnSize,
+    height: backBtnSize,
+    borderRadius: backBtnSize / 2,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
+    zIndex: 10,
   },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1E293B' },
+  headerTitle: { fontSize: fs(22), fontWeight: 'bold', color: '#1E293B' },
 
+  // ── List ──
   content: { flex: 1 },
   listContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingHorizontal: scaleW(16),
+    paddingTop: scaleH(12),
+    paddingBottom: scaleH(24),
   },
-  listHeader: { marginBottom: 12 },
+  listHeader:   { marginBottom: scaleH(8) },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: fs(17),
     fontWeight: 'bold',
     color: '#1E293B',
-    marginBottom: 12,
+    marginBottom: scaleH(10),
   },
 
-  /* Vehicle Card */
+  // ── Card ──
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    paddingHorizontal: ms(14),
+    paddingTop: ms(14),
+    paddingBottom: ms(10),
+    marginBottom: scaleH(10),
+    borderRadius: ms(14),
     borderWidth: 2,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -507,80 +470,93 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  selectedCard: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
+  selectedCard: { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: scaleH(6),
   },
   vehicleIcon: {
-    width: 70,
-    height: 60,
-    borderRadius: 12,
+    width: vehicleIconW,
+    height: vehicleIconH,
+    borderRadius: ms(10),
     backgroundColor: 'rgba(59,130,246,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: scaleW(12),
     overflow: 'hidden',
+    flexShrink: 0,
   },
   vehicleIconSelected: { backgroundColor: 'rgba(59,130,246,0.15)' },
-  vehicleImage: { width: 58, height: 48 },
-  emoji: { fontSize: 32 },
-
-  info: { flex: 1 },
+  vehicleImage: { width: vehicleImageW, height: vehicleImageH },
+  emoji: { fontSize: fs(30) },
+  info: { flex: 1, paddingRight: scaleW(4) },
   name: {
-    fontSize: 17,
+    fontSize: fs(16),
     fontWeight: 'bold',
     color: '#1E293B',
-    marginBottom: 3,
+    marginBottom: scaleH(2),
   },
-  details: { fontSize: 13, color: '#64748B', marginBottom: 4 },
-  rateRow: { flexDirection: 'row', alignItems: 'center' },
-  rateText: { fontSize: 12, color: '#3B82F6', fontWeight: '600' },
-  rateSeparator: { fontSize: 12, color: '#94A3B8' },
-
-  priceContainer: { alignItems: 'flex-end' },
+  details: {
+    fontSize: fs(12),
+    color: '#64748B',
+    lineHeight: fs(12) * 1.45,
+  },
+  priceContainer: {
+    width: priceColWidth,
+    alignItems: 'flex-end',
+    flexShrink: 0,
+  },
   priceRange: {
-    fontSize: 15,
+    fontSize: fs(13),
     fontWeight: '700',
     color: '#3B82F6',
-    marginBottom: 4,
+    textAlign: 'right',
   },
   priceRangeSelected: { color: '#2563EB' },
-  checkmark: { marginTop: 4 },
+  checkIcon: { marginTop: scaleH(5), alignSelf: 'flex-end' },
+  rateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: vehicleIconW + scaleW(12),
+  },
+  rateText:      { fontSize: fs(12), color: '#3B82F6', fontWeight: '600' },
+  rateSeparator: { fontSize: fs(12), color: '#94A3B8' },
 
-  /* Detail Panel */
+  // ── Detail Panel ──
   detailPanel: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: ms(12),
     borderWidth: 1.5,
     borderColor: '#BFDBFE',
-    padding: 16,
-    marginBottom: 20,
+    padding: ms(14),
+    marginBottom: scaleH(16),
   },
   detailPanelTitle: {
-    fontSize: 15,
+    fontSize: fs(14),
     fontWeight: '700',
     color: '#1E40AF',
-    marginBottom: 12,
+    marginBottom: scaleH(10),
   },
-  detailGrid: { gap: 8 },
+  detailGrid: { gap: scaleH(4) },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: scaleH(4),
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
-  detailLabel: { fontSize: 13, color: '#64748B' },
-  detailValue: { fontSize: 13, fontWeight: '600', color: '#1E293B' },
+  detailLabel: { fontSize: fs(12), color: '#64748B' },
+  detailValue: { fontSize: fs(12), fontWeight: '600', color: '#1E293B' },
 
-  /* Helper Section */
-  helperSection: { marginTop: 4, marginBottom: 10 },
+  // ── Helper ──
+  helperSection: { marginTop: scaleH(4), marginBottom: scaleH(10) },
   helperCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: ms(14),
+    borderRadius: ms(12),
     borderWidth: 2,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -589,135 +565,122 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  helperCardSelected: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
-  },
+  helperCardSelected: { borderColor: '#10B981', backgroundColor: '#F0FDF4' },
   helperIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
+    width: helperIconSize,
+    height: helperIconSize,
+    borderRadius: ms(10),
     backgroundColor: 'rgba(16,185,129,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: scaleW(12),
   },
-  helperImage: { width: 28, height: 28 },
-  helperInfo: { flex: 1 },
-  helperTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  helperDescription: { fontSize: 13, color: '#64748B' },
+  helperImage:       { width: helperImageSize, height: helperImageSize },
+  helperInfo:        { flex: 1 },
+  helperTitle:       { fontSize: fs(15), fontWeight: 'bold', color: '#1E293B', marginBottom: scaleH(3) },
+  helperDescription: { fontSize: fs(12), color: '#64748B' },
   counterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    padding: 4,
+    borderRadius: ms(8),
+    padding: ms(4),
   },
-  counterButton: {
-    padding: 4,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 4,
-  },
+  counterButton: { padding: ms(4), backgroundColor: '#E2E8F0', borderRadius: ms(4) },
   counterText: {
-    fontSize: 16,
+    fontSize: fs(15),
     fontWeight: '600',
     color: '#1E293B',
-    marginHorizontal: 12,
+    marginHorizontal: scaleW(10),
   },
   addButton: {
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: scaleW(14),
+    paddingVertical: scaleH(7),
+    borderRadius: ms(6),
     borderWidth: 1,
     borderColor: '#BFDBFE',
   },
-  addButtonText: { color: '#3B82F6', fontWeight: '600', fontSize: 14 },
+  addButtonText: { color: '#3B82F6', fontWeight: '600', fontSize: fs(13) },
 
-  /* Footer */
+  // ── Footer ──
   footer: {
-    padding: 20,
-    paddingBottom: 10,
+    paddingHorizontal: scaleW(16),
+    paddingTop: scaleH(12),
+    paddingBottom: scaleH(14),
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 4,
   },
   priceBreakdown: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleH(12),
   },
-  totalLabel: { fontSize: 16, color: '#64748B', fontWeight: '600' },
-  helperBreakdown: { fontSize: 12, color: '#10B981', marginTop: 2 },
-  totalPrice: { fontSize: 24, fontWeight: 'bold', color: '#1E293B' },
+  totalLabel:      { fontSize: fs(14), color: '#64748B', fontWeight: '600' },
+  helperBreakdown: { fontSize: fs(11), color: '#10B981', marginTop: scaleH(2) },
+  totalPrice:      { fontSize: fs(22), fontWeight: 'bold', color: '#1E293B' },
   nextButton: {
     backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: ms(12),
+    paddingVertical: scaleH(15),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 5,
   },
   nextButtonDisabled: { backgroundColor: '#E2E8F0' },
   nextButtonText: {
-    fontSize: 16,
+    fontSize: fs(15),
     fontWeight: '600',
     color: '#FFFFFF',
-    marginRight: 8,
+    marginRight: scaleW(8),
   },
   nextButtonTextDisabled: { color: '#94A3B8' },
   arrowIcon: {
-    width: 20,
-    height: 20,
-    marginLeft: 10,
+    width: arrowIconSize,
+    height: arrowIconSize,
     tintColor: '#FFFFFF',
   },
   arrowDisabled: { tintColor: '#94A3B8' },
 
-  /* Loading / Error */
+  // ── Loading / Error ──
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: scaleH(60),
   },
-  loadingText: { marginTop: 16, fontSize: 16, color: '#64748B' },
+  loadingText: { marginTop: scaleH(14), fontSize: fs(15), color: '#64748B' },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingVertical: scaleH(60),
+    paddingHorizontal: scaleW(40),
   },
   errorText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: scaleH(14),
+    fontSize: fs(15),
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: scaleH(20),
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 8,
+    paddingHorizontal: scaleW(22),
+    paddingVertical: scaleH(11),
+    borderRadius: ms(8),
+    gap: scaleW(8),
   },
-  retryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  retryButtonText: { color: '#FFFFFF', fontSize: fs(15), fontWeight: '600' },
 });
 
 export default VehicleSelection;

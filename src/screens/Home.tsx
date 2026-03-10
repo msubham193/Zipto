@@ -8,6 +8,7 @@ import {
   Image,
   PermissionsAndroid,
   Platform,
+  PixelRatio,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,34 +20,43 @@ import Geolocation from '@react-native-community/geolocation';
 import BottomTabBar from './BottomTabBar';
 import Spinner from '../components/Spinner';
 import { useAuthStore } from '../store/useAuthStore';
-import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken';
+import { MAPBOX_PUBLIC_TOKEN } from '../config/mapboxToken';
 
-const { width, height } = Dimensions.get('window');
+// ─── Responsive Utilities ────────────────────────────────────────────────────
 
-// Initialize Mapbox OUTSIDE the component
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH = 393;
+const BASE_HEIGHT = 852;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
+const nf = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+const sp = (size: number) => Math.round(scaleW(size));
+
+const isSmallScreen = SCREEN_WIDTH <= 360;
+const isLargeScreen = SCREEN_WIDTH >= 428;
+
+// ─── Mapbox Init ─────────────────────────────────────────────────────────────
+
 Mapbox.setAccessToken(MAPBOX_PUBLIC_TOKEN);
 
+// ─── Component ───────────────────────────────────────────────────────────────
+
 const Home = () => {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const isFocused = useIsFocused();
 
   const cameraRef = useRef<Mapbox.Camera>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(
-    null,
-  );
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [isServicesVisible, setIsServicesVisible] = useState(true);
-  const [_locationPermissionGranted, setLocationPermissionGranted] =
-    useState(false);
+  const [_locationPermissionGranted, setLocationPermissionGranted] = useState(false);
 
-  // Get auth token from store
   const { token, isAuthenticated } = useAuthStore();
-
-  // Default center (Bhubaneswar)
   const defaultCenter: [number, number] = [85.8245, 20.2961];
 
-  // Log token on home screen
   useEffect(() => {
     if (isAuthenticated && token) {
       console.log('🏠 Home Screen - Bearer Token:', token);
@@ -61,8 +71,7 @@ const Home = () => {
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
               title: 'Location Permission',
-              message:
-                'Zipto needs access to your location to show your position on the map.',
+              message: 'Zipto needs access to your location to show your position on the map.',
               buttonNeutral: 'Ask Me Later',
               buttonNegative: 'Cancel',
               buttonPositive: 'OK',
@@ -71,8 +80,6 @@ const Home = () => {
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             setLocationPermissionGranted(true);
             startLocationTracking();
-          } else {
-            console.log('Location permission denied');
           }
         } else {
           setLocationPermissionGranted(true);
@@ -82,22 +89,15 @@ const Home = () => {
         console.warn('Permission error:', err);
       }
     };
-
     requestLocationPermission();
   }, []);
 
   const startLocationTracking = () => {
-    console.log('📍 Starting location tracking...');
-
-    // Use low accuracy first - it's faster and more reliable
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
-        console.log('📍 Location obtained:', { latitude, longitude });
         const newLocation: [number, number] = [longitude, latitude];
         setUserLocation(newLocation);
-
-        // Move camera to user's location
         if (cameraRef.current) {
           cameraRef.current.setCamera({
             centerCoordinate: newLocation,
@@ -106,15 +106,8 @@ const Home = () => {
           });
         }
       },
-      error => {
-        console.log('Location error:', error);
-        // Silently fail - map will show default location
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000,
-      },
+      error => console.log('Location error:', error),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
     );
 
     const watchId = Geolocation.watchPosition(
@@ -130,43 +123,15 @@ const Home = () => {
   };
 
   const services = [
-    {
-      id: 1,
-      title: 'Send Packages',
-      icon: 'local-shipping',
-      gradient: ['#3B82F6', '#2563EB'],
-      description: 'Quick delivery',
-      serviceCategory: 'send_packages',
-    },
-    {
-      id: 2,
-      title: 'Transport Goods',
-      icon: 'fire-truck',
-      gradient: ['#10B981', '#059669'],
-      description: 'Heavy items',
-      serviceCategory: 'transport_goods',
-    },
-    {
-      id: 3,
-      title: 'Food Delivery',
-      icon: 'restaurant',
-      gradient: ['#F59E0B', '#D97706'],
-      description: 'Hot & fresh',
-      serviceCategory: 'food_delivery',
-    },
-    {
-      id: 4,
-      title: 'Medicine',
-      icon: 'local-pharmacy',
-      gradient: ['#EF4444', '#DC2626'],
-      description: 'Emergency delivery',
-      serviceCategory: 'medicine',
-    },
+    { id: 1, title: 'Send Packages',   icon: 'local-shipping',  gradient: ['#3B82F6', '#2563EB'], description: 'Quick delivery',      serviceCategory: 'send_packages'   },
+    { id: 2, title: 'Transport Goods', icon: 'fire-truck',       gradient: ['#10B981', '#059669'], description: 'Heavy items',         serviceCategory: 'transport_goods'  },
+    { id: 3, title: 'Food Delivery',   icon: 'restaurant',       gradient: ['#F59E0B', '#D97706'], description: 'Hot & fresh',         serviceCategory: 'food_delivery'    },
+    { id: 4, title: 'Medicine',        icon: 'local-pharmacy',   gradient: ['#EF4444', '#DC2626'], description: 'Emergency delivery',  serviceCategory: 'medicine'         },
   ];
 
   return (
     <View style={styles.container}>
-      {/* Mapbox Map */}
+      {/* ── Mapbox Map ── */}
       <Mapbox.MapView
         style={styles.map}
         styleURL={Mapbox.StyleURL.Street}
@@ -182,8 +147,6 @@ const Home = () => {
           animationMode="flyTo"
           animationDuration={1000}
         />
-
-        {/* Custom User Location Marker using ShapeSource + SymbolLayer or PointAnnotation */}
         {userLocation && (
           <Mapbox.MarkerView
             id="userLocationMarker"
@@ -198,11 +161,10 @@ const Home = () => {
         )}
       </Mapbox.MapView>
 
-      {/* Main Content Overlay */}
+      {/* ── Main Content Overlay ── */}
       <SafeAreaView style={styles.mainOverlay} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          {/* Left Side - Logo and Zipto Text */}
           <View style={styles.logoSection}>
             <View style={styles.logoContainer}>
               <Image
@@ -214,24 +176,18 @@ const Home = () => {
             <Text style={styles.ziptoText}>Zipto</Text>
           </View>
 
-          {/* Right Side - Wallet Button */}
           <TouchableOpacity
             onPress={() => navigation.navigate('Wallet')}
             style={styles.walletButton}
             activeOpacity={0.7}
           >
-            <MaterialIcons
-              name="account-balance-wallet"
-              size={24}
-              color="#3B82F6"
-            />
+            <MaterialIcons name="account-balance-wallet" size={sp(isSmallScreen ? 20 : 24)} color="#3B82F6" />
             <Text style={styles.walletText}>Wallet</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Content Container */}
+        {/* Bottom Content */}
         <View style={styles.bottomContainer}>
-          {/* Services Grid - Conditional Rendering */}
           {isServicesVisible && (
             <View style={styles.servicesContainer}>
               <Text style={styles.servicesTitle}>Our Services</Text>
@@ -240,7 +196,11 @@ const Home = () => {
                   <TouchableOpacity
                     key={service.id}
                     style={styles.serviceCard}
-                    onPress={() => navigation.navigate('PickupDropSelection', { serviceCategory: service.serviceCategory })}
+                    onPress={() =>
+                      navigation.navigate('PickupDropSelection', {
+                        serviceCategory: service.serviceCategory,
+                      })
+                    }
                     activeOpacity={0.8}
                   >
                     <View
@@ -251,14 +211,12 @@ const Home = () => {
                     >
                       <MaterialIcons
                         name={service.icon}
-                        size={32}
+                        size={sp(isSmallScreen ? 26 : isLargeScreen ? 36 : 32)}
                         color="#FFFFFF"
                       />
                     </View>
                     <Text style={styles.serviceTitle}>{service.title}</Text>
-                    <Text style={styles.serviceDescription}>
-                      {service.description}
-                    </Text>
+                    <Text style={styles.serviceDescription}>{service.description}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -267,10 +225,10 @@ const Home = () => {
         </View>
       </SafeAreaView>
 
-      {/* Bottom Navigation Bar */}
+      {/* ── Bottom Navigation ── */}
       <BottomTabBar />
 
-      {/* Floating Action Button */}
+      {/* ── FAB ── */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setIsServicesVisible(!isServicesVisible)}
@@ -278,12 +236,12 @@ const Home = () => {
       >
         <MaterialIcons
           name={isServicesVisible ? 'close' : 'menu'}
-          size={28}
+          size={sp(28)}
           color="#FFFFFF"
         />
       </TouchableOpacity>
 
-      {/* Loading Spinner */}
+      {/* ── Loading Spinner ── */}
       <Spinner
         visible={isFocused && isMapLoading}
         overlay={true}
@@ -294,33 +252,39 @@ const Home = () => {
   );
 };
 
+// ─── Responsive Styles ────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+
+  // ── Map ──────────────────────────────────────────────────────────────────────
   map: {
-    width,
-    height,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
     ...StyleSheet.absoluteFillObject,
   },
+
+  // ── User location marker ─────────────────────────────────────────────────────
   customMarker: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 40,
-    height: 40,
+    width: sp(40),
+    height: sp(40),
   },
   userLocationPulse: {
     position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: sp(40),
+    height: sp(40),
+    borderRadius: sp(20),
     backgroundColor: 'rgba(59, 130, 246, 0.2)',
   },
   userLocationDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: sp(16),
+    height: sp(16),
+    borderRadius: sp(8),
     backgroundColor: '#3B82F6',
     borderWidth: 3,
     borderColor: '#FFFFFF',
@@ -330,20 +294,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 4,
   },
+
+  // ── Overlay ──────────────────────────────────────────────────────────────────
   mainOverlay: {
     flex: 1,
     justifyContent: 'space-between',
-    padding: 16,
+    padding: sp(16),
     paddingBottom: 0,
   },
+
+  // ── Header ───────────────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    padding: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    padding: sp(isSmallScreen ? 10 : 12),
+    paddingHorizontal: sp(isSmallScreen ? 12 : 16),
+    borderRadius: sp(12),
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -355,12 +323,12 @@ const styles = StyleSheet.create({
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: sp(8),
     flex: 1,
   },
   logoContainer: {
-    width: 40,
-    height: 40,
+    width: sp(isSmallScreen ? 34 : 40),
+    height: sp(isSmallScreen ? 34 : 40),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -369,7 +337,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   ziptoText: {
-    fontSize: 18,
+    fontSize: nf(isSmallScreen ? 16 : 18),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
@@ -377,28 +345,33 @@ const styles = StyleSheet.create({
   walletButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: sp(6),
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: sp(isSmallScreen ? 10 : 14),
+    paddingVertical: sp(isSmallScreen ? 6 : 8),
+    borderRadius: sp(20),
     borderWidth: 1,
     borderColor: '#BFDBFE',
+    flexShrink: 0,
   },
   walletText: {
-    fontSize: 14,
+    fontSize: nf(isSmallScreen ? 12 : 14),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
   },
+
+  // ── Bottom container ─────────────────────────────────────────────────────────
   bottomContainer: {
-    marginBottom: 80,
+    marginBottom: sp(80),
   },
+
+  // ── Services panel ───────────────────────────────────────────────────────────
   servicesContainer: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
+    padding: sp(isSmallScreen ? 12 : 16),
+    borderRadius: sp(16),
+    marginBottom: sp(12),
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -408,56 +381,59 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   servicesTitle: {
-    fontSize: 18,
+    fontSize: nf(isSmallScreen ? 15 : 18),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: sp(12),
   },
   servicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: sp(isSmallScreen ? 8 : 0),
   },
   serviceCard: {
     width: '48%',
     backgroundColor: '#F8FAFC',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: sp(isSmallScreen ? 10 : 12),
+    borderRadius: sp(12),
+    marginBottom: sp(isSmallScreen ? 8 : 12),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   serviceIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: sp(isSmallScreen ? 46 : isLargeScreen ? 64 : 56),
+    height: sp(isSmallScreen ? 46 : isLargeScreen ? 64 : 56),
+    borderRadius: sp(isSmallScreen ? 23 : isLargeScreen ? 32 : 28),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: sp(8),
   },
   serviceTitle: {
-    fontSize: 13,
+    fontSize: nf(isSmallScreen ? 11 : 13),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: sp(3),
   },
   serviceDescription: {
-    fontSize: 11,
+    fontSize: nf(isSmallScreen ? 10 : 11),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
   },
+
+  // ── FAB ──────────────────────────────────────────────────────────────────────
   fab: {
     position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: sp(100),
+    right: sp(20),
+    width: sp(isSmallScreen ? 50 : 56),
+    height: sp(isSmallScreen ? 50 : 56),
+    borderRadius: sp(isSmallScreen ? 25 : 28),
     backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',

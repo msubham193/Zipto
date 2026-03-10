@@ -5,12 +5,30 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
 
 const PrivacyPolicy = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -20,18 +38,15 @@ const PrivacyPolicy = () => {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Privacy Policy</Text>
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -82,9 +97,7 @@ const PrivacyPolicy = () => {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>4. How We Use Your Information</Text>
-              <Text style={styles.sectionText}>
-                We use the collected information for various purposes:
-              </Text>
+              <Text style={styles.sectionText}>We use the collected information for various purposes:</Text>
               <Text style={styles.bulletText}>• To process and deliver your orders</Text>
               <Text style={styles.bulletText}>• To communicate with you about your orders and our services</Text>
               <Text style={styles.bulletText}>• To process payments and prevent fraudulent transactions</Text>
@@ -96,21 +109,23 @@ const PrivacyPolicy = () => {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>5. Information Sharing and Disclosure</Text>
-              <Text style={styles.sectionText}>
-                We may share your information in the following situations:
-              </Text>
+              <Text style={styles.sectionText}>We may share your information in the following situations:</Text>
+
               <Text style={styles.subSectionTitle}>With Delivery Partners:</Text>
               <Text style={styles.sectionText}>
                 We share necessary information (name, phone number, delivery address) with delivery agents only to the extent required to complete your delivery.
               </Text>
+
               <Text style={styles.subSectionTitle}>With Service Providers:</Text>
               <Text style={styles.sectionText}>
                 We may share information with third-party service providers who perform services on our behalf, such as payment processing, data analysis, and customer service.
               </Text>
+
               <Text style={styles.subSectionTitle}>Legal Requirements:</Text>
               <Text style={styles.sectionText}>
                 We may disclose your information if required by law or in response to valid requests by public authorities.
               </Text>
+
               <Text style={styles.importantNote}>
                 We do not sell your personal information to third parties for their marketing purposes.
               </Text>
@@ -139,9 +154,7 @@ const PrivacyPolicy = () => {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>8. Your Rights and Choices</Text>
-              <Text style={styles.sectionText}>
-                You have certain rights regarding your personal information:
-              </Text>
+              <Text style={styles.sectionText}>You have certain rights regarding your personal information:</Text>
               <Text style={styles.bulletText}>• Access: Request access to the personal information we hold about you</Text>
               <Text style={styles.bulletText}>• Correction: Request correction of inaccurate or incomplete information</Text>
               <Text style={styles.bulletText}>• Deletion: Request deletion of your personal information</Text>
@@ -198,7 +211,7 @@ const PrivacyPolicy = () => {
             </View>
 
             <View style={styles.acknowledgementCard}>
-              <MaterialIcons name="security" size={24} color="#3B82F6" />
+              <MaterialIcons name="security" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
                 Your privacy is important to us. By using Zipto, you acknowledge that you have read and understood this Privacy Policy and consent to our data practices as described herein.
               </Text>
@@ -210,143 +223,142 @@ const PrivacyPolicy = () => {
   );
 };
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const backBtnSize = ms(40);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  safeArea: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea:  { flex: 1 },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: backBtnSize,
+    height: backBtnSize,
+    borderRadius: backBtnSize / 2,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
-  placeholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  legalContent: {
-    padding: 20,
-  },
+  placeholder: { width: backBtnSize },
+
+  // ── Scroll ──
+  scrollView:    { flex: 1 },
+  scrollContent: { paddingBottom: scaleH(24) },
+  legalContent:  { padding: scaleW(20) },
+
+  // ── Title block ──
   legalTitle: {
-    fontSize: 26,
+    fontSize: fs(26),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   legalUpdate: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    marginBottom: 20,
+    marginBottom: scaleH(20),
   },
   welcomeText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 22,
-    marginBottom: 24,
-    padding: 16,
+    lineHeight: fs(14) * 1.6,
+    marginBottom: scaleH(24),
+    padding: ms(16),
     backgroundColor: '#EFF6FF',
-    borderRadius: 10,
+    borderRadius: ms(10),
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
   },
-  section: {
-    marginBottom: 24,
-  },
+
+  // ── Sections ──
+  section: { marginBottom: scaleH(24) },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: fs(17),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: scaleH(12),
   },
   subSectionTitle: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#1E40AF',
-    marginBottom: 8,
-    marginTop: 8,
+    marginBottom: scaleH(8),
+    marginTop: scaleH(8),
   },
   sectionText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 24,
-    marginBottom: 12,
+    lineHeight: fs(14) * 1.7,
+    marginBottom: scaleH(12),
   },
   bulletText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 24,
-    marginBottom: 8,
-    paddingLeft: 8,
+    lineHeight: fs(14) * 1.7,
+    marginBottom: scaleH(8),
+    paddingLeft: scaleW(8),
   },
   importantNote: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#16A34A',
-    lineHeight: 22,
-    marginTop: 12,
-    padding: 12,
+    lineHeight: fs(14) * 1.6,
+    marginTop: scaleH(12),
+    padding: ms(12),
     backgroundColor: '#F0FDF4',
-    borderRadius: 8,
+    borderRadius: ms(8),
     borderLeftWidth: 3,
     borderLeftColor: '#16A34A',
   },
   contactText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
-    lineHeight: 24,
-    marginBottom: 6,
+    lineHeight: fs(14) * 1.7,
+    marginBottom: scaleH(6),
   },
+
+  // ── Acknowledgement card ──
   acknowledgementCard: {
     flexDirection: 'row',
     backgroundColor: '#DBEAFE',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    marginTop: 8,
+    padding: ms(16),
+    borderRadius: ms(12),
+    gap: scaleW(12),
+    marginTop: scaleH(8),
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
+    alignItems: 'flex-start',
   },
   acknowledgementText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#1E40AF',
-    lineHeight: 20,
+    lineHeight: fs(13) * 1.55,
   },
 });
 

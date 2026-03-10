@@ -13,12 +13,34 @@ import {
   ScrollView,
   Modal,
   Animated,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 
-/* Success Modal Component */
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Hero heights scaled to screen
+const HERO_HEIGHT_OPEN   = scaleH(250);
+const HERO_HEIGHT_CLOSED = scaleH(120);
+
+/* ─── Success Modal ─────────────────────────────────────────────────────────── */
 const SuccessModal = ({
   visible,
   onClose,
@@ -49,7 +71,7 @@ const SuccessModal = ({
   </Modal>
 );
 
-/* OTP Box Component */
+/* ─── OTP Input ─────────────────────────────────────────────────────────────── */
 const OTPInput = ({
   value,
   onChange,
@@ -68,7 +90,6 @@ const OTPInput = ({
       onPress={() => inputRef.current?.focus()}
       style={styles.otpBoxesWrapper}
     >
-      {/* Hidden real input */}
       <TextInput
         ref={inputRef}
         value={value}
@@ -79,7 +100,6 @@ const OTPInput = ({
         caretHidden={true}
         autoCorrect={false}
       />
-      {/* 6 visual boxes */}
       {[0, 1, 2, 3, 4, 5].map(i => (
         <View
           key={i}
@@ -97,6 +117,7 @@ const OTPInput = ({
   );
 };
 
+/* ─── Screen ────────────────────────────────────────────────────────────────── */
 const OTPVerification = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -109,21 +130,21 @@ const OTPVerification = () => {
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [heroHeight, setHeroHeight] = useState(250);
+  const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
 
-  const heroScale = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const heroScale  = useRef(new Animated.Value(1)).current;
+  const fadeAnim   = useRef(new Animated.Value(1)).current;
+  const slideAnim  = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardOpen(true);
-      setHeroHeight(120);
+      setHeroHeight(HERO_HEIGHT_CLOSED);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
-      setHeroHeight(250);
+      setHeroHeight(HERO_HEIGHT_OPEN);
     });
     return () => {
       showSub.remove();
@@ -147,13 +168,8 @@ const OTPVerification = () => {
     }
   };
 
-  const handleSuccessModalClose = () => {
-    setShowSuccessModal(false);
-  };
-
-  const handleResendOTP = () => {
-    console.log('Resend OTP');
-  };
+  const handleSuccessModalClose = () => setShowSuccessModal(false);
+  const handleResendOTP = () => console.log('Resend OTP');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -168,10 +184,12 @@ const OTPVerification = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* HERO SECTION */}
-          <Animated.View style={[styles.heroContainer, { transform: [{ scale: heroScale }] }]}>
+          <Animated.View
+            style={[styles.heroContainer, { transform: [{ scale: heroScale }] }]}
+          >
             <View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/images/heroimg3.jpg')}
+                source={require('../assets/images/heroimg3.jpeg')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
@@ -180,7 +198,10 @@ const OTPVerification = () => {
 
           <View style={styles.contentWrapper}>
             <Animated.View
-              style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+              style={[
+                styles.content,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}
             >
               <View style={styles.formSection}>
                 <Text style={styles.title}>Verify OTP</Text>
@@ -204,7 +225,11 @@ const OTPVerification = () => {
                 </View>
 
                 {/* Resend OTP */}
-                <TouchableOpacity onPress={handleResendOTP} style={styles.resendButton} activeOpacity={0.7}>
+                <TouchableOpacity
+                  onPress={handleResendOTP}
+                  style={styles.resendButton}
+                  activeOpacity={0.7}
+                >
                   <Text style={styles.resendText}>
                     Didn't receive code?{' '}
                     <Text style={styles.resendLink}>Resend OTP</Text>
@@ -222,21 +247,23 @@ const OTPVerification = () => {
                     <Text style={styles.verifyButtonText}>
                       {isLoading ? 'Verifying...' : 'Verify & Continue'}
                     </Text>
-                     <Image
-                                          source={require('../assets/images/arrow.png')}
-                                          style={styles.arrowIcon}
-                                        />
+                    <Image
+                      source={require('../assets/images/arrow.png')}
+                      style={styles.arrowIcon}
+                    />
                   </TouchableOpacity>
                 </Animated.View>
 
                 {!keyboardOpen && (
-                  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-
-                      <Image
-    source={require('../assets/images/back.png')} 
-    style={styles.backIcon}
-  />
-  <Text style={styles.backText}>Back to Login</Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.backButton}
+                  >
+                    <Image
+                      source={require('../assets/images/back.png')}
+                      style={styles.backIcon}
+                    />
+                    <Text style={styles.backText}>Back to Login</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -256,20 +283,25 @@ const OTPVerification = () => {
   );
 };
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const successIconSize = ms(60);
+const arrowIconSize   = ms(22);
+const otpBoxHeight    = scaleH(56);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
-  contentWrapper: { flex: 1, paddingHorizontal: 20 },
+  contentWrapper: { flex: 1, paddingHorizontal: scaleW(20) },
 
-  /* Hero */
-  heroContainer: { paddingHorizontal: 20, paddingTop: 10 },
+  // ── Hero ──
+  heroContainer: {
+    paddingHorizontal: scaleW(20),
+    paddingTop: scaleH(10),
+  },
   heroCard: {
-    height: 250,
-    borderRadius: 16,
+    // height set dynamically via inline style
+    borderRadius: ms(16),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -281,7 +313,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   heroText: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
@@ -290,39 +322,39 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
 
-  /* Content */
-  content: { flex: 1, paddingTop: 20, paddingBottom: 20 },
+  // ── Content ──
+  content: { flex: 1, paddingTop: scaleH(20), paddingBottom: scaleH(20) },
   formSection: { flex: 1 },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 22,
-    marginBottom: 40,
+    lineHeight: fs(16) * 1.4,
+    marginBottom: scaleH(40),
   },
 
-  /* OTP */
-  otpContainer: { marginBottom: 20 },
+  // ── OTP Container ──
+  otpContainer: { marginBottom: scaleH(20) },
   label: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: scaleH(12),
   },
 
-  /* OTP Boxes */
+  // ── OTP Boxes ──
   otpBoxesWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: scaleW(8),
   },
   hiddenInput: {
     position: 'absolute',
@@ -332,8 +364,8 @@ const styles = StyleSheet.create({
   },
   otpBox: {
     flex: 1,
-    height: 56,
-    borderRadius: 12,
+    height: otpBoxHeight,
+    borderRadius: ms(12),
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
@@ -348,86 +380,97 @@ const styles = StyleSheet.create({
     borderColor: '#2563EB',
     backgroundColor: '#FFFFFF',
   },
-  otpBoxError: {
-    borderColor: '#EF4444',
-  },
+  otpBoxError: { borderColor: '#EF4444' },
   otpBoxText: {
-    fontSize: 22,
+    fontSize: fs(22),
     fontWeight: '700',
     color: '#0F172A',
     fontFamily: 'Poppins-Regular',
   },
- arrowIcon: {
-    width: 22,
-    height: 22,
+
+  arrowIcon: {
+    width: arrowIconSize,
+    height: arrowIconSize,
     tintColor: '#eaecf1',
   },
-  backIcon:{
-      width: 22,
-    height: 22,
-    tintColor: '#eaecf1',
+  backIcon: {
+    width: arrowIconSize,
+    height: arrowIconSize,
+    tintColor: '#64748B',
   },
   inputError: { borderColor: '#EF4444' },
   errorText: {
     color: '#EF4444',
-    fontSize: 12,
+    fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: 8,
-    marginLeft: 4,
+    marginTop: scaleH(8),
+    marginLeft: scaleW(4),
   },
 
-  /* Resend */
-  resendButton: { alignSelf: 'center', marginBottom: 30 },
-  resendText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: '#64748B' },
+  // ── Resend ──
+  resendButton: { alignSelf: 'center', marginBottom: scaleH(30) },
+  resendText: { fontSize: fs(14), fontFamily: 'Poppins-Regular', color: '#64748B' },
   resendLink: { color: '#2563EB', fontWeight: '600', fontFamily: 'Poppins-Regular' },
 
-  /* Verify */
+  // ── Verify Button ──
   verifyButton: {
     backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: ms(12),
+    paddingVertical: scaleH(16),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleH(16),
   },
   verifyButtonText: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
-    marginRight: 8,
+    marginRight: scaleW(8),
   },
-  arrow: { fontSize: 18, color: '#FFFFFF' },
+  arrow: { fontSize: fs(18), color: '#FFFFFF' },
 
-  /* Back */
-  backButton: { alignSelf: 'center', paddingVertical: 12 },
-  backText: { fontSize: 14, fontFamily: 'Poppins-Regular', color: '#64748B', fontWeight: '500' },
+  // ── Back ──
+  backButton: {
+    alignSelf: 'center',
+    paddingVertical: scaleH(12),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleW(6),
+  },
+  backText: {
+    fontSize: fs(14),
+    fontFamily: 'Poppins-Regular',
+    color: '#64748B',
+    fontWeight: '500',
+  },
 
-  /* Footer */
+  // ── Footer ──
   termsText: {
-    fontSize: 11,
+    fontSize: fs(11),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 16,
-    paddingTop: 20,
-    paddingBottom: 20,
+    lineHeight: fs(11) * 1.5,
+    paddingTop: scaleH(20),
+    paddingBottom: scaleH(20),
   },
   link: { color: '#2563EB' },
 
-  /* Modal */
+  // ── Modal ──
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: scaleW(24),
   },
   modalContent: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    width: '80%',
+    borderRadius: ms(20),
+    padding: ms(24),
+    width: '100%',
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
@@ -436,39 +479,44 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   successIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: successIconSize,
+    height: successIconSize,
+    borderRadius: successIconSize / 2,
     backgroundColor: '#4ADE80',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleH(16),
   },
-  successIcon: { fontSize: 32, color: 'white', fontWeight: 'bold' },
+  successIcon: { fontSize: fs(32), color: 'white', fontWeight: 'bold' },
   modalTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
     fontFamily: 'Poppins-Regular',
   },
   modalMessage: {
-    fontSize: 14,
+    fontSize: fs(14),
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: scaleH(24),
     fontFamily: 'Poppins-Regular',
-    lineHeight: 20,
+    lineHeight: fs(14) * 1.5,
   },
   modalButton: {
     backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+    borderRadius: ms(12),
+    paddingVertical: scaleH(12),
+    paddingHorizontal: scaleW(32),
     width: '100%',
     alignItems: 'center',
   },
-  modalButtonText: { color: 'white', fontSize: 16, fontWeight: '600', fontFamily: 'Poppins-Regular' },
+  modalButtonText: {
+    color: 'white',
+    fontSize: fs(16),
+    fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
+  },
 });
 
 export default OTPVerification;

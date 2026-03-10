@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -17,6 +19,22 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { vehicleApi } from '../api/vehicle';
+
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
 
 const TransferToWalletScreen = () => {
   const navigation =
@@ -34,12 +52,11 @@ const TransferToWalletScreen = () => {
     remaining: number;
   } | null>(null);
 
-  // Parse rate to get coins per rupee (e.g. "100 coins = ₹2" → 50 coins per rupee)
   const coinsPerRupee = rate
     ? (() => {
         const match = rate.match(/(\d+)\s*coins?\s*=\s*₹(\d+)/i);
         if (match) return parseInt(match[1]) / parseInt(match[2]);
-        return 50; // fallback
+        return 50;
       })()
     : 50;
 
@@ -79,7 +96,7 @@ const TransferToWalletScreen = () => {
       Alert.alert('Insufficient Coins', `You only have ${availableCoins} coins available.`);
       return;
     }
-    const minCoins = coinsPerRupee; // minimum 1 rupee worth
+    const minCoins = coinsPerRupee;
     if (coinsNum < minCoins) {
       Alert.alert('Minimum Transfer', `Minimum transfer is ${minCoins} coins (₹1).`);
       return;
@@ -110,10 +127,10 @@ const TransferToWalletScreen = () => {
   };
 
   const quickAmounts = [
-    { label: '100', value: 100 },
-    { label: '250', value: 250 },
-    { label: '500', value: 500 },
-    { label: 'All', value: availableCoins },
+    { label: '100',  value: 100 },
+    { label: '250',  value: 250 },
+    { label: '500',  value: 500 },
+    { label: 'All',  value: availableCoins },
   ];
 
   if (loading) {
@@ -122,10 +139,10 @@ const TransferToWalletScreen = () => {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+              <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Transfer to Wallet</Text>
-            <View style={{ width: 40 }} />
+            <View style={{ width: ms(40) }} />
           </View>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#3B82F6" />
@@ -142,10 +159,10 @@ const TransferToWalletScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Transfer to Wallet</Text>
-          <View style={{ width: 40 }} />
+          <View style={{ width: ms(40) }} />
         </View>
 
         <ScrollView
@@ -169,7 +186,7 @@ const TransferToWalletScreen = () => {
                 </Text>
               </View>
               <View style={styles.coinsIconContainer}>
-                <MaterialIcons name="stars" size={60} color="#FCD34D" />
+                <MaterialIcons name="stars" size={ms(60)} color="#FCD34D" />
               </View>
             </LinearGradient>
           </View>
@@ -179,7 +196,7 @@ const TransferToWalletScreen = () => {
             <Text style={styles.sectionTitle}>How many coins to transfer?</Text>
             <View style={styles.inputCard}>
               <View style={styles.inputRow}>
-                <MaterialIcons name="stars" size={24} color="#F59E0B" />
+                <MaterialIcons name="stars" size={ms(24)} color="#F59E0B" />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter coins"
@@ -192,7 +209,7 @@ const TransferToWalletScreen = () => {
 
               {coinsNum > 0 && (
                 <View style={styles.conversionRow}>
-                  <MaterialIcons name="swap-vert" size={18} color="#6366F1" />
+                  <MaterialIcons name="swap-vert" size={ms(18)} color="#6366F1" />
                   <Text style={styles.conversionText}>
                     {coinsNum} coins = ₹{rupeeEquivalent.toFixed(2)}
                   </Text>
@@ -243,7 +260,9 @@ const TransferToWalletScreen = () => {
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Wallet credit</Text>
-                  <Text style={[styles.summaryValue, { color: '#10B981' }]}>₹{rupeeEquivalent.toFixed(2)}</Text>
+                  <Text style={[styles.summaryValue, { color: '#10B981' }]}>
+                    ₹{rupeeEquivalent.toFixed(2)}
+                  </Text>
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
@@ -258,7 +277,8 @@ const TransferToWalletScreen = () => {
           <TouchableOpacity
             style={[
               styles.transferButton,
-              (coinsNum <= 0 || coinsNum > availableCoins || transferring) && styles.transferButtonDisabled,
+              (coinsNum <= 0 || coinsNum > availableCoins || transferring) &&
+                styles.transferButtonDisabled,
             ]}
             onPress={handleTransfer}
             disabled={coinsNum <= 0 || coinsNum > availableCoins || transferring}
@@ -268,7 +288,7 @@ const TransferToWalletScreen = () => {
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <MaterialIcons name="account-balance-wallet" size={22} color="#FFFFFF" />
+                <MaterialIcons name="account-balance-wallet" size={ms(22)} color="#FFFFFF" />
                 <Text style={styles.transferButtonText}>
                   Transfer{coinsNum > 0 ? ` ₹${rupeeEquivalent.toFixed(2)}` : ''} to Wallet
                 </Text>
@@ -278,11 +298,9 @@ const TransferToWalletScreen = () => {
 
           {/* Info Banner */}
           <View style={styles.infoBanner}>
-            <MaterialIcons name="info" size={20} color="#3B82F6" />
+            <MaterialIcons name="info" size={ms(20)} color="#3B82F6" />
             <View style={styles.infoBannerContent}>
-              <Text style={styles.infoBannerText}>
-                • {rate || '50 coins = ₹1'}
-              </Text>
+              <Text style={styles.infoBannerText}>• {rate || '50 coins = ₹1'}</Text>
               <Text style={styles.infoBannerText}>
                 • Transferred amount is added to your Zipto wallet instantly
               </Text>
@@ -299,7 +317,7 @@ const TransferToWalletScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalIcon}>
-              <MaterialIcons name="check-circle" size={64} color="#10B981" />
+              <MaterialIcons name="check-circle" size={ms(64)} color="#10B981" />
             </View>
             <Text style={styles.modalTitle}>Transfer Successful!</Text>
             <Text style={styles.modalSubtitle}>
@@ -325,6 +343,9 @@ const TransferToWalletScreen = () => {
   );
 };
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const backBtnSize = ms(40);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -333,54 +354,62 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: backBtnSize,
+    height: backBtnSize,
+    borderRadius: backBtnSize / 2,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     color: '#0F172A',
   },
+
+  // ── Loading ──
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 15,
+    marginTop: scaleH(12),
+    fontSize: fs(15),
     color: '#64748B',
   },
+
+  // ── Scroll ──
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: scaleH(24),
   },
+
+  // ── Balance Card ──
   balanceCardContainer: {
-    padding: 16,
+    padding: scaleW(16),
   },
   balanceCard: {
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: ms(20),
+    padding: ms(24),
     position: 'relative',
     overflow: 'hidden',
-    minHeight: 150,
+    minHeight: scaleH(150),
     elevation: 8,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
@@ -391,40 +420,44 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: fs(14),
     color: '#DBEAFE',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   balanceAmount: {
-    fontSize: 44,
+    fontSize: fs(44),
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: scaleH(4),
   },
   balanceSubtext: {
-    fontSize: 16,
+    fontSize: fs(16),
     color: '#DBEAFE',
   },
   coinsIconContainer: {
     position: 'absolute',
-    right: 20,
-    top: 20,
+    right: scaleW(20),
+    top: scaleH(20),
     opacity: 0.2,
   },
+
+  // ── Section ──
   section: {
-    paddingHorizontal: 16,
-    marginBottom: 20,
+    paddingHorizontal: scaleW(16),
+    marginBottom: scaleH(20),
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: fs(17),
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: scaleH(12),
   },
+
+  // ── Input Card ──
   inputCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: ms(12),
+    padding: ms(20),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -436,45 +469,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    borderRadius: ms(12),
+    paddingHorizontal: scaleW(14),
     backgroundColor: '#F8FAFC',
   },
   input: {
     flex: 1,
-    fontSize: 18,
+    fontSize: fs(18),
     fontWeight: '600',
     color: '#0F172A',
-    paddingVertical: 14,
-    marginLeft: 10,
+    paddingVertical: scaleH(14),
+    marginLeft: scaleW(10),
   },
   conversionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    gap: 6,
+    marginTop: scaleH(10),
+    gap: scaleW(6),
   },
   conversionText: {
-    fontSize: 14,
+    fontSize: fs(14),
     color: '#6366F1',
     fontWeight: '600',
   },
   errorText: {
-    fontSize: 13,
+    fontSize: fs(13),
     color: '#EF4444',
-    marginTop: 6,
+    marginTop: scaleH(6),
     fontWeight: '500',
   },
   quickAmountContainer: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 16,
+    gap: scaleW(8),
+    marginTop: scaleH(16),
   },
   quickAmountBtn: {
     flex: 1,
-    padding: 10,
+    padding: ms(10),
     backgroundColor: '#EFF6FF',
-    borderRadius: 10,
+    borderRadius: ms(10),
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: 'transparent',
@@ -490,7 +523,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     color: '#3B82F6',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: fs(14),
   },
   quickAmountTextActive: {
     color: '#1D4ED8',
@@ -499,10 +532,12 @@ const styles = StyleSheet.create({
   quickAmountTextDisabled: {
     color: '#94A3B8',
   },
+
+  // ── Summary Card ──
   summaryCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: ms(12),
+    padding: ms(16),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -513,14 +548,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: scaleH(10),
   },
   summaryLabel: {
-    fontSize: 14,
+    fontSize: fs(14),
     color: '#64748B',
   },
   summaryValue: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '700',
     color: '#0F172A',
   },
@@ -528,16 +563,18 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F1F5F9',
   },
+
+  // ── Transfer Button ──
   transferButton: {
     flexDirection: 'row',
     backgroundColor: '#3B82F6',
-    padding: 16,
-    borderRadius: 14,
+    padding: ms(16),
+    borderRadius: ms(14),
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    gap: 10,
+    marginHorizontal: scaleW(16),
+    marginBottom: scaleH(20),
+    gap: scaleW(10),
     elevation: 4,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 2 },
@@ -551,86 +588,89 @@ const styles = StyleSheet.create({
   },
   transferButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: 'bold',
   },
+
+  // ── Info Banner ──
   infoBanner: {
     flexDirection: 'row',
     backgroundColor: '#EFF6FF',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 16,
+    padding: ms(16),
+    borderRadius: ms(12),
+    marginHorizontal: scaleW(16),
     alignItems: 'flex-start',
     borderWidth: 1,
     borderColor: '#DBEAFE',
   },
   infoBannerContent: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: scaleW(12),
   },
   infoBannerText: {
-    fontSize: 13,
+    fontSize: fs(13),
     color: '#1E40AF',
-    lineHeight: 20,
-    marginBottom: 2,
+    lineHeight: fs(13) * 1.6,
+    marginBottom: scaleH(2),
   },
-  // Success Modal
+
+  // ── Success Modal ──
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: scaleW(24),
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 32,
+    borderRadius: ms(20),
+    padding: ms(32),
     width: '100%',
     alignItems: 'center',
   },
   modalIcon: {
-    marginBottom: 16,
+    marginBottom: scaleH(16),
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: fs(22),
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   modalSubtitle: {
-    fontSize: 15,
+    fontSize: fs(15),
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: scaleH(20),
   },
   modalInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
     backgroundColor: '#F8FAFC',
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 20,
+    padding: ms(14),
+    borderRadius: ms(10),
+    marginBottom: scaleH(20),
   },
   modalInfoLabel: {
-    fontSize: 14,
+    fontSize: fs(14),
     color: '#64748B',
   },
   modalInfoValue: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: 'bold',
     color: '#0F172A',
   },
   modalButton: {
     backgroundColor: '#3B82F6',
-    paddingVertical: 14,
-    paddingHorizontal: 48,
-    borderRadius: 12,
+    paddingVertical: scaleH(14),
+    paddingHorizontal: scaleW(48),
+    borderRadius: ms(12),
   },
   modalButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: 'bold',
   },
 });

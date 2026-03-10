@@ -7,6 +7,8 @@ import {
   ScrollView,
   Switch,
   Alert,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,21 +16,32 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
+
 const Settings = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  
-  // Notification Settings
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  const [smsNotifications, setSmsNotifications] = useState(true);
-  
-  // Privacy Settings
-  const [locationServices, setLocationServices] = useState(true);
-  const [shareDataForAnalytics, setShareDataForAnalytics] = useState(false);
-  
-  // App Preferences
-  const [darkMode, setDarkMode] = useState(false);
-  const [autoPlayVideos, setAutoPlayVideos] = useState(true);
+
+  const [pushNotifications,    setPushNotifications]    = useState(true);
+  const [emailNotifications,   setEmailNotifications]   = useState(false);
+  const [smsNotifications,     setSmsNotifications]     = useState(true);
+  const [locationServices,     setLocationServices]     = useState(true);
+  const [shareDataForAnalytics,setShareDataForAnalytics]= useState(false);
+  const [darkMode,             setDarkMode]             = useState(false);
+  const [autoPlayVideos,       setAutoPlayVideos]       = useState(true);
 
   const handleClearCache = () => {
     Alert.alert(
@@ -36,18 +49,12 @@ const Settings = () => {
       'Are you sure you want to clear app cache? This will free up storage space.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
-          style: 'destructive',
-          onPress: () => Alert.alert('Success', 'Cache cleared successfully!')
-        },
+        { text: 'Clear', style: 'destructive', onPress: () => Alert.alert('Success', 'Cache cleared successfully!') },
       ]
     );
   };
 
-  const handleChangePassword = () => {
-    navigation.navigate('ChangePassword');
-  };
+  const handleChangePassword = () => navigation.navigate('ChangePassword');
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -55,244 +62,165 @@ const Settings = () => {
       'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => console.log('Account deletion initiated')
-        },
+        { text: 'Delete', style: 'destructive', onPress: () => console.log('Account deletion initiated') },
       ]
     );
   };
+
+  // ── Reusable row components ─────────────────────────────────────────────
+  const SwitchRow = ({
+    icon, iconColor, title, desc, value, onValueChange,
+  }: {
+    icon: string; iconColor: string; title: string; desc: string;
+    value: boolean; onValueChange: (v: boolean) => void;
+  }) => (
+    <View style={styles.settingItem}>
+      <View style={styles.settingInfo}>
+        <View style={styles.settingHeader}>
+          <MaterialIcons name={icon} size={ms(20)} color={iconColor} />
+          <Text style={styles.settingTitle}>{title}</Text>
+        </View>
+        <Text style={styles.settingDesc}>{desc}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
+        thumbColor={value ? '#3B82F6' : '#CBD5E1'}
+      />
+    </View>
+  );
+
+  const ChevronRow = ({
+    icon, iconColor, title, desc, titleColor, onPress,
+  }: {
+    icon: string; iconColor: string; title: string; desc: string;
+    titleColor?: string; onPress?: () => void;
+  }) => (
+    <TouchableOpacity style={styles.settingItem} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.settingInfo}>
+        <View style={styles.settingHeader}>
+          <MaterialIcons name={icon} size={ms(20)} color={iconColor} />
+          <Text style={[styles.settingTitle, titleColor ? { color: titleColor } : undefined]}>
+            {title}
+          </Text>
+        </View>
+        <Text style={styles.settingDesc}>{desc}</Text>
+      </View>
+      <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Settings</Text>
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Notifications Section */}
+          {/* ── Notifications ── */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Notifications</Text>
             <View style={styles.settingsCard}>
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="notifications" size={20} color="#3B82F6" />
-                    <Text style={styles.settingTitle}>Push Notifications</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Receive order updates and alerts</Text>
-                </View>
-                <Switch 
-                  value={pushNotifications} 
-                  onValueChange={setPushNotifications}
-                  trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-                  thumbColor={pushNotifications ? '#3B82F6' : '#CBD5E1'}
-                />
-              </View>
-              
+              <SwitchRow
+                icon="notifications" iconColor="#3B82F6"
+                title="Push Notifications" desc="Receive order updates and alerts"
+                value={pushNotifications} onValueChange={setPushNotifications}
+              />
               <View style={styles.settingDivider} />
-              
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="email" size={20} color="#10B981" />
-                    <Text style={styles.settingTitle}>Email Notifications</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Promotional emails and updates</Text>
-                </View>
-                <Switch 
-                  value={emailNotifications} 
-                  onValueChange={setEmailNotifications}
-                  trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-                  thumbColor={emailNotifications ? '#3B82F6' : '#CBD5E1'}
-                />
-              </View>
-              
+              <SwitchRow
+                icon="email" iconColor="#10B981"
+                title="Email Notifications" desc="Promotional emails and updates"
+                value={emailNotifications} onValueChange={setEmailNotifications}
+              />
               <View style={styles.settingDivider} />
-              
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="sms" size={20} color="#F59E0B" />
-                    <Text style={styles.settingTitle}>SMS Notifications</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Important order alerts via SMS</Text>
-                </View>
-                <Switch 
-                  value={smsNotifications} 
-                  onValueChange={setSmsNotifications}
-                  trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-                  thumbColor={smsNotifications ? '#3B82F6' : '#CBD5E1'}
-                />
-              </View>
+              <SwitchRow
+                icon="sms" iconColor="#F59E0B"
+                title="SMS Notifications" desc="Important order alerts via SMS"
+                value={smsNotifications} onValueChange={setSmsNotifications}
+              />
             </View>
           </View>
 
-          {/* Privacy & Security Section */}
+          {/* ── Privacy & Security ── */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Privacy & Security</Text>
             <View style={styles.settingsCard}>
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="location-on" size={20} color="#EF4444" />
-                    <Text style={styles.settingTitle}>Location Services</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Required for accurate delivery</Text>
-                </View>
-                <Switch 
-                  value={locationServices} 
-                  onValueChange={setLocationServices}
-                  trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-                  thumbColor={locationServices ? '#3B82F6' : '#CBD5E1'}
-                />
-              </View>
-              
+              <SwitchRow
+                icon="location-on" iconColor="#EF4444"
+                title="Location Services" desc="Required for accurate delivery"
+                value={locationServices} onValueChange={setLocationServices}
+              />
               <View style={styles.settingDivider} />
-              
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="analytics" size={20} color="#8B5CF6" />
-                    <Text style={styles.settingTitle}>Share Analytics Data</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Help us improve the app</Text>
-                </View>
-                <Switch 
-                  value={shareDataForAnalytics} 
-                  onValueChange={setShareDataForAnalytics}
-                  trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-                  thumbColor={shareDataForAnalytics ? '#3B82F6' : '#CBD5E1'}
-                />
-              </View>
+              <SwitchRow
+                icon="analytics" iconColor="#8B5CF6"
+                title="Share Analytics Data" desc="Help us improve the app"
+                value={shareDataForAnalytics} onValueChange={setShareDataForAnalytics}
+              />
             </View>
           </View>
 
-          {/* App Preferences Section */}
+          {/* ── App Preferences ── */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>App Preferences</Text>
             <View style={styles.settingsCard}>
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="dark-mode" size={20} color="#64748B" />
-                    <Text style={styles.settingTitle}>Dark Mode</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Switch to dark theme</Text>
-                </View>
-                <Switch 
-                  value={darkMode} 
-                  onValueChange={setDarkMode}
-                  trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-                  thumbColor={darkMode ? '#3B82F6' : '#CBD5E1'}
-                />
-              </View>
-              
+              <SwitchRow
+                icon="dark-mode" iconColor="#64748B"
+                title="Dark Mode" desc="Switch to dark theme"
+                value={darkMode} onValueChange={setDarkMode}
+              />
               <View style={styles.settingDivider} />
-              
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="play-circle-outline" size={20} color="#EC4899" />
-                    <Text style={styles.settingTitle}>Auto-play Videos</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Auto-play promotional videos</Text>
-                </View>
-                <Switch 
-                  value={autoPlayVideos} 
-                  onValueChange={setAutoPlayVideos}
-                  trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-                  thumbColor={autoPlayVideos ? '#3B82F6' : '#CBD5E1'}
-                />
-              </View>
-              
+              <SwitchRow
+                icon="play-circle-outline" iconColor="#EC4899"
+                title="Auto-play Videos" desc="Auto-play promotional videos"
+                value={autoPlayVideos} onValueChange={setAutoPlayVideos}
+              />
               <View style={styles.settingDivider} />
-              
-              <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="language" size={20} color="#0EA5E9" />
-                    <Text style={styles.settingTitle}>Language</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>English (US)</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
-              </TouchableOpacity>
+              <ChevronRow
+                icon="language" iconColor="#0EA5E9"
+                title="Language" desc="English (US)"
+              />
             </View>
           </View>
 
-          {/* Account Section */}
+          {/* ── Account ── */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Account</Text>
             <View style={styles.settingsCard}>
-              <TouchableOpacity 
-                style={styles.settingItem} 
+              <ChevronRow
+                icon="lock-outline" iconColor="#3B82F6"
+                title="Change Password" desc="Update your password"
                 onPress={handleChangePassword}
-                activeOpacity={0.7}
-              >
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="lock-outline" size={20} color="#3B82F6" />
-                    <Text style={styles.settingTitle}>Change Password</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Update your password</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
-              </TouchableOpacity>
-              
+              />
               <View style={styles.settingDivider} />
-              
-              <TouchableOpacity 
-                style={styles.settingItem}
+              <ChevronRow
+                icon="cleaning-services" iconColor="#F59E0B"
+                title="Clear Cache" desc="Free up storage space"
                 onPress={handleClearCache}
-                activeOpacity={0.7}
-              >
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="cleaning-services" size={20} color="#F59E0B" />
-                    <Text style={styles.settingTitle}>Clear Cache</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Free up storage space</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
-              </TouchableOpacity>
-              
+              />
               <View style={styles.settingDivider} />
-              
-              <TouchableOpacity 
-                style={styles.settingItem}
+              <ChevronRow
+                icon="delete-forever" iconColor="#EF4444"
+                title="Delete Account" desc="Permanently delete your account"
+                titleColor="#EF4444"
                 onPress={handleDeleteAccount}
-                activeOpacity={0.7}
-              >
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingHeader}>
-                    <MaterialIcons name="delete-forever" size={20} color="#EF4444" />
-                    <Text style={[styles.settingTitle, { color: '#EF4444' }]}>Delete Account</Text>
-                  </View>
-                  <Text style={styles.settingDesc}>Permanently delete your account</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
-              </TouchableOpacity>
+              />
             </View>
           </View>
 
-          {/* App Info */}
+          {/* ── App Info ── */}
           <View style={styles.appInfoCard}>
-            <MaterialIcons name="info-outline" size={20} color="#64748B" />
+            <MaterialIcons name="info-outline" size={ms(20)} color="#64748B" />
             <View style={styles.appInfoText}>
               <Text style={styles.appInfoTitle}>App Version</Text>
               <Text style={styles.appInfoVersion}>Zipto v1.0.0 (Build 100)</Text>
@@ -304,60 +232,59 @@ const Settings = () => {
   );
 };
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const backBtnSize   = ms(40);
+// settingDesc indented to align with title text: icon size + gap
+const descIndent    = ms(20) + scaleW(8);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  safeArea: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea:  { flex: 1 },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: backBtnSize,
+    height: backBtnSize,
+    borderRadius: backBtnSize / 2,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
-  placeholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  section: {
-    marginBottom: 24,
-  },
+  placeholder: { width: backBtnSize },
+
+  scrollView: { flex: 1 },
+  scrollContent: { padding: scaleW(16) },
+
+  // ── Section ──
+  section: { marginBottom: scaleH(24) },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: scaleH(12),
   },
+
+  // ── Card ──
   settingsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: ms(12),
     overflow: 'hidden',
     elevation: 1,
     shadowColor: '#000',
@@ -365,65 +292,65 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
+
+  // ── Row ──
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(14),
   },
-  settingInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
+  settingInfo:   { flex: 1, marginRight: scaleW(12) },
   settingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: scaleW(8),
+    marginBottom: scaleH(4),
   },
   settingTitle: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   settingDesc: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    marginLeft: 28,
+    marginLeft: descIndent,   // aligns under title text, not icon
   },
   settingDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginLeft: 16,
+    marginLeft: scaleW(16),
   },
+
+  // ── App info ──
   appInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    marginBottom: 16,
+    padding: ms(16),
+    borderRadius: ms(12),
+    gap: scaleW(12),
+    marginBottom: scaleH(16),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
-  appInfoText: {
-    flex: 1,
-  },
+  appInfoText: { flex: 1 },
   appInfoTitle: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: '500',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 2,
+    marginBottom: scaleH(2),
   },
   appInfoVersion: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },

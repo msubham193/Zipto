@@ -7,12 +7,39 @@ import {
   ScrollView,
   Linking,
   Image,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Base dimensions (designed on 390×844 – iPhone 14)
+const BASE_WIDTH = 390;
+const BASE_HEIGHT = 844;
+
+/** Scale a size relative to screen width */
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+
+/** Scale a size relative to screen height */
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+/**
+ * Moderate scale – less aggressive than linear scaling.
+ * factor 0.5 = halfway between fixed and fully-scaled.
+ */
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+/** Scale font sizes and round to nearest pixel */
+const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const AboutUs = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -49,14 +76,14 @@ const AboutUs = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>About Us</Text>
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -76,36 +103,47 @@ const AboutUs = () => {
           {/* Mission Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="flag" size={24} color="#3B82F6" />
+              <MaterialIcons name="flag" size={ms(24)} color="#3B82F6" />
               <Text style={styles.sectionTitle}>Our Mission</Text>
             </View>
             <Text style={styles.sectionText}>
-              At Zipto, we're revolutionizing last-mile delivery across India. Our mission is to provide fast, reliable, and affordable delivery services that connect businesses and customers seamlessly. We believe in empowering local economies while delivering exceptional service.
+              At Zipto, we're revolutionizing last-mile delivery across India. Our mission is to
+              provide fast, reliable, and affordable delivery services that connect businesses and
+              customers seamlessly. We believe in empowering local economies while delivering
+              exceptional service.
             </Text>
           </View>
 
           {/* What We Do Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="info" size={24} color="#10B981" />
+              <MaterialIcons name="info" size={ms(24)} color="#10B981" />
               <Text style={styles.sectionTitle}>What We Do</Text>
             </View>
             <Text style={styles.sectionText}>
-              We offer on-demand pickup and delivery services for packages, documents, food, groceries, and more. With our network of verified delivery partners and advanced technology, we ensure your items reach their destination safely and on time, every time.
+              We offer on-demand pickup and delivery services for packages, documents, food,
+              groceries, and more. With our network of verified delivery partners and advanced
+              technology, we ensure your items reach their destination safely and on time, every
+              time.
             </Text>
           </View>
 
           {/* Stats Grid */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="trending-up" size={24} color="#F59E0B" />
+              <MaterialIcons name="trending-up" size={ms(24)} color="#F59E0B" />
               <Text style={styles.sectionTitle}>Our Impact</Text>
             </View>
             <View style={styles.statsGrid}>
               {stats.map((stat, index) => (
                 <View key={index} style={styles.statCard}>
-                  <View style={[styles.statIconContainer, { backgroundColor: `${stat.color}15` }]}>
-                    <MaterialIcons name={stat.icon} size={32} color={stat.color} />
+                  <View
+                    style={[
+                      styles.statIconContainer,
+                      { backgroundColor: `${stat.color}15` },
+                    ]}
+                  >
+                    <MaterialIcons name={stat.icon} size={ms(32)} color={stat.color} />
                   </View>
                   <Text style={styles.statValue}>{stat.value}</Text>
                   <Text style={styles.statLabel}>{stat.label}</Text>
@@ -117,13 +155,13 @@ const AboutUs = () => {
           {/* Why Choose Us Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="star" size={24} color="#8B5CF6" />
+              <MaterialIcons name="star" size={ms(24)} color="#8B5CF6" />
               <Text style={styles.sectionTitle}>Why Choose Zipto?</Text>
             </View>
             {features.map((feature, index) => (
               <View key={index} style={styles.featureItem}>
                 <View style={styles.featureIconContainer}>
-                  <MaterialIcons name={feature.icon} size={20} color="#10B981" />
+                  <MaterialIcons name={feature.icon} size={ms(20)} color="#10B981" />
                 </View>
                 <Text style={styles.featureText}>{feature.text}</Text>
               </View>
@@ -133,14 +171,14 @@ const AboutUs = () => {
           {/* Our Team Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="people" size={24} color="#EC4899" />
+              <MaterialIcons name="people" size={ms(24)} color="#EC4899" />
               <Text style={styles.sectionTitle}>Our Team</Text>
             </View>
             <View style={styles.teamGrid}>
               {team.map((member, index) => (
                 <View key={index} style={styles.teamCard}>
                   <View style={styles.teamIconContainer}>
-                    <MaterialIcons name={member.icon} size={28} color="#3B82F6" />
+                    <MaterialIcons name={member.icon} size={ms(28)} color="#3B82F6" />
                   </View>
                   <Text style={styles.teamName}>{member.name}</Text>
                   <Text style={styles.teamRole}>{member.role}</Text>
@@ -152,51 +190,53 @@ const AboutUs = () => {
           {/* Contact Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="contact-mail" size={24} color="#0EA5E9" />
+              <MaterialIcons name="contact-mail" size={ms(24)} color="#0EA5E9" />
               <Text style={styles.sectionTitle}>Get In Touch</Text>
             </View>
             <View style={styles.contactCard}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactItem}
                 onPress={() => Linking.openURL('mailto:support@zipto.com')}
               >
                 <View style={styles.contactIconContainer}>
-                  <MaterialIcons name="email" size={20} color="#3B82F6" />
+                  <MaterialIcons name="email" size={ms(20)} color="#3B82F6" />
                 </View>
                 <View style={styles.contactInfo}>
                   <Text style={styles.contactLabel}>Email</Text>
                   <Text style={styles.contactValue}>support@zipto.com</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
+                <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
               </TouchableOpacity>
 
               <View style={styles.contactDivider} />
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactItem}
                 onPress={() => Linking.openURL('tel:18001234567')}
               >
                 <View style={styles.contactIconContainer}>
-                  <MaterialIcons name="phone" size={20} color="#10B981" />
+                  <MaterialIcons name="phone" size={ms(20)} color="#10B981" />
                 </View>
                 <View style={styles.contactInfo}>
                   <Text style={styles.contactLabel}>Phone</Text>
                   <Text style={styles.contactValue}>1800-123-4567</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
+                <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
               </TouchableOpacity>
 
               <View style={styles.contactDivider} />
 
               <TouchableOpacity style={styles.contactItem}>
                 <View style={styles.contactIconContainer}>
-                  <MaterialIcons name="location-on" size={20} color="#EF4444" />
+                  <MaterialIcons name="location-on" size={ms(20)} color="#EF4444" />
                 </View>
                 <View style={styles.contactInfo}>
                   <Text style={styles.contactLabel}>Address</Text>
-                  <Text style={styles.contactValue}>123 Business Park, Bhubaneswar, Odisha</Text>
+                  <Text style={styles.contactValue}>
+                    123 Business Park, Bhubaneswar, Odisha
+                  </Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
+                <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
               </TouchableOpacity>
             </View>
           </View>
@@ -204,24 +244,34 @@ const AboutUs = () => {
           {/* Social Media Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="share" size={24} color="#EC4899" />
+              <MaterialIcons name="share" size={ms(24)} color="#EC4899" />
               <Text style={styles.sectionTitle}>Follow Us</Text>
             </View>
             <View style={styles.socialContainer}>
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#1877F2' }]}>
-                <MaterialIcons name="facebook" size={24} color="#FFFFFF" />
+              <TouchableOpacity
+                style={[styles.socialButton, { backgroundColor: '#1877F2' }]}
+              >
+                <MaterialIcons name="facebook" size={ms(24)} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#1DA1F2' }]}>
-                <MaterialIcons name="twitter" size={24} color="#FFFFFF" />
+              <TouchableOpacity
+                style={[styles.socialButton, { backgroundColor: '#1DA1F2' }]}
+              >
+                <MaterialIcons name="twitter" size={ms(24)} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#E4405F' }]}>
-                <MaterialIcons name="instagram" size={24} color="#FFFFFF" />
+              <TouchableOpacity
+                style={[styles.socialButton, { backgroundColor: '#E4405F' }]}
+              >
+                <MaterialIcons name="instagram" size={ms(24)} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#0A66C2' }]}>
-                <MaterialIcons name="linkedin" size={24} color="#FFFFFF" />
+              <TouchableOpacity
+                style={[styles.socialButton, { backgroundColor: '#0A66C2' }]}
+              >
+                <MaterialIcons name="linkedin" size={ms(24)} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#25D366' }]}>
-                <MaterialIcons name="whatsapp" size={24} color="#FFFFFF" />
+              <TouchableOpacity
+                style={[styles.socialButton, { backgroundColor: '#25D366' }]}
+              >
+                <MaterialIcons name="whatsapp" size={ms(24)} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -230,19 +280,19 @@ const AboutUs = () => {
           <View style={styles.valuesCard}>
             <Text style={styles.valuesTitle}>Our Core Values</Text>
             <View style={styles.valueItem}>
-              <MaterialIcons name="verified" size={20} color="#3B82F6" />
+              <MaterialIcons name="verified" size={ms(20)} color="#3B82F6" />
               <Text style={styles.valueText}>Reliability & Trust</Text>
             </View>
             <View style={styles.valueItem}>
-              <MaterialIcons name="favorite" size={20} color="#EF4444" />
+              <MaterialIcons name="favorite" size={ms(20)} color="#EF4444" />
               <Text style={styles.valueText}>Customer First</Text>
             </View>
             <View style={styles.valueItem}>
-              <MaterialIcons name="flash-on" size={20} color="#F59E0B" />
+              <MaterialIcons name="flash-on" size={ms(20)} color="#F59E0B" />
               <Text style={styles.valueText}>Speed & Efficiency</Text>
             </View>
             <View style={styles.valueItem}>
-              <MaterialIcons name="emoji-people" size={20} color="#10B981" />
+              <MaterialIcons name="emoji-people" size={ms(20)} color="#10B981" />
               <Text style={styles.valueText}>Empowering Communities</Text>
             </View>
           </View>
@@ -259,6 +309,16 @@ const AboutUs = () => {
   );
 };
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const logoSize        = ms(140);
+const statCardMinW    = (SCREEN_WIDTH - scaleW(20) * 2 - scaleW(12)) / 2; // 2-col grid
+const teamCardMinW    = statCardMinW;
+const socialBtnSize   = ms(56);
+const statIconSize    = ms(64);
+const teamIconSize    = ms(56);
+const contactIconSize = ms(44);
+const featureIconSize = ms(36);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -271,103 +331,109 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   placeholder: {
-    width: 40,
+    width: ms(40),
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: scaleW(20),
   },
+
+  // ── Logo ──
   logoSection: {
     alignItems: 'center',
-    paddingVertical: 32,
-    marginBottom: 16,
+    paddingVertical: scaleH(32),
+    marginBottom: scaleH(16),
   },
   logoContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: logoSize,
+    height: logoSize,
+    borderRadius: logoSize / 2,
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 4,
+    marginBottom: scaleH(20),
+    borderWidth: ms(4),
     borderColor: '#BFDBFE',
-    padding: 30,
+    padding: ms(30),
   },
   logoImage: {
     width: '140%',
     height: '140%',
   },
   appName: {
-    fontSize: 36,
+    fontSize: fs(36),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#e45c33',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   tagline: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#4c89dd',
     fontStyle: 'italic',
   },
+
+  // ── Sections ──
   section: {
-    marginBottom: 28,
+    marginBottom: scaleH(28),
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
+    gap: scaleW(10),
+    marginBottom: scaleH(14),
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   sectionText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 24,
+    lineHeight: fs(14) * 1.7,
   },
+
+  // ── Stats ──
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 8,
+    gap: scaleW(12),
+    marginTop: scaleH(8),
   },
   statCard: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: statCardMinW,
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
+    padding: ms(20),
+    borderRadius: ms(16),
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
@@ -376,33 +442,35 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   statIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: statIconSize,
+    height: statIconSize,
+    borderRadius: statIconSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: scaleH(12),
   },
   statValue: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: scaleH(4),
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
+
+  // ── Features ──
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 14,
+    gap: scaleW(12),
+    marginBottom: scaleH(14),
     backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 10,
+    padding: ms(14),
+    borderRadius: ms(10),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -410,32 +478,34 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   featureIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: featureIconSize,
+    height: featureIconSize,
+    borderRadius: featureIconSize / 2,
     backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   featureText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     fontWeight: '500',
   },
+
+  // ── Team ──
   teamGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 8,
+    gap: scaleW(12),
+    marginTop: scaleH(8),
   },
   teamCard: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: teamCardMinW,
     backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 12,
+    padding: ms(18),
+    borderRadius: ms(12),
     alignItems: 'center',
     elevation: 1,
     shadowColor: '#000',
@@ -444,31 +514,33 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   teamIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: teamIconSize,
+    height: teamIconSize,
+    borderRadius: teamIconSize / 2,
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: scaleH(12),
   },
   teamName: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: scaleH(4),
     textAlign: 'center',
   },
   teamRole: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
   },
+
+  // ── Contact ──
   contactCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: ms(12),
     overflow: 'hidden',
     elevation: 1,
     shadowColor: '#000',
@@ -479,28 +551,28 @@ const styles = StyleSheet.create({
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: ms(16),
   },
   contactIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: contactIconSize,
+    height: contactIconSize,
+    borderRadius: contactIconSize / 2,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: scaleW(14),
   },
   contactInfo: {
     flex: 1,
   },
   contactLabel: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    marginBottom: 2,
+    marginBottom: scaleH(2),
   },
   contactValue: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: '500',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
@@ -508,18 +580,20 @@ const styles = StyleSheet.create({
   contactDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginLeft: 74,
+    marginLeft: contactIconSize + scaleW(14),
   },
+
+  // ── Social ──
   socialContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
-    marginTop: 8,
+    gap: scaleW(16),
+    marginTop: scaleH(8),
   },
   socialButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: socialBtnSize,
+    height: socialBtnSize,
+    borderRadius: socialBtnSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
@@ -528,11 +602,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
+
+  // ── Values ──
   valuesCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
+    padding: ms(20),
+    borderRadius: ms(16),
+    marginBottom: scaleH(24),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -540,41 +616,43 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   valuesTitle: {
-    fontSize: 18,
+    fontSize: fs(18),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 16,
+    marginBottom: scaleH(16),
     textAlign: 'center',
   },
   valueItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
+    gap: scaleW(12),
+    paddingVertical: scaleH(10),
   },
   valueText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     fontWeight: '500',
   },
+
+  // ── App Info ──
   appInfo: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: scaleH(24),
   },
   versionText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: '500',
     fontFamily: 'Poppins-Regular',
     color: '#94A3B8',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   copyrightText: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
     color: '#CBD5E1',
-    marginBottom: 2,
+    marginBottom: scaleH(2),
   },
 });
 

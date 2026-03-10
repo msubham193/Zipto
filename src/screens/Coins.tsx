@@ -7,6 +7,8 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +18,22 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
+
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
 
 const Coins = () => {
   const navigation =
@@ -59,9 +77,7 @@ const Coins = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -72,16 +88,14 @@ const Coins = () => {
     try {
       const date = new Date(dateStr);
       const day = date.getDate().toString().padStart(2, '0');
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const month = months[date.getMonth()];
       let hours = date.getHours();
       const mins = date.getMinutes().toString().padStart(2, '0');
       const ampm = hours >= 12 ? 'PM' : 'AM';
       hours = hours % 12 || 12;
       return `${day} ${month} • ${hours}:${mins} ${ampm}`;
-    } catch {
-      return dateStr;
-    }
+    } catch { return dateStr; }
   };
 
   const getTransactionIcon = (type: string) => {
@@ -111,37 +125,16 @@ const Coins = () => {
   ];
 
   const earnCoinsWays = [
+    { icon: 'local-shipping', text: 'Complete deliveries', coins: 'Per order', onPress: () => navigation.navigate('Home') },
     {
-      icon: 'local-shipping',
-      text: 'Complete deliveries',
-      coins: 'Per order',
-      onPress: () => navigation.navigate('Home'),
-    },
-    {
-      icon: 'share',
-      text: 'Refer friends',
-      coins: '+50',
+      icon: 'share', text: 'Refer friends', coins: '+50',
       onPress: () => {
-        // Share referral link
         const { Share } = require('react-native');
-        Share.share({
-          message: 'Join Zipto and get 50 bonus coins! Download now: https://zipto.app/refer',
-          title: 'Refer Zipto',
-        });
+        Share.share({ message: 'Join Zipto and get 50 bonus coins! Download now: https://zipto.app/refer', title: 'Refer Zipto' });
       },
     },
-    {
-      icon: 'star',
-      text: 'Write reviews',
-      coins: '+5',
-      onPress: () => navigation.navigate('MyOrders'),
-    },
-    {
-      icon: 'receipt-long',
-      text: 'View transaction history',
-      coins: 'All',
-      onPress: () => navigation.navigate('TransactionHistory'),
-    },
+    { icon: 'star', text: 'Write reviews', coins: '+5', onPress: () => navigation.navigate('MyOrders') },
+    { icon: 'receipt-long', text: 'View transaction history', coins: 'All', onPress: () => navigation.navigate('TransactionHistory') },
   ];
 
   if (loading) {
@@ -150,7 +143,7 @@ const Coins = () => {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+              <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>My Coins</Text>
             <View style={styles.historyButton} />
@@ -170,18 +163,15 @@ const Coins = () => {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Coins</Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('TransactionHistory')}
             style={styles.historyButton}
           >
-            <MaterialIcons name="history" size={24} color="#3B82F6" />
+            <MaterialIcons name="history" size={ms(24)} color="#3B82F6" />
           </TouchableOpacity>
         </View>
 
@@ -202,7 +192,7 @@ const Coins = () => {
               style={styles.balanceCard}
             >
               <View style={styles.coinsIconContainer}>
-                <MaterialIcons name="stars" size={60} color="#FCD34D" />
+                <MaterialIcons name="stars" size={ms(60)} color="#FCD34D" />
               </View>
 
               <View style={styles.balanceInfo}>
@@ -212,16 +202,14 @@ const Coins = () => {
                 ) : (
                   <>
                     <Text style={styles.balanceAmount}>{coins}</Text>
-                    <Text style={styles.balanceSubtext}>
-                      ≈ ₹{rupeeValue.toFixed(2)}
-                    </Text>
+                    <Text style={styles.balanceSubtext}>≈ ₹{rupeeValue.toFixed(2)}</Text>
                   </>
                 )}
               </View>
 
               {rate ? (
                 <View style={styles.rateTag}>
-                  <MaterialIcons name="info-outline" size={14} color="#E0E7FF" />
+                  <MaterialIcons name="info-outline" size={ms(14)} color="#E0E7FF" />
                   <Text style={styles.rateText}>{rate}</Text>
                 </View>
               ) : null}
@@ -232,16 +220,13 @@ const Coins = () => {
               <View style={[styles.decorCircle, styles.decorCircle3]} />
             </LinearGradient>
 
-            {/* Quick Transaction Button */}
             <TouchableOpacity
               style={styles.transactionHistoryButton}
               onPress={() => navigation.navigate('TransactionHistory')}
             >
-              <MaterialIcons name="receipt-long" size={20} color="#6366F1" />
-              <Text style={styles.transactionHistoryText}>
-                Transaction History
-              </Text>
-              <MaterialIcons name="chevron-right" size={20} color="#94A3B8" />
+              <MaterialIcons name="receipt-long" size={ms(20)} color="#6366F1" />
+              <Text style={styles.transactionHistoryText}>Transaction History</Text>
+              <MaterialIcons name="chevron-right" size={ms(20)} color="#94A3B8" />
             </TouchableOpacity>
           </View>
 
@@ -262,16 +247,10 @@ const Coins = () => {
                     <React.Fragment key={tx.id}>
                       <View style={styles.transactionItem}>
                         <View style={[styles.txIconContainer, { backgroundColor: color + '15' }]}>
-                          <MaterialIcons
-                            name={getTransactionIcon(tx.type)}
-                            size={22}
-                            color={color}
-                          />
+                          <MaterialIcons name={getTransactionIcon(tx.type)} size={ms(22)} color={color} />
                         </View>
                         <View style={styles.txInfo}>
-                          <Text style={styles.txDescription} numberOfLines={1}>
-                            {tx.description}
-                          </Text>
+                          <Text style={styles.txDescription} numberOfLines={1}>{tx.description}</Text>
                           <View style={styles.txMeta}>
                             <Text style={styles.txDate}>{formatDate(tx.created_at)}</Text>
                             {tx.multiplier > 1 && (
@@ -307,38 +286,17 @@ const Coins = () => {
                   activeOpacity={0.8}
                 >
                   {option.badge && (
-                    <View
-                      style={[
-                        styles.badge,
-                        option.badge === 'NEW' && styles.badgeNew,
-                      ]}
-                    >
+                    <View style={[styles.badge, option.badge === 'NEW' && styles.badgeNew]}>
                       <Text style={styles.badgeText}>{option.badge}</Text>
                     </View>
                   )}
-
-                  <LinearGradient
-                    colors={option.gradient}
-                    style={styles.optionIconContainer}
-                  >
-                    <MaterialIcons
-                      name={option.icon}
-                      size={32}
-                      color="#FFFFFF"
-                    />
+                  <LinearGradient colors={option.gradient} style={styles.optionIconContainer}>
+                    <MaterialIcons name={option.icon} size={ms(32)} color="#FFFFFF" />
                   </LinearGradient>
-
                   <Text style={styles.optionTitle}>{option.title}</Text>
-                  <Text style={styles.optionDescription}>
-                    {option.description}
-                  </Text>
-
+                  <Text style={styles.optionDescription}>{option.description}</Text>
                   <View style={styles.optionArrow}>
-                    <MaterialIcons
-                      name="arrow-forward"
-                      size={20}
-                      color="#3B82F6"
-                    />
+                    <MaterialIcons name="arrow-forward" size={ms(20)} color="#3B82F6" />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -351,27 +309,17 @@ const Coins = () => {
             <View style={styles.earnCard}>
               {earnCoinsWays.map((way, index) => (
                 <React.Fragment key={index}>
-                  <TouchableOpacity
-                    style={styles.earnItem}
-                    onPress={way.onPress}
-                    activeOpacity={0.7}
-                  >
+                  <TouchableOpacity style={styles.earnItem} onPress={way.onPress} activeOpacity={0.7}>
                     <View style={styles.earnIconContainer}>
-                      <MaterialIcons
-                        name={way.icon}
-                        size={24}
-                        color="#6366F1"
-                      />
+                      <MaterialIcons name={way.icon} size={ms(24)} color="#6366F1" />
                     </View>
                     <Text style={styles.earnText}>{way.text}</Text>
                     <View style={styles.earnCoinsTag}>
                       <Text style={styles.earnCoinsText}>{way.coins}</Text>
                     </View>
-                    <MaterialIcons name="chevron-right" size={20} color="#94A3B8" />
+                    <MaterialIcons name="chevron-right" size={ms(20)} color="#94A3B8" />
                   </TouchableOpacity>
-                  {index < earnCoinsWays.length - 1 && (
-                    <View style={styles.earnDivider} />
-                  )}
+                  {index < earnCoinsWays.length - 1 && <View style={styles.earnDivider} />}
                 </React.Fragment>
               ))}
             </View>
@@ -379,7 +327,7 @@ const Coins = () => {
 
           {/* Info Banner */}
           <View style={styles.infoBanner}>
-            <MaterialIcons name="info" size={20} color="#3B82F6" />
+            <MaterialIcons name="info" size={ms(20)} color="#3B82F6" />
             <Text style={styles.infoBannerText}>
               {rate || '100 coins = ₹2'}. Use your coins for discounts on your next delivery!
             </Text>
@@ -387,76 +335,69 @@ const Coins = () => {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Bottom Navigation Bar */}
       <BottomTabBar />
     </View>
   );
 };
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const btnSize         = ms(40);
+const txIconSize      = ms(42);
+const optionIconSize  = ms(64);
+const earnIconSize    = ms(44);
+const decorCircle1Sz  = ms(120);
+const decorCircle2Sz  = ms(80);
+const decorCircle3Sz  = ms(60);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  safeArea: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea:  { flex: 1 },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: btnSize,
+    height: btnSize,
+    borderRadius: btnSize / 2,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0F172A',
-  },
+  headerTitle: { fontSize: fs(20), fontWeight: 'bold', color: '#0F172A' },
   historyButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: btnSize,
+    height: btnSize,
+    borderRadius: btnSize / 2,
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 15,
-    color: '#64748B',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  balanceCardContainer: {
-    padding: 16,
-  },
+
+  // ── Loading ──
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: scaleH(12), fontSize: fs(15), color: '#64748B' },
+
+  // ── Scroll ──
+  scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: scaleH(100) },
+
+  // ── Balance Card ──
+  balanceCardContainer: { padding: scaleW(16) },
   balanceCard: {
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: ms(20),
+    padding: ms(24),
     position: 'relative',
     overflow: 'hidden',
-    minHeight: 180,
+    minHeight: scaleH(180),
     elevation: 8,
     shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 4 },
@@ -465,75 +406,46 @@ const styles = StyleSheet.create({
   },
   coinsIconContainer: {
     position: 'absolute',
-    right: 20,
-    top: 20,
+    right: scaleW(20),
+    top: scaleH(20),
     opacity: 0.3,
   },
-  balanceInfo: {
-    zIndex: 1,
-  },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#E0E7FF',
-    marginBottom: 8,
-  },
-  balanceAmount: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  balanceSubtext: {
-    fontSize: 16,
-    color: '#E0E7FF',
-  },
+  balanceInfo: { zIndex: 1 },
+  balanceLabel: { fontSize: fs(14), color: '#E0E7FF', marginBottom: scaleH(8) },
+  balanceAmount: { fontSize: fs(48), fontWeight: 'bold', color: '#FFFFFF', marginBottom: scaleH(4) },
+  balanceSubtext: { fontSize: fs(16), color: '#E0E7FF' },
   rateTag: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 12,
-    gap: 4,
+    paddingHorizontal: scaleW(10),
+    paddingVertical: scaleH(4),
+    borderRadius: ms(12),
+    marginTop: scaleH(12),
+    gap: scaleW(4),
     zIndex: 1,
   },
-  rateText: {
-    fontSize: 12,
-    color: '#E0E7FF',
-    fontWeight: '500',
-  },
+  rateText: { fontSize: fs(12), color: '#E0E7FF', fontWeight: '500' },
+
+  // ── Decor circles ──
   decorCircle: {
     position: 'absolute',
     borderRadius: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  decorCircle1: {
-    width: 120,
-    height: 120,
-    right: -30,
-    bottom: -30,
-  },
-  decorCircle2: {
-    width: 80,
-    height: 80,
-    right: 100,
-    top: -20,
-  },
-  decorCircle3: {
-    width: 60,
-    height: 60,
-    left: -20,
-    bottom: 40,
-  },
+  decorCircle1: { width: decorCircle1Sz, height: decorCircle1Sz, right: -scaleW(30), bottom: -scaleH(30) },
+  decorCircle2: { width: decorCircle2Sz, height: decorCircle2Sz, right: scaleW(100), top: -scaleH(20) },
+  decorCircle3: { width: decorCircle3Sz, height: decorCircle3Sz, left: -scaleW(20), bottom: scaleH(40) },
+
+  // ── Transaction History Button ──
   transactionHistoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 12,
+    padding: ms(16),
+    borderRadius: ms(12),
+    marginTop: scaleH(12),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -542,37 +454,28 @@ const styles = StyleSheet.create({
   },
   transactionHistoryText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '600',
     color: '#0F172A',
-    marginLeft: 12,
+    marginLeft: scaleW(12),
   },
-  section: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
+
+  // ── Section ──
+  section: { paddingHorizontal: scaleW(16), marginBottom: scaleH(24) },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleH(16),
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginBottom: 16,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6366F1',
-    marginBottom: 16,
-  },
+  sectionTitle: { fontSize: fs(18), fontWeight: 'bold', color: '#0F172A', marginBottom: scaleH(16) },
+  seeAllText:   { fontSize: fs(14), fontWeight: '600', color: '#6366F1', marginBottom: scaleH(16) },
+
+  // ── Transactions Card ──
   transactionsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: ms(12),
+    padding: ms(4),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -582,62 +485,36 @@ const styles = StyleSheet.create({
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: ms(12),
   },
   txIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: txIconSize,
+    height: txIconSize,
+    borderRadius: txIconSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: scaleW(12),
   },
-  txInfo: {
-    flex: 1,
-  },
-  txDescription: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  txMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  txDate: {
-    fontSize: 12,
-    color: '#94A3B8',
-  },
+  txInfo: { flex: 1 },
+  txDescription: { fontSize: fs(14), fontWeight: '500', color: '#1E293B', marginBottom: scaleH(4) },
+  txMeta: { flexDirection: 'row', alignItems: 'center', gap: scaleW(8) },
+  txDate: { fontSize: fs(12), color: '#94A3B8' },
   multiplierTag: {
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: scaleW(6),
+    paddingVertical: scaleH(2),
+    borderRadius: ms(6),
   },
-  multiplierText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#D97706',
-  },
-  txCoins: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  txDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginLeft: 66,
-  },
-  optionsGrid: {
-    gap: 12,
-  },
+  multiplierText: { fontSize: fs(10), fontWeight: 'bold', color: '#D97706' },
+  txCoins: { fontSize: fs(16), fontWeight: 'bold', marginLeft: scaleW(8) },
+  txDivider: { height: 1, backgroundColor: '#F1F5F9', marginLeft: txIconSize + scaleW(12) },
+
+  // ── Options Grid ──
+  optionsGrid: { gap: scaleH(12) },
   optionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: ms(16),
+    padding: ms(20),
     position: 'relative',
     elevation: 2,
     shadowColor: '#000',
@@ -647,49 +524,32 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: scaleH(12),
+    right: scaleW(12),
     backgroundColor: '#10B981',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: scaleW(10),
+    paddingVertical: scaleH(4),
+    borderRadius: ms(12),
   },
-  badgeNew: {
-    backgroundColor: '#F59E0B',
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
+  badgeNew: { backgroundColor: '#F59E0B' },
+  badgeText: { fontSize: fs(10), fontWeight: 'bold', color: '#FFFFFF' },
   optionIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: optionIconSize,
+    height: optionIconSize,
+    borderRadius: optionIconSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleH(16),
   },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 6,
-  },
-  optionDescription: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 12,
-  },
-  optionArrow: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-  },
+  optionTitle:       { fontSize: fs(16), fontWeight: '600', color: '#0F172A', marginBottom: scaleH(6) },
+  optionDescription: { fontSize: fs(13), color: '#64748B', marginBottom: scaleH(12) },
+  optionArrow:       { position: 'absolute', bottom: scaleH(20), right: scaleW(20) },
+
+  // ── Earn Card ──
   earnCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: ms(12),
+    padding: ms(16),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -699,55 +559,45 @@ const styles = StyleSheet.create({
   earnItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: scaleH(12),
   },
   earnIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: earnIconSize,
+    height: earnIconSize,
+    borderRadius: earnIconSize / 2,
     backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: scaleW(12),
   },
-  earnText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#0F172A',
-    fontWeight: '500',
-  },
+  earnText: { flex: 1, fontSize: fs(15), color: '#0F172A', fontWeight: '500' },
   earnCoinsTag: {
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: scaleW(12),
+    paddingVertical: scaleH(6),
+    borderRadius: ms(12),
   },
-  earnCoinsText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#16A34A',
-  },
-  earnDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-  },
+  earnCoinsText: { fontSize: fs(14), fontWeight: 'bold', color: '#16A34A' },
+  earnDivider:   { height: 1, backgroundColor: '#F1F5F9' },
+
+  // ── Info Banner ──
   infoBanner: {
     flexDirection: 'row',
     backgroundColor: '#EFF6FF',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 16,
+    padding: ms(16),
+    borderRadius: ms(12),
+    marginHorizontal: scaleW(16),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#DBEAFE',
-    marginBottom: 20,
+    marginBottom: scaleH(20),
   },
   infoBannerText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: fs(13),
     color: '#1E40AF',
-    marginLeft: 12,
-    lineHeight: 18,
+    marginLeft: scaleW(12),
+    lineHeight: fs(13) * 1.4,
   },
 });
 

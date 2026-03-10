@@ -5,12 +5,30 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
 
 const TermsAndConditions = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -20,18 +38,15 @@ const TermsAndConditions = () => {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Terms & Conditions</Text>
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -180,7 +195,7 @@ const TermsAndConditions = () => {
             </View>
 
             <View style={styles.acknowledgementCard}>
-              <MaterialIcons name="info-outline" size={24} color="#3B82F6" />
+              <MaterialIcons name="info-outline" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
                 By using Zipto's services, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
               </Text>
@@ -192,123 +207,122 @@ const TermsAndConditions = () => {
   );
 };
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const backBtnSize = ms(40);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  safeArea: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea:  { flex: 1 },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleW(16),
+    paddingVertical: scaleH(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: backBtnSize,
+    height: backBtnSize,
+    borderRadius: backBtnSize / 2,
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
-  placeholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  legalContent: {
-    padding: 20,
-  },
+  placeholder: { width: backBtnSize },
+
+  // ── Scroll ──
+  scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: scaleH(24) },
+  legalContent:  { padding: scaleW(20) },
+
+  // ── Title block ──
   legalTitle: {
-    fontSize: 26,
+    fontSize: fs(26),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: scaleH(8),
   },
   legalUpdate: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    marginBottom: 20,
+    marginBottom: scaleH(20),
   },
   welcomeText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 22,
-    marginBottom: 24,
-    padding: 16,
+    lineHeight: fs(14) * 1.6,
+    marginBottom: scaleH(24),
+    padding: ms(16),
     backgroundColor: '#EFF6FF',
-    borderRadius: 10,
+    borderRadius: ms(10),
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
   },
-  section: {
-    marginBottom: 24,
-  },
+
+  // ── Sections ──
+  section: { marginBottom: scaleH(24) },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: fs(17),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: scaleH(12),
   },
   sectionText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 24,
-    marginBottom: 12,
+    lineHeight: fs(14) * 1.7,
+    marginBottom: scaleH(12),
   },
   bulletText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    lineHeight: 24,
-    marginBottom: 8,
-    paddingLeft: 8,
+    lineHeight: fs(14) * 1.7,
+    marginBottom: scaleH(8),
+    paddingLeft: scaleW(8),
   },
   contactText: {
-    fontSize: 14,
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
-    lineHeight: 24,
-    marginBottom: 6,
+    lineHeight: fs(14) * 1.7,
+    marginBottom: scaleH(6),
   },
+
+  // ── Acknowledgement card ──
   acknowledgementCard: {
     flexDirection: 'row',
     backgroundColor: '#DCFCE7',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    marginTop: 8,
+    padding: ms(16),
+    borderRadius: ms(12),
+    gap: scaleW(12),
+    marginTop: scaleH(8),
     borderLeftWidth: 4,
     borderLeftColor: '#16A34A',
+    alignItems: 'flex-start',
   },
   acknowledgementText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#166534',
-    lineHeight: 20,
+    lineHeight: fs(13) * 1.55,
   },
 });
 
