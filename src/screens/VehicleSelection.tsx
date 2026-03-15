@@ -240,58 +240,58 @@ const VehicleSelection = () => {
     </View>
   );
 
-  const renderListFooter = () => {
-    const selectedVehicleData = getSelectedVehicleData();
-    const showHelper = selectedVehicleData?.helperAvailable === true;
-    return (
-      <>
-        {renderSelectedDetails()}
-        {showHelper && (
-          <View style={styles.helperSection}>
-            <Text style={styles.sectionTitle}>Additional Services</Text>
-            <View style={[styles.helperCard, helperCount > 0 && styles.helperCardSelected]}>
-              <View style={styles.helperIconContainer}>
-                <Image
-                  source={require('../assets/images/worker.png')}
-                  style={styles.helperImage}
-                  resizeMode="contain"
-                />
-              </View>
-              <View style={styles.helperInfo}>
-                <Text style={styles.helperTitle}>Add Labour</Text>
-                <Text style={styles.helperDescription}>
-                  ₹{selectedVehicleData?.helperCharge ?? 200} per person
-                </Text>
-              </View>
-              <View style={styles.counterContainer}>
-                {helperCount > 0 ? (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => setHelperCount(h => Math.max(0, h - 1))}
-                      style={styles.counterButton}
-                    >
-                      <Icon name="remove" size={ms(20)} color="#3B82F6" />
-                    </TouchableOpacity>
-                    <Text style={styles.counterText}>{helperCount}</Text>
-                    <TouchableOpacity
-                      onPress={() => setHelperCount(h => h + 1)}
-                      style={styles.counterButton}
-                    >
-                      <Icon name="add" size={ms(20)} color="#3B82F6" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <TouchableOpacity onPress={() => setHelperCount(1)} style={styles.addButton}>
-                    <Text style={styles.addButtonText}>ADD</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-      </>
-    );
-  };
+  // const renderListFooter = () => {
+  //   const selectedVehicleData = getSelectedVehicleData();
+  //   const showHelper = selectedVehicleData?.helperAvailable === true;
+  //   return (
+  //     <>
+  //       {renderSelectedDetails()}
+  //       {showHelper && (
+  //         <View style={styles.helperSection}>
+  //           <Text style={styles.sectionTitle}>Additional Services</Text>
+  //           <View style={[styles.helperCard, helperCount > 0 && styles.helperCardSelected]}>
+  //             <View style={styles.helperIconContainer}>
+  //               <Image
+  //                 source={require('../assets/images/worker.png')}
+  //                 style={styles.helperImage}
+  //                 resizeMode="contain"
+  //               />
+  //             </View>
+  //             <View style={styles.helperInfo}>
+  //               <Text style={styles.helperTitle}>Add Labour</Text>
+  //               <Text style={styles.helperDescription}>
+  //                 ₹{selectedVehicleData?.helperCharge ?? 200} per person
+  //               </Text>
+  //             </View>
+  //             <View style={styles.counterContainer}>
+  //               {helperCount > 0 ? (
+  //                 <>
+  //                   <TouchableOpacity
+  //                     onPress={() => setHelperCount(h => Math.max(0, h - 1))}
+  //                     style={styles.counterButton}
+  //                   >
+  //                     <Icon name="remove" size={ms(20)} color="#3B82F6" />
+  //                   </TouchableOpacity>
+  //                   <Text style={styles.counterText}>{helperCount}</Text>
+  //                   <TouchableOpacity
+  //                     onPress={() => setHelperCount(h => h + 1)}
+  //                     style={styles.counterButton}
+  //                   >
+  //                     <Icon name="add" size={ms(20)} color="#3B82F6" />
+  //                   </TouchableOpacity>
+  //                 </>
+  //               ) : (
+  //                 <TouchableOpacity onPress={() => setHelperCount(1)} style={styles.addButton}>
+  //                   <Text style={styles.addButtonText}>ADD</Text>
+  //                 </TouchableOpacity>
+  //               )}
+  //             </View>
+  //           </View>
+  //         </View>
+  //       )}
+  //     </>
+  //   );
+  // };
 
   return (
     <View style={styles.container}>
