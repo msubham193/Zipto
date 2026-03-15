@@ -12,6 +12,7 @@ interface User {
   role: string;
   is_verified: boolean;
   is_active: boolean;
+  is_profile_complete: boolean;
   language_preference: string;
   created_at: string;
   updated_at: string;
@@ -35,6 +36,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  needsProfileSetup: boolean;
+  isNewUser: boolean;
 
   // Actions
   login: (phone: string) => Promise<any>;
@@ -43,6 +46,7 @@ interface AuthState {
   refreshAccessToken: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  setNeedsProfileSetup: (value: boolean) => void;
 }
 
 const isCustomerRole = (role?: string | null) =>
@@ -66,6 +70,8 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      needsProfileSetup: false,
+      isNewUser: false,
 
       login: async (phone: string) => {
         set({ isLoading: true, error: null });
@@ -88,7 +94,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await authApi.verifyOtp(phone, otp);
 
           if (response.success && response.data) {
-            const { user, access_token, refresh_token } = response.data;
+            const { user, access_token, refresh_token, is_new_user } = response.data;
 
             if (!isCustomerRole(user?.role)) {
               const roleError = getCustomerRoleError(user?.role);
@@ -109,8 +115,13 @@ export const useAuthStore = create<AuthState>()(
             await AsyncStorage.setItem('auth_token', access_token);
             await AsyncStorage.setItem('refresh_token', refresh_token);
 
+            // Determine if profile setup is needed:
+            // true for brand-new users OR existing users who never completed their profile
+            const profileIncomplete = is_new_user === true || user?.is_profile_complete === false;
+
             // Log the bearer token
             console.log('✅ Authentication successful! Bearer Token:', access_token);
+            console.log(`🆕 is_new_user: ${is_new_user}, is_profile_complete: ${user?.is_profile_complete}`);
 
             set({
               user,
@@ -118,6 +129,8 @@ export const useAuthStore = create<AuthState>()(
               refreshToken: refresh_token,
               isAuthenticated: true,
               isLoading: false,
+              isNewUser: is_new_user === true,
+              needsProfileSetup: profileIncomplete,
             });
             return response.data;
           } else {
@@ -161,9 +174,13 @@ export const useAuthStore = create<AuthState>()(
           if (response?.success && response?.data) {
             const { user, ...profileData } = response.data;
 
+            // Sync needsProfileSetup from the latest profile data on app restart
+            const profileIncomplete = user?.is_profile_complete === false;
+
             set({
               user,
               profile: profileData,
+              needsProfileSetup: profileIncomplete,
             });
           } else {
             console.log('⚠️ Fetch profile returned invalid response:', response);
@@ -289,12 +306,15 @@ export const useAuthStore = create<AuthState>()(
             token: null,
             refreshToken: null,
             isAuthenticated: false,
+            needsProfileSetup: false,
+            isNewUser: false,
             error: null,
           });
         }
       },
 
       clearError: () => set({ error: null }),
+      setNeedsProfileSetup: (value: boolean) => set({ needsProfileSetup: value }),
     }),
     {
       name: 'auth-storage',
@@ -305,6 +325,8 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
+        needsProfileSetup: state.needsProfileSetup,
+        isNewUser: state.isNewUser,
       }),
     }
   )

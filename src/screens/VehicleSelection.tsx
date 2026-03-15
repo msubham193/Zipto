@@ -71,7 +71,6 @@ const VehicleSelection = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-  const [helperCount, setHelperCount]         = useState(0);
   const [vehicles, setVehicles]               = useState<UIVehicle[]>([]);
   const [loading, setLoading]                 = useState(true);
   const [error, setError]                     = useState<string | null>(null);
@@ -146,10 +145,9 @@ const VehicleSelection = () => {
   const handleBook = () => {
     const vehicle = getSelectedVehicleData();
     if (!vehicle) return;
-    const helperCost = helperCount * vehicle.helperCharge;
     navigation.navigate('FareEstimate', {
       vehicle, pickup, drop, pickupCoords, dropCoords,
-      hasHelper: helperCount > 0, helperCount, helperCost,
+      hasHelper: false, helperCount: 0, helperCost: 0,
       city, serviceCategory, senderName, senderMobile,
     });
   };
@@ -157,7 +155,7 @@ const VehicleSelection = () => {
   const calculateTotalPrice = (): string => {
     const vehicle = getSelectedVehicleData();
     if (!vehicle) return '₹0';
-    return `₹${(vehicle.minimumFare + helperCount * vehicle.helperCharge).toFixed(0)}`;
+    return `₹${vehicle.minimumFare.toFixed(0)}`;
   };
 
   // ── Vehicle Card ─────────────────────────────────────────────────────────
@@ -204,33 +202,7 @@ const VehicleSelection = () => {
           </View>
         </View>
 
-        <View style={styles.rateRow}>
-          <Text style={styles.rateText}>₹{item.perKmRate}/km</Text>
-          <Text style={styles.rateSeparator}> · </Text>
-          <Text style={styles.rateText}>Min ₹{item.minimumFare}</Text>
-        </View>
       </TouchableOpacity>
-    );
-  };
-
-  // ── Detail panel ─────────────────────────────────────────────────────────
-  const renderSelectedDetails = () => {
-    const vehicle = getSelectedVehicleData();
-    if (!vehicle) return null;
-    return (
-      <View style={styles.detailPanel}>
-        <Text style={styles.detailPanelTitle}>{vehicle.name} — Fare Details</Text>
-        <View style={styles.detailGrid}>
-          <DetailRow label="Base Fare"       value={`₹${vehicle.basePrice}`} />
-          <DetailRow label="Min Fare"        value={`₹${vehicle.minimumFare}`} />
-          <DetailRow label="Per KM"          value={`₹${vehicle.perKmRate}`} />
-          <DetailRow label="Per Minute"      value={`₹${vehicle.perMinuteRate}`} />
-          <DetailRow label="Night Surcharge" value={`${vehicle.nightSurchargePercent}%`} />
-          <DetailRow label="Multi-stop Fee"  value={`₹${vehicle.multiStopFee}`} />
-          <DetailRow label="Helper Charge"   value={`₹${vehicle.helperCharge}/person`} />
-          <DetailRow label="City"            value={vehicle.city} />
-        </View>
-      </View>
     );
   };
 
@@ -240,58 +212,6 @@ const VehicleSelection = () => {
     </View>
   );
 
-  const renderListFooter = () => {
-    const selectedVehicleData = getSelectedVehicleData();
-    const showHelper = selectedVehicleData?.helperAvailable === true;
-    return (
-      <>
-        {renderSelectedDetails()}
-        {showHelper && (
-          <View style={styles.helperSection}>
-            <Text style={styles.sectionTitle}>Additional Services</Text>
-            <View style={[styles.helperCard, helperCount > 0 && styles.helperCardSelected]}>
-              <View style={styles.helperIconContainer}>
-                <Image
-                  source={require('../assets/images/worker.png')}
-                  style={styles.helperImage}
-                  resizeMode="contain"
-                />
-              </View>
-              <View style={styles.helperInfo}>
-                <Text style={styles.helperTitle}>Add Labour</Text>
-                <Text style={styles.helperDescription}>
-                  ₹{selectedVehicleData?.helperCharge ?? 200} per person
-                </Text>
-              </View>
-              <View style={styles.counterContainer}>
-                {helperCount > 0 ? (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => setHelperCount(h => Math.max(0, h - 1))}
-                      style={styles.counterButton}
-                    >
-                      <Icon name="remove" size={ms(20)} color="#3B82F6" />
-                    </TouchableOpacity>
-                    <Text style={styles.counterText}>{helperCount}</Text>
-                    <TouchableOpacity
-                      onPress={() => setHelperCount(h => h + 1)}
-                      style={styles.counterButton}
-                    >
-                      <Icon name="add" size={ms(20)} color="#3B82F6" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <TouchableOpacity onPress={() => setHelperCount(1)} style={styles.addButton}>
-                    <Text style={styles.addButtonText}>ADD</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-      </>
-    );
-  };
 
   return (
     <View style={styles.container}>
@@ -346,7 +266,7 @@ const VehicleSelection = () => {
             keyExtractor={item => item.id}
             renderItem={renderVehicleCard}
             ListHeaderComponent={renderListHeader}
-            ListFooterComponent={renderListFooter}
+
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             bounces={true}
@@ -359,15 +279,7 @@ const VehicleSelection = () => {
       <View style={styles.footer}>
         {selectedVehicle && (
           <View style={styles.priceBreakdown}>
-            <View>
-              <Text style={styles.totalLabel}>Estimated Total</Text>
-              {helperCount > 0 && (
-                <Text style={styles.helperBreakdown}>
-                  +{helperCount} helper{helperCount > 1 ? 's' : ''} (₹
-                  {helperCount * (getSelectedVehicleData()?.helperCharge ?? 300)})
-                </Text>
-              )}
-            </View>
+            <Text style={styles.totalLabel}>Estimated Total</Text>
             <Text style={styles.totalPrice}>{calculateTotalPrice()}</Text>
           </View>
         )}

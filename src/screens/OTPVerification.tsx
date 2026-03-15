@@ -11,19 +11,17 @@ import {
   Image,
   Keyboard,
   ScrollView,
-  Modal,
   Animated,
   Dimensions,
   PixelRatio,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BASE_WIDTH  = 390;
+const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
 
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
@@ -37,39 +35,8 @@ const fs = (size: number) =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Hero heights scaled to screen
-const HERO_HEIGHT_OPEN   = scaleH(250);
+const HERO_HEIGHT_OPEN = scaleH(250);
 const HERO_HEIGHT_CLOSED = scaleH(120);
-
-/* ─── Success Modal ─────────────────────────────────────────────────────────── */
-const SuccessModal = ({
-  visible,
-  onClose,
-}: {
-  visible: boolean;
-  onClose: () => void;
-}) => (
-  <Modal
-    animationType="fade"
-    transparent={true}
-    visible={visible}
-    onRequestClose={() => {}}
-  >
-    <View style={styles.modalOverlay}>
-      <View style={styles.modalContent}>
-        <View style={styles.successIconContainer}>
-          <Text style={styles.successIcon}>✓</Text>
-        </View>
-        <Text style={styles.modalTitle}>Verification Successful!</Text>
-        <Text style={styles.modalMessage}>
-          Your account has been verified successfully. Welcome to Zipto!
-        </Text>
-        <TouchableOpacity style={styles.modalButton} onPress={onClose}>
-          <Text style={styles.modalButtonText}>Continue</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-);
 
 /* ─── OTP Input ─────────────────────────────────────────────────────────────── */
 const OTPInput = ({
@@ -121,7 +88,6 @@ const OTPInput = ({
 const OTPVerification = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { t } = useTranslation();
   const { verifyOtp, isLoading, error: authError } = useAuthStore();
 
   const { mobile, fullMobile } = route.params || { mobile: '', fullMobile: '' };
@@ -129,12 +95,11 @@ const OTPVerification = () => {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
 
-  const heroScale  = useRef(new Animated.Value(1)).current;
-  const fadeAnim   = useRef(new Animated.Value(1)).current;
-  const slideAnim  = useRef(new Animated.Value(0)).current;
+  const heroScale = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -160,20 +125,29 @@ const OTPVerification = () => {
     setError('');
     try {
       const phoneToVerify = fullMobile || mobile;
-      await verifyOtp(phoneToVerify, otp);
-      setShowSuccessModal(true);
+      const data = await verifyOtp(phoneToVerify, otp);
+
+      // Navigate based on whether the user needs to complete their profile
+      const isNewUser = data?.is_new_user === true;
+      const isProfileComplete = data?.user?.is_profile_complete === true;
+
+      if (isNewUser || !isProfileComplete) {
+        // New user or existing user with incomplete profile → show profile setup
+        navigation.reset({ index: 0, routes: [{ name: 'ProfileSetup' }] });
+      } else {
+        // Returning user with complete profile → go straight home
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      }
     } catch (err: any) {
       console.log('Verification error', err);
       setError(err?.message || 'Verification failed. Please try again.');
     }
   };
 
-  const handleSuccessModalClose = () => setShowSuccessModal(false);
   const handleResendOTP = () => console.log('Resend OTP');
 
   return (
     <SafeAreaView style={styles.container}>
-      <SuccessModal visible={showSuccessModal} onClose={handleSuccessModalClose} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -185,7 +159,10 @@ const OTPVerification = () => {
         >
           {/* HERO SECTION */}
           <Animated.View
-            style={[styles.heroContainer, { transform: [{ scale: heroScale }] }]}
+            style={[
+              styles.heroContainer,
+              { transform: [{ scale: heroScale }] },
+            ]}
           >
             <View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
@@ -221,7 +198,9 @@ const OTPVerification = () => {
                     hasError={!!error}
                   />
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                  {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
+                  {authError ? (
+                    <Text style={styles.errorText}>{authError}</Text>
+                  ) : null}
                 </View>
 
                 {/* Resend OTP */}
@@ -284,9 +263,8 @@ const OTPVerification = () => {
 };
 
 // ─── Derived responsive values ────────────────────────────────────────────────
-const successIconSize = ms(60);
-const arrowIconSize   = ms(22);
-const otpBoxHeight    = scaleH(56);
+const arrowIconSize = ms(22);
+const otpBoxHeight = scaleH(56);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
@@ -409,8 +387,16 @@ const styles = StyleSheet.create({
 
   // ── Resend ──
   resendButton: { alignSelf: 'center', marginBottom: scaleH(30) },
-  resendText: { fontSize: fs(14), fontFamily: 'Poppins-Regular', color: '#64748B' },
-  resendLink: { color: '#2563EB', fontWeight: '600', fontFamily: 'Poppins-Regular' },
+  resendText: {
+    fontSize: fs(14),
+    fontFamily: 'Poppins-Regular',
+    color: '#64748B',
+  },
+  resendLink: {
+    color: '#2563EB',
+    fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
+  },
 
   // ── Verify Button ──
   verifyButton: {
@@ -457,66 +443,6 @@ const styles = StyleSheet.create({
     paddingBottom: scaleH(20),
   },
   link: { color: '#2563EB' },
-
-  // ── Modal ──
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: scaleW(24),
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: ms(20),
-    padding: ms(24),
-    width: '100%',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  successIconContainer: {
-    width: successIconSize,
-    height: successIconSize,
-    borderRadius: successIconSize / 2,
-    backgroundColor: '#4ADE80',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: scaleH(16),
-  },
-  successIcon: { fontSize: fs(32), color: 'white', fontWeight: 'bold' },
-  modalTitle: {
-    fontSize: fs(20),
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginBottom: scaleH(8),
-    fontFamily: 'Poppins-Regular',
-  },
-  modalMessage: {
-    fontSize: fs(14),
-    color: '#64748B',
-    textAlign: 'center',
-    marginBottom: scaleH(24),
-    fontFamily: 'Poppins-Regular',
-    lineHeight: fs(14) * 1.5,
-  },
-  modalButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: ms(12),
-    paddingVertical: scaleH(12),
-    paddingHorizontal: scaleW(32),
-    width: '100%',
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: 'white',
-    fontSize: fs(16),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-  },
 });
 
 export default OTPVerification;
