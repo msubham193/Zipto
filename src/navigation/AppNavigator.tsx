@@ -1,7 +1,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useAuthStore } from '../store/useAuthStore';
 
 import Home from '../screens/Home';
+import ProfileSetup from '../screens/ProfileSetup';
 import PickupDropSelection from '../screens/PickupDropSelection';
 import VehicleSelection from '../screens/VehicleSelection';
 import FareEstimate from '../screens/FareEstimate';
@@ -36,6 +38,7 @@ const PlaceholderScreen = ({ name }: { name: string }) => (
 );
 
 export type AppStackParamList = {
+  ProfileSetup: undefined;
   Home: undefined;
   PickupDropSelection: { serviceCategory?: string } | undefined;
   VehicleSelection: undefined;
@@ -76,8 +79,18 @@ export type AppStackParamList = {
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 const AppNavigator = () => {
+  const { needsProfileSetup } = useAuthStore();
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={needsProfileSetup ? 'ProfileSetup' : 'Home'}
+    >
+      <Stack.Screen
+        name="ProfileSetup"
+        component={ProfileSetup}
+        options={{ animation: 'fade' }}
+      />
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen
         name="PickupDropSelection"

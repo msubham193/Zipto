@@ -83,7 +83,7 @@ const Splash = () => {
     ]).start();
 
     const timer = setTimeout(() => {
-      navigation.replace('LanguageSelection');
+      navigation.replace('Login');
     }, 2500);
 
     return () => clearTimeout(timer);

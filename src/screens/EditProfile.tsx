@@ -22,7 +22,7 @@ import { authApi } from '../api/client';
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BASE_WIDTH  = 390;
+const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
 
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
@@ -36,12 +36,13 @@ const fs = (size: number) =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 const EditProfile = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const { user, profile, fetchProfile } = useAuthStore();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const { user, profile, fetchProfile, setNeedsProfileSetup } = useAuthStore();
 
-  const [name, setName]       = useState(user?.name || '');
-  const [email, setEmail]     = useState(user?.email || '');
-  const [phone, setPhone]     = useState(user?.phone || '');
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [address, setAddress] = useState(profile?.address || '');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -66,12 +67,16 @@ const EditProfile = () => {
       const payload = { name, email, address, language_preference: 'en' };
       await authApi.updateCustomerProfile(payload);
       await fetchProfile();
+      setNeedsProfileSetup(false);
       Alert.alert('Success', 'Profile updated successfully', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error: any) {
       console.error('Update profile error:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to update profile');
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'Failed to update profile',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -82,14 +87,20 @@ const EditProfile = () => {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
             <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Profile</Text>
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
             <View style={styles.largeAvatar}>
@@ -155,7 +166,10 @@ const EditProfile = () => {
           {/* Save Button */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+              style={[
+                styles.saveButton,
+                isLoading && styles.saveButtonDisabled,
+              ]}
               onPress={handleSave}
               disabled={isLoading}
             >
@@ -173,13 +187,13 @@ const EditProfile = () => {
 };
 
 // ─── Derived responsive values ────────────────────────────────────────────────
-const backBtnSize  = ms(40);
-const avatarSize   = ms(120);
-const textAreaH    = scaleH(100);
+const backBtnSize = ms(40);
+const avatarSize = ms(120);
+const textAreaH = scaleH(100);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  safeArea:  { flex: 1 },
+  safeArea: { flex: 1 },
 
   // ── Header ──
   header: {
@@ -245,7 +259,7 @@ const styles = StyleSheet.create({
 
   // ── Form ──
   formSection: { padding: scaleW(16) },
-  inputGroup:  { marginBottom: scaleH(20) },
+  inputGroup: { marginBottom: scaleH(20) },
   inputLabel: {
     fontSize: fs(14),
     fontWeight: '600',
