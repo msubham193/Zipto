@@ -123,10 +123,10 @@ const TransactionHistoryScreen = () => {
             {item.description}
           </Text>
           <Text style={styles.transactionDate}>{formatDate(item.created_at)}</Text>
-          {item.multiplier > 1 && (
+          {item.multiplier && Number(item.multiplier) > 1 && (
             <View style={styles.multiplierTag}>
               <MaterialIcons name="bolt" size={ms(12)} color="#D97706" />
-              <Text style={styles.multiplierText}>{item.multiplier.toFixed(1)}x multiplier</Text>
+              <Text style={styles.multiplierText}>{Number(item.multiplier).toFixed(1)}x multiplier</Text>
             </View>
           )}
         </View>

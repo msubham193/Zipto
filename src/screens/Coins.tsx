@@ -253,9 +253,9 @@ const Coins = () => {
                           <Text style={styles.txDescription} numberOfLines={1}>{tx.description}</Text>
                           <View style={styles.txMeta}>
                             <Text style={styles.txDate}>{formatDate(tx.created_at)}</Text>
-                            {tx.multiplier > 1 && (
+                            {tx.multiplier && Number(tx.multiplier) > 1 && (
                               <View style={styles.multiplierTag}>
-                                <Text style={styles.multiplierText}>{tx.multiplier.toFixed(1)}x</Text>
+                                <Text style={styles.multiplierText}>{Number(tx.multiplier).toFixed(1)}x</Text>
                               </View>
                             )}
                           </View>

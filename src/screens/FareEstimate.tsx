@@ -19,6 +19,7 @@ import { Button } from '../components/Button';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
+import { useBookingStore } from '../store/useBookingStore';
 import { WebView } from 'react-native-webview';
 
 // ─── Responsive Utilities ────────────────────────────────────────────────────
@@ -76,10 +77,12 @@ const FareEstimate = () => {
   const [paymentModal, setPaymentModal] = useState<{ html: string; bookingId: string } | null>(null);
 
   const { user } = useAuthStore();
+  const { setActiveBooking } = useBookingStore();
   const {
     vehicle, pickup, drop, pickupCoords, dropCoords,
     city, serviceCategory, senderName, senderMobile,
     helperCount, helperCost,
+    receiverName, receiverPhone, alternativePhone,
   } = route.params || {};
 
   const selectedVehicleType = vehicle?.vehicleType || 'bike';
@@ -194,7 +197,7 @@ const FareEstimate = () => {
           Alert.alert('Verification Failed', 'Payment collected but verification failed. Contact support.');
           return;
         }
-        navigateToTracking(bookingId, true, 'online');
+        navigateToTracking(bookingId, false, 'online');
       } else if (message.type === 'PAYMENT_CANCELLED') {
         Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
       } else if (message.type === 'PAYMENT_FAILED') {
@@ -221,6 +224,9 @@ const FareEstimate = () => {
         vehicle_type: selectedVehicleType,
         booking_type: 'instant' as const,
         number_of_helpers: helperCount || 0,
+        receiver_name: receiverName || undefined,
+        receiver_phone: receiverPhone || undefined,
+        alternative_phone: alternativePhone || undefined,
       };
 
       const bookingResponse = await vehicleApi.createBooking(bookingData);
@@ -231,6 +237,21 @@ const FareEstimate = () => {
 
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
       const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
+
+      // Persist active booking so the banner shows while searching for a driver
+      setActiveBooking({
+        id: bookingId,
+        status: 'searching',
+        pickupAddress: pickup || '',
+        dropAddress: drop || '',
+        vehicleType: selectedVehicleType,
+        estimatedFare: amount,
+        pickup: pickup || '',
+        drop: drop || '',
+        pickupCoords,
+        dropCoords,
+        paymentMethod: selectedPayment,
+      });
 
       if (selectedPayment === 'online') {
         const orderResponse = await vehicleApi.createPaymentOrder({ booking_id: bookingId, amount });
@@ -243,7 +264,7 @@ const FareEstimate = () => {
         setBookingLoading(false);
         setPaymentModal({ html, bookingId });
       } else {
-        navigateToTracking(bookingId, true, 'cash');
+        navigateToTracking(bookingId, false, 'cash');
       }
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.message || err.message || 'Something went wrong. Please try again.');
@@ -276,7 +297,28 @@ const FareEstimate = () => {
   }
 
   const breakdown = estimateData?.breakdown;
-  const totalFare = (estimateData?.estimated_fare || 0) + (helperCost || 0);
+  const totalFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+
+  const surgeMultiplier = breakdown?.surge_multiplier || 1;
+  const hasSurge = surgeMultiplier > 1;
+  const surgeExtra = hasSurge && breakdown?.subtotal
+    ? Math.round((estimateData?.estimated_fare || 0) - breakdown.subtotal)
+    : 0;
+
+  const getSurgeLabel = (multiplier: number): string => {
+    if (multiplier >= 1.6) return 'Peak Hour Surge';
+    if (multiplier >= 1.4) return 'High Demand Surge';
+    if (multiplier >= 1.3) return 'Moderate Surge';
+    return 'Light Surge';
+  };
+
+  const getSurgeReason = (multiplier: number): string => {
+    const hour = new Date().getHours();
+    if (hour >= 8 && hour < 10) return 'Morning rush hour (8–10 AM)';
+    if (hour >= 18 && hour < 21) return 'Evening rush hour (6–9 PM)';
+    if (multiplier >= 1.4) return 'Very high booking demand';
+    return 'Higher than usual demand';
+  };
 
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
@@ -355,18 +397,25 @@ const FareEstimate = () => {
           </View>
         </View>
 
+        {/* ── Surge Banner (outside card, above breakdown) ── */}
+        {hasSurge && (
+          <View style={styles.surgeBanner}>
+            <View style={styles.surgeBannerLeft}>
+              <Icon name="bolt" size={sp(16)} color="#B91C1C" />
+              <View style={styles.surgeBannerText}>
+                <Text style={styles.surgeBannerTitle}>{getSurgeLabel(surgeMultiplier)}</Text>
+                <Text style={styles.surgeBannerReason}>{getSurgeReason(surgeMultiplier)}</Text>
+              </View>
+            </View>
+            <View style={styles.surgeBadge}>
+              <Text style={styles.surgeBadgeText}>{surgeMultiplier}x</Text>
+            </View>
+          </View>
+        )}
+
         {/* ── Fare Breakdown Card ── */}
         <Text style={styles.sectionTitle}>Fare Breakdown</Text>
         <View style={styles.card}>
-          {(breakdown?.surge_multiplier || 1) > 1 && (
-            <View style={styles.surgeAlert}>
-              <Icon name="trending-up" size={sp(16)} color="#B91C1C" />
-              <Text style={styles.surgeText}>
-                High demand! Fares are slightly higher right now.
-              </Text>
-            </View>
-          )}
-
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Base Fare</Text>
             <Text style={styles.rowValue}>₹{breakdown?.base_fare || 0}</Text>
@@ -375,11 +424,27 @@ const FareEstimate = () => {
             <Text style={styles.rowLabel}>Distance Charge</Text>
             <Text style={styles.rowValue}>₹{breakdown?.distance_charge || 0}</Text>
           </View>
-          {(breakdown?.time_charge || 0) > 0 && (
+          {(breakdown?.platform_fee || 0) > 0 && (
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Time Charge</Text>
-              <Text style={styles.rowValue}>₹{breakdown?.time_charge || 0}</Text>
+              <Text style={styles.rowLabel}>Platform Fee (incl. GST)</Text>
+              <Text style={styles.rowValue}>
+                ₹{((breakdown?.platform_fee || 0) + (breakdown?.platform_fee_gst || 0)).toFixed(0)}
+              </Text>
             </View>
+          )}
+          {hasSurge && (
+            <>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Subtotal (before surge)</Text>
+                <Text style={styles.rowValue}>₹{breakdown?.subtotal || 0}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={[styles.rowLabel, styles.surgeRowLabel]}>
+                  Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
+                </Text>
+                <Text style={[styles.rowValue, styles.surgeRowValue]}>+₹{surgeExtra}</Text>
+              </View>
+            </>
           )}
           {(helperCount || 0) > 0 && (
             <View style={styles.row}>
@@ -720,21 +785,59 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
 
-  // ── Surge alert ──────────────────────────────────────────────────────────────
-  surgeAlert: {
+  // ── Surge banner ─────────────────────────────────────────────────────────────
+  surgeBanner: {
     flexDirection: 'row',
-    backgroundColor: '#FEF2F2',
-    padding: sp(12),
-    borderRadius: sp(8),
-    marginBottom: sp(14),
-    gap: sp(8),
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#B91C1C',
+    borderRadius: sp(12),
+    paddingVertical: sp(10),
+    paddingHorizontal: sp(14),
+    marginBottom: sp(12),
+    gap: sp(10),
   },
-  surgeText: {
-    fontSize: nf(isSmallScreen ? 11 : 12),
-    color: '#B91C1C',
+  surgeBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
     flex: 1,
-    lineHeight: nf(16),
+  },
+  surgeBannerText: {
+    flex: 1,
+    gap: sp(2),
+  },
+  surgeBannerTitle: {
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontWeight: '700',
+    color: '#B91C1C',
+  },
+  surgeBannerReason: {
+    fontSize: nf(isSmallScreen ? 10 : 11),
+    color: '#6B7280',
+  },
+  surgeBadge: {
+    backgroundColor: '#B91C1C',
+    borderRadius: sp(6),
+    paddingHorizontal: sp(8),
+    paddingVertical: sp(3),
+    flexShrink: 0,
+  },
+  surgeBadgeText: {
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  surgeRowLabel: {
+    color: '#B91C1C',
+    fontWeight: '500',
+  },
+  surgeRowValue: {
+    color: '#B91C1C',
+    fontWeight: '700',
   },
 
   // ── Payment options ──────────────────────────────────────────────────────────

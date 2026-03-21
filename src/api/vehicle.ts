@@ -66,6 +66,10 @@ export interface FareEstimateResponse {
       time_charge: number;
       surge_multiplier: number;
       minimum_fare: number;
+      platform_fee?: number;
+      platform_fee_gst?: number;
+      multi_stop_charge?: number;
+      subtotal?: number;
     };
   };
   timestamp: string;
@@ -83,6 +87,9 @@ export interface CreateBookingRequest {
   booking_type: 'instant' | 'scheduled';
   scheduled_time?: string;
   number_of_helpers?: number;
+  receiver_name?: string;
+  receiver_phone?: string;
+  alternative_phone?: string;
 }
 
 export interface CreateBookingResponse {
@@ -179,6 +186,11 @@ export interface BookingDetails {
   } | null;
   vehicle: any | null;
   otp?: string;
+  delivery_otp?: string;
+  receiver_name?: string;
+  receiver_phone?: string;
+  alternative_phone?: string;
+  otp_verified?: boolean;
   vehicle_type?: string;
   payments?: {
     id: string;
@@ -263,6 +275,35 @@ export interface TransferToWalletResponse {
   };
 }
 
+// Rating types
+export interface SubmitRatingRequest {
+  booking_id: string;
+  rating: number;
+  comment?: string;
+}
+
+export interface RatingData {
+  id: string;
+  booking_id: string;
+  customer_id: string;
+  driver_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface SubmitRatingResponse {
+  success: boolean;
+  data: RatingData;
+  message?: string;
+}
+
+export interface GetRatingResponse {
+  success: boolean;
+  data: RatingData | null;
+  message?: string;
+}
+
 // Vehicle API service
 export const vehicleApi = {
   /**
@@ -324,11 +365,21 @@ export const vehicleApi = {
     return response.data;
   },
 
+  getOfferStatus: async (offerId: string): Promise<{ success: boolean; data: { status: 'searching' | 'accepted' | 'expired'; booking_id?: string } }> => {
+    const response = await client.get(`/booking/offer/${offerId}/status`);
+    return response.data;
+  },
+
   getBookingDetails: async (bookingId: string): Promise<BookingDetailsResponse> => {
     const response = await client.get<BookingDetailsResponse>(
       `/booking/${bookingId}`
     );
     return response.data;
+  },
+
+  getCustomerActiveBooking: async (): Promise<any> => {
+    const response = await client.get('/booking/customer/active');
+    return response.data?.data ?? response.data;
   },
 
   getCustomerHistory: async (page: number = 1, limit: number = 20): Promise<BookingHistoryResponse> => {
@@ -347,23 +398,33 @@ export const vehicleApi = {
   },
 
   getCoinsBalance: async (): Promise<CoinsBalanceResponse> => {
-    const response = await client.get<CoinsBalanceResponse>('/coins/balance');
-    return response.data;
+    const response = await client.get('/coins/balance');
+    return response.data?.data ?? response.data;
   },
 
   getCoinsHistory: async (page: number = 1, limit: number = 10): Promise<CoinsHistoryResponse> => {
-    const response = await client.get<CoinsHistoryResponse>(
+    const response = await client.get(
       `/coins/history?page=${page}&limit=${limit}`
     );
-    return response.data;
+    return response.data?.data ?? response.data;
   },
 
   transferToWallet: async (request: TransferToWalletRequest): Promise<TransferToWalletResponse> => {
-    const response = await client.post<TransferToWalletResponse>(
+    const response = await client.post(
       '/coins/transfer-to-wallet',
       request
     );
-    return response.data;
+    return response.data?.data ?? response.data;
+  },
+
+  submitRating: async (request: SubmitRatingRequest): Promise<SubmitRatingResponse> => {
+    const response = await client.post('/rating/submit', request);
+    return response.data?.data ?? response.data;
+  },
+
+  getRatingByBooking: async (bookingId: string): Promise<GetRatingResponse> => {
+    const response = await client.get(`/rating/booking/${bookingId}`);
+    return response.data?.data ?? response.data;
   },
 };
 

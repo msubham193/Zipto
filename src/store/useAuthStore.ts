@@ -337,7 +337,20 @@ export const useAuthStore = create<AuthState>()(
 import { setLogoutCallback, setTokenUpdateCallback } from '../api/client';
 
 setLogoutCallback(() => {
-  useAuthStore.getState().logout().catch(console.error);
+  // Force-clear auth state WITHOUT calling the logout API.
+  // Calling logout() from here would hit POST /auth/logout → 401 → retry → infinite loop.
+  console.log('[Auth] JWT expired or refresh failed — force clearing session');
+  AsyncStorage.multiRemove(['auth_token', 'refresh_token']).catch(console.error);
+  useAuthStore.setState({
+    user: null,
+    profile: null,
+    token: null,
+    refreshToken: null,
+    isAuthenticated: false,
+    needsProfileSetup: false,
+    isNewUser: false,
+    error: null,
+  });
 });
 
 setTokenUpdateCallback((token, refreshToken) => {

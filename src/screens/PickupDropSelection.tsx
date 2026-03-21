@@ -17,8 +17,28 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Geolocation from '@react-native-community/geolocation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mapboxApi } from '../api/mapbox';
 import { useAuthStore } from '../store/useAuthStore';
+
+const PICKUP_CACHE_KEY = 'pickup_location_cache';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const LOCATION_CHANGE_THRESHOLD_M = 200; // metres
+
+function haversineDistance(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number,
+): number {
+  const R = 6371000;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -74,13 +94,20 @@ const PickupDropSelection = () => {
   const [isSearching,          setIsSearching]          = useState(false);
   const [senderName,           setSenderName]           = useState('');
   const [senderMobile,         setSenderMobile]         = useState('');
+  const [receiverName,         setReceiverName]         = useState('');
+  const [receiverPhone,        setReceiverPhone]        = useState('');
+  const [alternativePhone,     setAlternativePhone]     = useState('');
   const [selectedLocationType, setSelectedLocationType] = useState<LocationType | ''>('');
   const [customLocationName,   setCustomLocationName]   = useState('');
   const [pickupCoords,         setPickupCoords]         = useState<{ latitude: number; longitude: number } | null>(null);
   const [dropCoords,           setDropCoords]           = useState<{ latitude: number; longitude: number } | null>(null);
 
+  const [autoFillingPickup, setAutoFillingPickup] = useState(false);
+  const [locationChanged,   setLocationChanged]   = useState(false);
+
   const sessionTokenRef  = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const watchIdRef       = useRef<number | null>(null);
   const fadeAnim         = useRef(new Animated.Value(1)).current;
   const slideAnim        = useRef(new Animated.Value(0)).current;
 
@@ -89,6 +116,103 @@ const PickupDropSelection = () => {
   useEffect(() => {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, []);
+
+  // Load cached pickup on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(PICKUP_CACHE_KEY);
+        if (!raw) return;
+        const cached = JSON.parse(raw) as {
+          address: string;
+          coords: { latitude: number; longitude: number };
+          cachedAt: number;
+        };
+        if (Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+          setPickup(cached.address);
+          setPickupCoords(cached.coords);
+          setActiveInput('drop');
+        }
+      } catch {}
+    })();
+  }, []);
+
+  // Watch GPS to detect if user has moved away from the cached pickup location
+  useEffect(() => {
+    if (!pickupCoords) {
+      setLocationChanged(false);
+      if (watchIdRef.current !== null) {
+        Geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      return;
+    }
+    const id = Geolocation.watchPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        const dist = haversineDistance(
+          latitude, longitude,
+          pickupCoords.latitude, pickupCoords.longitude,
+        );
+        setLocationChanged(dist > LOCATION_CHANGE_THRESHOLD_M);
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000, distanceFilter: 50 },
+    );
+    watchIdRef.current = id;
+    return () => {
+      Geolocation.clearWatch(id);
+      watchIdRef.current = null;
+    };
+  }, [pickupCoords]);
+
+  const savePickupCache = async (
+    address: string,
+    coords: { latitude: number; longitude: number },
+  ) => {
+    try {
+      await AsyncStorage.setItem(
+        PICKUP_CACHE_KEY,
+        JSON.stringify({ address, coords, cachedAt: Date.now() }),
+      );
+    } catch {}
+  };
+
+  const detectCurrentLocation = () => {
+    setAutoFillingPickup(true);
+    Geolocation.getCurrentPosition(
+      async position => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const address = await mapboxApi.reverseGeocode(latitude, longitude);
+          if (address) {
+            setPickup(address);
+            setPickupCoords({ latitude, longitude });
+            setActiveInput('drop');
+            setLocationChanged(false);
+            await savePickupCache(address, { latitude, longitude });
+          }
+        } catch (err) {
+          console.log('GPS pickup error:', err);
+        } finally {
+          setAutoFillingPickup(false);
+        }
+      },
+      error => {
+        console.log('GPS error:', error);
+        setAutoFillingPickup(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+    );
+  };
+
+  // Auto-fill pickup location from current GPS position (only when city selected and pickup empty)
+  useEffect(() => {
+    if (!selectedCity) return;
+    // Only auto-fill if pickup is still empty (user hasn't typed anything / no cache hit)
+    if (pickup) return;
+    detectCurrentLocation();
+  }, [selectedCity]);
 
   useEffect(() => {
     if (user?.name && !senderName.trim()) setSenderName(user.name);
@@ -172,6 +296,9 @@ const PickupDropSelection = () => {
         pickup, drop, pickupCoords, dropCoords,
         currentLocationCoords: null,
         senderName, senderMobile,
+        receiverName: receiverName.trim() || undefined,
+        receiverPhone: receiverPhone.trim() || undefined,
+        alternativePhone: alternativePhone.trim() || undefined,
         city: selectedCity,
         serviceCategory,
         locationType: selectedLocationType === 'Other' ? customLocationName : selectedLocationType,
@@ -326,12 +453,31 @@ const PickupDropSelection = () => {
                 </View>
                 <TextInput
                   style={[styles.locationInput, activeInput === 'pickup' && styles.activeInput]}
-                  placeholder="Enter pickup location *"
+                  placeholder={autoFillingPickup ? 'Detecting your location...' : 'Enter pickup location *'}
                   placeholderTextColor="#94A3B8"
                   value={pickup}
-                  onChangeText={handleSearchLocation}
+                  onChangeText={(text) => {
+                    // When user edits, clear auto-filled coords so they must pick from suggestions
+                    if (pickupCoords) setPickupCoords(null);
+                    handleSearchLocation(text);
+                  }}
                   onFocus={() => setActiveInput('pickup')}
                 />
+                {autoFillingPickup && (
+                  <ActivityIndicator size="small" color="#3B82F6" style={{ marginLeft: scaleW(8) }} />
+                )}
+                {!autoFillingPickup && (!pickup || locationChanged) && (
+                  <TouchableOpacity
+                    onPress={detectCurrentLocation}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialIcons
+                      name="my-location"
+                      size={ms(20)}
+                      color={locationChanged ? '#EF4444' : '#3B82F6'}
+                    />
+                  </TouchableOpacity>
+                )}
               </View>
               {activeInput === 'pickup' && pickup.trim().length > 1 && (
                 <SuggestionList query={pickup} />
@@ -423,6 +569,48 @@ const PickupDropSelection = () => {
                   />
                 </View>
               )}
+            </View>
+
+            {/* Receiver Details */}
+            <View style={styles.senderDetailsSection}>
+              <Text style={styles.sectionTitle}>Receiver Details</Text>
+
+              <View style={styles.inputWrapper}>
+                <MaterialIcons name="person-outline" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Receiver Name"
+                  placeholderTextColor="#94A3B8"
+                  value={receiverName}
+                  onChangeText={setReceiverName}
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <MaterialIcons name="phone" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Receiver Phone Number"
+                  placeholderTextColor="#94A3B8"
+                  value={receiverPhone}
+                  onChangeText={text => setReceiverPhone(text.replace(/\D/g, '').slice(0, 10))}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <MaterialIcons name="phone-forwarded" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Alternative Phone (Optional)"
+                  placeholderTextColor="#94A3B8"
+                  value={alternativePhone}
+                  onChangeText={text => setAlternativePhone(text.replace(/\D/g, '').slice(0, 10))}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+              </View>
             </View>
           </ScrollView>
         )}

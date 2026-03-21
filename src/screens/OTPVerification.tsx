@@ -125,19 +125,10 @@ const OTPVerification = () => {
     setError('');
     try {
       const phoneToVerify = fullMobile || mobile;
-      const data = await verifyOtp(phoneToVerify, otp);
-
-      // Navigate based on whether the user needs to complete their profile
-      const isNewUser = data?.is_new_user === true;
-      const isProfileComplete = data?.user?.is_profile_complete === true;
-
-      if (isNewUser || !isProfileComplete) {
-        // New user or existing user with incomplete profile → show profile setup
-        navigation.reset({ index: 0, routes: [{ name: 'ProfileSetup' }] });
-      } else {
-        // Returning user with complete profile → go straight home
-        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-      }
+      await verifyOtp(phoneToVerify, otp);
+      // Navigation is handled automatically by RootNavigator
+      // when isAuthenticated becomes true in the auth store.
+      // AppNavigator uses needsProfileSetup to pick the initial screen.
     } catch (err: any) {
       console.log('Verification error', err);
       setError(err?.message || 'Verification failed. Please try again.');

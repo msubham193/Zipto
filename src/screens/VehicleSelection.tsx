@@ -51,6 +51,8 @@ export interface UIVehicle {
   basePrice: number;
   perKmRate: number;
   minimumFare: number;
+  baseDistanceKm: number;
+  startingFare: number;        // baseFare + platform fee (incl. GST)
   capacity: string;
   helperCharge: number;
   helperAvailable: boolean;
@@ -78,6 +80,7 @@ const VehicleSelection = () => {
   const {
     pickup, drop, pickupCoords, dropCoords,
     city, serviceCategory, senderName, senderMobile,
+    receiverName, receiverPhone, alternativePhone,
   } = route.params || {};
 
   const fadeAnim    = useRef(new Animated.Value(1)).current;
@@ -109,14 +112,20 @@ const VehicleSelection = () => {
               capMin > 0 && capMax > 0 ? `${capMin}–${capMax} kg`
               : capMax > 0 ? `Up to ${capMax} kg`
               : 'Any load';
+            const baseFare      = parseFloat(vehicle.base_fare);
+            const minimumFare   = parseFloat(vehicle.minimum_fare);
+            const baseDistKm    = parseFloat(vehicle.base_distance_km) || 2;
+            const startingFare  = baseFare;
             return {
               id: vehicle.id,
               vehicleType: vehicle.vehicle_type,
               name: formatVehicleName(vehicle.vehicle_type),
-              priceRange: `From ₹${vehicle.minimum_fare || vehicle.base_fare}`,
-              basePrice: parseFloat(vehicle.base_fare),
+              priceRange: `From ₹${startingFare}`,
+              basePrice: baseFare,
               perKmRate: parseFloat(vehicle.per_km_rate),
-              minimumFare: parseFloat(vehicle.minimum_fare),
+              minimumFare,
+              baseDistanceKm: baseDistKm,
+              startingFare,
               capacity,
               helperCharge: parseFloat(vehicle.helper_charge_per_person) || 200,
               helperAvailable: vehicle.helper_available,
@@ -149,13 +158,14 @@ const VehicleSelection = () => {
       vehicle, pickup, drop, pickupCoords, dropCoords,
       hasHelper: false, helperCount: 0, helperCost: 0,
       city, serviceCategory, senderName, senderMobile,
+      receiverName, receiverPhone, alternativePhone,
     });
   };
 
   const calculateTotalPrice = (): string => {
     const vehicle = getSelectedVehicleData();
     if (!vehicle) return '₹0';
-    return `₹${vehicle.minimumFare.toFixed(0)}`;
+    return `₹${vehicle.startingFare}`;
   };
 
   // ── Vehicle Card ─────────────────────────────────────────────────────────
@@ -182,8 +192,11 @@ const VehicleSelection = () => {
 
           <View style={styles.info}>
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.details} numberOfLines={2}>
+            <Text style={styles.details} numberOfLines={1}>
               {item.capacity}{item.bestFor ? ` • ${item.bestFor}` : ''}
+            </Text>
+            <Text style={styles.rateInfo}>
+              ₹{item.basePrice} base · first {item.baseDistanceKm}km included
             </Text>
           </View>
 
@@ -413,6 +426,12 @@ const styles = StyleSheet.create({
     fontSize: fs(12),
     color: '#64748B',
     lineHeight: fs(12) * 1.45,
+  },
+  rateInfo: {
+    fontSize: fs(11),
+    color: '#3B82F6',
+    marginTop: scaleH(3),
+    fontWeight: '500',
   },
   priceContainer: {
     width: priceColWidth,

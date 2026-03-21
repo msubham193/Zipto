@@ -10,6 +10,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import ActiveBookingBanner from '../components/ActiveBookingBanner';
+import { useBookingStore } from '../store/useBookingStore';
 
 type TabName = 'Home' | 'MyOrders' | 'Coins' | 'Profile';
 
@@ -26,9 +28,18 @@ const tabs: TabConfig[] = [
   { name: 'Profile', icon: 'person', label: 'Profile' },
 ];
 
+// Screens where the banner should NOT appear (they handle tracking themselves)
+const BANNER_HIDDEN_ON = ['LiveTracking'];
+
 const BottomTabBar: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const route = useRoute();
+  const activeBooking = useBookingStore((s) => s.activeBooking);
+
+  const showBanner =
+    !!activeBooking &&
+    !['completed', 'cancelled', 'expired'].includes(activeBooking.status) &&
+    !BANNER_HIDDEN_ON.includes(route.name);
 
   const handleTabPress = (tabName: TabName) => {
     if (route.name !== tabName) {
@@ -38,6 +49,7 @@ const BottomTabBar: React.FC = () => {
 
   return (
     <SafeAreaView edges={['bottom']} style={styles.bottomNavContainer}>
+      {showBanner && <ActiveBookingBanner />}
       <View style={styles.bottomNav}>
         {tabs.map((tab) => {
           const isActive = route.name === tab.name;

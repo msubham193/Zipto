@@ -32,7 +32,7 @@ const processQueue = (error: any, token: string | null = null) => {
       prom.resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -59,7 +59,7 @@ client.interceptors.response.use(
     // If error is 401 and we haven't already tried to refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.log('🔄 Token expired, attempting refresh...');
-      
+
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -77,14 +77,18 @@ client.interceptors.response.use(
 
       try {
         const refreshToken = await AsyncStorage.getItem('refresh_token');
-        
+
         if (!refreshToken) {
-          console.log('❌ No refresh token available');
-          throw new Error('No refresh token available');
+          console.log('❌ No refresh token — forcing logout');
+          processQueue(new Error('No refresh token'), null);
+          isRefreshing = false;
+          await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
+          if (logoutCallback) logoutCallback();
+          return Promise.reject(error);
         }
 
         console.log('🔄 Calling refresh token API...');
-        
+
         // Call refresh token endpoint
         const response = await axios.post(`${API_URL}/auth/refresh-token`, {
           refresh_token: refreshToken,
@@ -126,7 +130,7 @@ client.interceptors.response.use(
         // Clear tokens and logout user
         await AsyncStorage.removeItem('auth_token');
         await AsyncStorage.removeItem('refresh_token');
-        
+
         // Trigger store logout if callback is registered
         if (logoutCallback) {
           console.log('🔄 Triggering store logout callback...');

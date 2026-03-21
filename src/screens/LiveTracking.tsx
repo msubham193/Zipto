@@ -21,6 +21,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { vehicleApi } from '../api/vehicle';
 import { mapboxApi } from '../api/mapbox';
+import { useBookingStore } from '../store/useBookingStore';
 import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken';
 
 const { width, height } = Dimensions.get('window');
@@ -34,6 +35,7 @@ interface DriverInfo {
   phone: string;
   vehicle_number?: string;
   rating?: number;
+  total_trips?: number;
 }
 
 const CANCEL_REASONS = [
@@ -61,9 +63,14 @@ const LiveTracking = () => {
     paymentMethod = 'cash',
   } = route.params || {};
 
+  const { updateActiveBookingId, updateActiveBookingStatus, clearActiveBooking } = useBookingStore();
+
   const [bookingStatus, setBookingStatus] = useState<BookingStatus>('searching');
   const [driver, setDriver] = useState<DriverInfo | null>(null);
   const [otp, setOtp] = useState<string | null>(null);
+  const [pickupOtp, setPickupOtp] = useState<string | null>(null);
+  // realBookingId is set once a driver accepts — until then we only have offer_id
+  const [realBookingId, setRealBookingId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
   const [successModal, setSuccessModal] = useState(false);
@@ -71,6 +78,7 @@ const LiveTracking = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [customCancelReason, setCustomCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [searchCountdown, setSearchCountdown] = useState(60);
   const hasShownSuccessRef = useRef(false);
   const successScale = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
@@ -218,24 +226,50 @@ const LiveTracking = () => {
 
   const fetchBookingDetails = useCallback(async () => {
     if (!bookingId) return;
+
+    // While searching, poll offer status endpoint (booking not in DB yet)
+    if (bookingStatus === 'searching' && !realBookingId) {
+      try {
+        const offerResponse = await vehicleApi.getOfferStatus(bookingId);
+        const offerData = offerResponse?.data ?? (offerResponse as any);
+        if (offerData?.status === 'accepted' && offerData?.booking_id) {
+          setRealBookingId(offerData.booking_id);
+          setBookingStatus('assigned');
+          updateActiveBookingId(offerData.booking_id);
+          updateActiveBookingStatus('accepted');
+        } else if (offerData?.status === 'expired') {
+          setBookingStatus('cancelled');
+          clearActiveBooking();
+        }
+      } catch (err: any) {
+        console.log('Offer status poll error:', err?.message);
+      }
+      return;
+    }
+
+    // Use real booking ID once driver has accepted
+    const activeBookingId = realBookingId || bookingId;
     try {
-      const response = await vehicleApi.getBookingDetails(bookingId);
+      const response = await vehicleApi.getBookingDetails(activeBookingId);
       if (response.success && response.data) {
         const data = response.data;
         const status = data.status?.toLowerCase();
 
         if (status === 'cancelled') {
           setBookingStatus('cancelled');
+          clearActiveBooking();
         } else if (status === 'completed') {
           setBookingStatus('completed');
+          clearActiveBooking();
         } else if (status === 'in_progress' || status === 'picked_up') {
           setBookingStatus('in_progress');
+          updateActiveBookingStatus('in_progress');
         } else if (status === 'driver_arriving' || status === 'arriving') {
           setBookingStatus('arriving');
+          updateActiveBookingStatus('arriving');
         } else if (data.driver_id || data.driver) {
           setBookingStatus('assigned');
-        } else {
-          setBookingStatus('searching');
+          updateActiveBookingStatus('driver_assigned');
         }
 
         if (data.driver) {
@@ -243,18 +277,17 @@ const LiveTracking = () => {
             name: data.driver.name || 'Driver',
             phone: data.driver.phone || '',
             vehicle_number: data.driver.vehicle_number,
-            rating: data.driver.rating,
+            rating: (data as any).driver_stats?.average_rating ?? data.driver.rating,
+            total_trips: (data as any).driver_stats?.total_trips,
           });
         }
-
-        if (data.otp) {
-          setOtp(data.otp);
-        }
+        if (data.delivery_otp) setOtp(data.delivery_otp);
+        if (data.pickup_otp)   setPickupOtp(data.pickup_otp);
       }
     } catch (err: any) {
       console.log('Booking fetch error:', err?.message);
     }
-  }, [bookingId]);
+  }, [bookingId, bookingStatus, realBookingId]);
 
   // Initial fetch
   useEffect(() => {
@@ -270,6 +303,19 @@ const LiveTracking = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, [bookingStatus, fetchBookingDetails]);
+
+  // 60-second countdown while searching
+  useEffect(() => {
+    if (bookingStatus !== 'searching') return;
+    if (searchCountdown <= 0) {
+      // Time's up — mark cancelled
+      setBookingStatus('cancelled');
+      clearActiveBooking();
+      return;
+    }
+    const timer = setTimeout(() => setSearchCountdown(prev => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [bookingStatus, searchCountdown]);
 
   // Fetch actual road route from Mapbox Directions API
   useEffect(() => {
@@ -321,9 +367,11 @@ const LiveTracking = () => {
       cancelReason === 'custom' ? customCancelReason.trim() : cancelReason;
     if (!reason) return;
 
+    // Use real booking ID if available, otherwise cancel the offer
+    const cancelId = realBookingId || bookingId;
     try {
       setCancelling(true);
-      const response = await vehicleApi.cancelBooking(bookingId, reason);
+      const response = await vehicleApi.cancelBooking(cancelId, reason);
       setCancelling(false);
       setCancelModalVisible(false);
       setCancelReason('');
@@ -358,7 +406,7 @@ const LiveTracking = () => {
           bg: '#FFFBEB',
           border: '#FDE68A',
           icon: 'search',
-          title: 'Looking for a driver...',
+          title: `Finding driver... ${searchCountdown}s`,
           subtitle: 'Please wait while we find the best driver for you',
         };
       case 'assigned':
@@ -566,16 +614,52 @@ const LiveTracking = () => {
               </Text>
               <Text style={styles.statusSubtitle}>{statusConfig.subtitle}</Text>
             </View>
+            {bookingStatus === 'searching' && (
+              <View style={styles.countdownBadge}>
+                <Text style={styles.countdownText}>{searchCountdown}</Text>
+              </View>
+            )}
           </View>
 
-          {/* OTP Section */}
-          {otp && bookingStatus !== 'completed' && bookingStatus !== 'cancelled' && (
+          {/* Countdown progress bar */}
+          {bookingStatus === 'searching' && (
+            <View style={styles.countdownBarBg}>
+              <View style={[styles.countdownBarFill, { width: `${(searchCountdown / 60) * 100}%` }]} />
+            </View>
+          )}
+
+          {/* Pickup OTP — show when driver assigned but trip not started */}
+          {pickupOtp && (bookingStatus === 'assigned' || bookingStatus === 'arriving') && (
             <View style={styles.otpContainer}>
-              <Text style={styles.otpLabel}>Share this OTP with driver</Text>
+              <View style={styles.otpLabelRow}>
+                <Icon name="inventory" size={16} color="#2563EB" />
+                <Text style={[styles.otpLabel, {color: '#2563EB', fontWeight: '700'}]}>
+                  Pickup OTP — Share when driver arrives
+                </Text>
+              </View>
+              <View style={styles.otpBox}>
+                {pickupOtp.split('').map((digit, index) => (
+                  <View key={index} style={[styles.otpDigit, {borderColor: '#2563EB', backgroundColor: '#EFF6FF'}]}>
+                    <Text style={[styles.otpDigitText, {color: '#1E40AF'}]}>{digit}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Delivery OTP — show during and after trip */}
+          {otp && bookingStatus === 'in_progress' && (
+            <View style={styles.otpContainer}>
+              <View style={styles.otpLabelRow}>
+                <Icon name="local-shipping" size={16} color="#059669" />
+                <Text style={[styles.otpLabel, {color: '#059669', fontWeight: '700'}]}>
+                  Delivery OTP — Share when package arrives
+                </Text>
+              </View>
               <View style={styles.otpBox}>
                 {otp.split('').map((digit, index) => (
-                  <View key={index} style={styles.otpDigit}>
-                    <Text style={styles.otpDigitText}>{digit}</Text>
+                  <View key={index} style={[styles.otpDigit, {borderColor: '#059669', backgroundColor: '#F0FDF4'}]}>
+                    <Text style={[styles.otpDigitText, {color: '#065F46'}]}>{digit}</Text>
                   </View>
                 ))}
               </View>
@@ -593,15 +677,20 @@ const LiveTracking = () => {
                 <View style={styles.driverInfo}>
                   <Text style={styles.driverName}>{driver.name}</Text>
                   {driver.vehicle_number && (
-                    <Text style={styles.vehicleInfo}>{vehicleType} {driver.vehicle_number}</Text>
+                    <Text style={styles.vehicleInfo}>{vehicleType} · {driver.vehicle_number}</Text>
+                  )}
+                  {driver.total_trips != null && driver.total_trips > 0 && (
+                    <Text style={styles.tripsText}>{driver.total_trips} trips completed</Text>
                   )}
                 </View>
-                {driver.rating && (
-                  <View style={styles.ratingBadge}>
-                    <Icon name="star" size={14} color="#F59E0B" />
-                    <Text style={styles.ratingText}>{driver.rating.toFixed(1)}</Text>
-                  </View>
-                )}
+                <View style={styles.driverBadgesCol}>
+                  {driver.rating != null && (
+                    <View style={styles.ratingBadge}>
+                      <Icon name="star" size={14} color="#F59E0B" />
+                      <Text style={styles.ratingText}>{Number(driver.rating).toFixed(1)}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
               <View style={styles.actionRow}>
@@ -1055,10 +1144,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
+  // Countdown
+  countdownBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countdownText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  countdownBarBg: {
+    height: 4,
+    backgroundColor: '#FDE68A',
+    borderRadius: 2,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  countdownBarFill: {
+    height: '100%',
+    backgroundColor: '#F59E0B',
+    borderRadius: 2,
+  },
   // OTP
   otpContainer: {
     alignItems: 'center',
     marginBottom: 12,
+  },
+  otpLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
   otpLabel: {
     fontSize: 12,
@@ -1114,6 +1235,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     textTransform: 'capitalize',
+    marginBottom: 2,
+  },
+  tripsText: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  driverBadgesCol: {
+    alignItems: 'flex-end',
+    gap: 6,
   },
   ratingBadge: {
     flexDirection: 'row',
