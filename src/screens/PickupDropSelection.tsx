@@ -95,8 +95,7 @@ const PickupDropSelection = () => {
   const [senderName,           setSenderName]           = useState('');
   const [senderMobile,         setSenderMobile]         = useState('');
   const [receiverName,         setReceiverName]         = useState('');
-  const [receiverPhone,        setReceiverPhone]        = useState('');
-  const [alternativePhone,     setAlternativePhone]     = useState('');
+  const [receiverMobile,       setReceiverMobile]       = useState('');
   const [selectedLocationType, setSelectedLocationType] = useState<LocationType | ''>('');
   const [customLocationName,   setCustomLocationName]   = useState('');
   const [pickupCoords,         setPickupCoords]         = useState<{ latitude: number; longitude: number } | null>(null);
@@ -285,7 +284,9 @@ const PickupDropSelection = () => {
 
   const navigateToBook = () => {
     if (!senderName.trim())                                              { Alert.alert('Missing Information', 'Please enter sender name');                                            return; }
-    if (!validateMobileNumber(senderMobile))                             { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit mobile number');                      return; }
+    if (!validateMobileNumber(senderMobile))                             { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit sender mobile number');               return; }
+    if (!receiverName.trim())                                            { Alert.alert('Missing Information', 'Please enter receiver name');                                          return; }
+    if (!validateMobileNumber(receiverMobile))                           { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit receiver mobile number');             return; }
     if (!selectedLocationType)                                           { Alert.alert('Missing Information', 'Please select location type');                                         return; }
     if (selectedLocationType === 'Other' && !customLocationName.trim()) { Alert.alert('Missing Information', 'Please enter custom location name');                                   return; }
     if (!pickupCoords)                                                   { Alert.alert('Invalid Pickup Location', 'Please select pickup location from the suggestions');              return; }
@@ -296,9 +297,7 @@ const PickupDropSelection = () => {
         pickup, drop, pickupCoords, dropCoords,
         currentLocationCoords: null,
         senderName, senderMobile,
-        receiverName: receiverName.trim() || undefined,
-        receiverPhone: receiverPhone.trim() || undefined,
-        alternativePhone: alternativePhone.trim() || undefined,
+        receiverName, receiverMobile,
         city: selectedCity,
         serviceCategory,
         locationType: selectedLocationType === 'Other' ? customLocationName : selectedLocationType,
@@ -311,6 +310,8 @@ const PickupDropSelection = () => {
     drop.trim() !== '' &&
     senderName.trim() !== '' &&
     validateMobileNumber(senderMobile) &&
+    receiverName.trim() !== '' &&
+    validateMobileNumber(receiverMobile) &&
     selectedLocationType !== '' &&
     (selectedLocationType !== 'Other' || customLocationName.trim() !== '');
 
@@ -371,7 +372,6 @@ const PickupDropSelection = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        {/* ✅ FIXED: explicitly navigate to Home instead of goBack() */}
         <TouchableOpacity
           onPress={() => navigation.navigate('Home')}
           style={styles.backButton}
@@ -504,7 +504,12 @@ const PickupDropSelection = () => {
 
             {/* Sender Details */}
             <View style={styles.senderDetailsSection}>
-              <Text style={styles.sectionTitle}>Sender Details</Text>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionIconContainer}>
+                  <MaterialIcons name="upload" size={ms(18)} color="#10B981" />
+                </View>
+                <Text style={styles.sectionTitle}>Sender Details</Text>
+              </View>
 
               <View style={styles.inputWrapper}>
                 <MaterialIcons name="person" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
@@ -521,7 +526,7 @@ const PickupDropSelection = () => {
                 <MaterialIcons name="phone" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Mobile Number *"
+                  placeholder="Sender Mobile Number *"
                   placeholderTextColor="#94A3B8"
                   value={senderMobile}
                   onChangeText={text => setSenderMobile(text.replace(/\D/g, '').slice(0, 10))}
@@ -572,14 +577,19 @@ const PickupDropSelection = () => {
             </View>
 
             {/* Receiver Details */}
-            <View style={styles.senderDetailsSection}>
-              <Text style={styles.sectionTitle}>Receiver Details</Text>
+            <View style={styles.receiverDetailsSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={[styles.sectionIconContainer, styles.receiverIconContainer]}>
+                  <MaterialIcons name="download" size={ms(18)} color="#EF4444" />
+                </View>
+                <Text style={styles.sectionTitle}>Receiver Details</Text>
+              </View>
 
               <View style={styles.inputWrapper}>
                 <MaterialIcons name="person-outline" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Receiver Name"
+                  placeholder="Receiver Name *"
                   placeholderTextColor="#94A3B8"
                   value={receiverName}
                   onChangeText={setReceiverName}
@@ -590,23 +600,10 @@ const PickupDropSelection = () => {
                 <MaterialIcons name="phone" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Receiver Phone Number"
+                  placeholder="Receiver Mobile Number *"
                   placeholderTextColor="#94A3B8"
-                  value={receiverPhone}
-                  onChangeText={text => setReceiverPhone(text.replace(/\D/g, '').slice(0, 10))}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="phone-forwarded" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Alternative Phone (Optional)"
-                  placeholderTextColor="#94A3B8"
-                  value={alternativePhone}
-                  onChangeText={text => setAlternativePhone(text.replace(/\D/g, '').slice(0, 10))}
+                  value={receiverMobile}
+                  onChangeText={text => setReceiverMobile(text.replace(/\D/g, '').slice(0, 10))}
                   keyboardType="phone-pad"
                   maxLength={10}
                 />
@@ -694,6 +691,23 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginBottom: scaleH(10),
     marginTop: scaleH(4),
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: scaleH(14),
+    gap: scaleW(10),
+  },
+  sectionIconContainer: {
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(8),
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  receiverIconContainer: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -886,6 +900,13 @@ const styles = StyleSheet.create({
   },
 
   senderDetailsSection: {
+    paddingHorizontal: scaleW(20),
+    paddingTop: scaleH(20),
+    paddingBottom: scaleH(16),
+    backgroundColor: '#FFFFFF',
+    marginBottom: 2,
+  },
+  receiverDetailsSection: {
     paddingHorizontal: scaleW(20),
     paddingTop: scaleH(20),
     paddingBottom: scaleH(16),
