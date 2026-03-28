@@ -19,7 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mapboxApi } from '../api/mapbox';
+import { googleMapsApi as mapboxApi } from '../api/googleMaps';
 import { useAuthStore } from '../store/useAuthStore';
 
 const PICKUP_CACHE_KEY = 'pickup_location_cache';
@@ -62,7 +62,7 @@ type Location = {
   address: string;
   center?: [number, number];
   metadata?: {
-    mapbox_id?: string;
+    place_id?: string;
     feature_type?: string;
   };
 };
@@ -104,7 +104,7 @@ const PickupDropSelection = () => {
   const [autoFillingPickup, setAutoFillingPickup] = useState(false);
   const [locationChanged,   setLocationChanged]   = useState(false);
 
-  const sessionTokenRef  = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const sessionTokenRef  = useRef(`session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const watchIdRef       = useRef<number | null>(null);
   const fadeAnim         = useRef(new Animated.Value(1)).current;
@@ -227,12 +227,12 @@ const PickupDropSelection = () => {
 
   const handleLocationSelect = async (location: Location) => {
     try {
-      if (!location.metadata?.mapbox_id) {
+      if (!location.metadata?.place_id) {
         Alert.alert('Error', 'Invalid location data. Please try selecting again.');
         return;
       }
       const fullLocationData = await mapboxApi.retrievePlace(
-        location.metadata.mapbox_id,
+        location.metadata.place_id!,
         sessionTokenRef.current,
       );
       if (!fullLocationData || !fullLocationData.center) {
@@ -248,6 +248,8 @@ const PickupDropSelection = () => {
       else                          { setDrop(fullAddress);    setDropCoords(coordinates);   }
       setFilteredLocations([]);
       setActiveInput('' as 'pickup' | 'drop');
+      // Rotate session token after select — Google bills search+select as one session
+      sessionTokenRef.current = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     } catch (error) {
       Alert.alert('Error', 'Failed to select location. Please try again.');
     }
@@ -277,7 +279,7 @@ const PickupDropSelection = () => {
         setFilteredLocations(results);
       } catch { setFilteredLocations([]); }
       finally   { setIsSearching(false); }
-    }, 400);
+    }, 600);
   };
 
   const validateMobileNumber = (n: string) => n.replace(/\D/g, '').length === 10;

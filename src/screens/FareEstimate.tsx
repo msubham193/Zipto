@@ -70,6 +70,7 @@ const FareEstimate = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const [selectedPayment, setSelectedPayment] = useState<'cash' | 'online'>('cash');
+  const [paidBy, setPaidBy] = useState<'sender' | 'receiver'>('sender');
   const [estimateData, setEstimateData] = useState<FareEstimateResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -227,6 +228,7 @@ const FareEstimate = () => {
         receiver_name: receiverName || undefined,
         receiver_phone: receiverPhone || undefined,
         alternative_phone: alternativePhone || undefined,
+        paid_by: paidBy,
       };
 
       const bookingResponse = await vehicleApi.createBooking(bookingData);
@@ -251,6 +253,7 @@ const FareEstimate = () => {
         pickupCoords,
         dropCoords,
         paymentMethod: selectedPayment,
+        paidBy,
       });
 
       if (selectedPayment === 'online') {
@@ -459,6 +462,54 @@ const FareEstimate = () => {
             <Text style={styles.totalLabel}>Total Estimate</Text>
             <Text style={styles.totalValue}>₹{totalFare}</Text>
           </View>
+        </View>
+
+        {/* ── Who Pays? ── */}
+        <Text style={styles.sectionTitle}>Who Pays?</Text>
+        <View style={styles.paymentContainer}>
+          {/* Sender */}
+          <TouchableOpacity
+            style={[styles.paymentOption, paidBy === 'sender' && styles.selectedPayment]}
+            onPress={() => setPaidBy('sender')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.paymentLeft}>
+              <View style={[styles.iconBox, paidBy === 'sender' && styles.selectedIconBox]}>
+                <Icon name="person" size={sp(20)} color={paidBy === 'sender' ? '#2563EB' : '#6B7280'} />
+              </View>
+              <View>
+                <Text style={[styles.paymentTitle, paidBy === 'sender' && styles.selectedPaymentText]}>
+                  Sender Pays
+                </Text>
+                <Text style={styles.paymentSub}>Collect at pickup</Text>
+              </View>
+            </View>
+            <View style={[styles.radio, paidBy === 'sender' && styles.radioSelected]}>
+              {paidBy === 'sender' && <View style={styles.radioInner} />}
+            </View>
+          </TouchableOpacity>
+
+          {/* Receiver */}
+          <TouchableOpacity
+            style={[styles.paymentOption, paidBy === 'receiver' && styles.selectedPayment]}
+            onPress={() => setPaidBy('receiver')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.paymentLeft}>
+              <View style={[styles.iconBox, paidBy === 'receiver' && styles.selectedIconBox]}>
+                <Icon name="person-outline" size={sp(20)} color={paidBy === 'receiver' ? '#2563EB' : '#6B7280'} />
+              </View>
+              <View>
+                <Text style={[styles.paymentTitle, paidBy === 'receiver' && styles.selectedPaymentText]}>
+                  Receiver Pays
+                </Text>
+                <Text style={styles.paymentSub}>Collect at delivery</Text>
+              </View>
+            </View>
+            <View style={[styles.radio, paidBy === 'receiver' && styles.radioSelected]}>
+              {paidBy === 'receiver' && <View style={styles.radioInner} />}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Payment Method ── */}

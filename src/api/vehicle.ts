@@ -90,6 +90,7 @@ export interface CreateBookingRequest {
   receiver_name?: string;
   receiver_phone?: string;
   alternative_phone?: string;
+  paid_by?: 'sender' | 'receiver';
 }
 
 export interface CreateBookingResponse {

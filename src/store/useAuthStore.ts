@@ -119,9 +119,6 @@ export const useAuthStore = create<AuthState>()(
             // true for brand-new users OR existing users who never completed their profile
             const profileIncomplete = is_new_user === true || user?.is_profile_complete === false;
 
-            // Log the bearer token
-            console.log('✅ Authentication successful! Bearer Token:', access_token);
-            console.log(`🆕 is_new_user: ${is_new_user}, is_profile_complete: ${user?.is_profile_complete}`);
 
             set({
               user,
@@ -147,7 +144,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchProfile: async () => {
-        console.log('🔄 fetchProfile called');
         try {
           const currentUser = get().user;
 
@@ -168,7 +164,6 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const response = await authApi.getCustomerProfile();
-          console.log('✅ fetchProfile response:', JSON.stringify(response, null, 2));
 
           // Safe check for response existance
           if (response?.success && response?.data) {
@@ -186,15 +181,6 @@ export const useAuthStore = create<AuthState>()(
             console.log('⚠️ Fetch profile returned invalid response:', response);
           }
         } catch (error: any) {
-          console.error('❌ Fetch profile error CAUGHT:', error);
-          console.log('🔍 Error structure:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-          console.log('🔍 Error response data:', JSON.stringify(error.response?.data, null, 2));
-          
-          console.log('🔒 Error details:', {
-            status: error.response?.status,
-            dataStatus: error.response?.data?.statusCode,
-            message: error.message
-          });
 
           const apiMessage = error.response?.data?.message;
           
@@ -209,10 +195,7 @@ export const useAuthStore = create<AuthState>()(
             typeof apiMessage === 'string' &&
             apiMessage.toLowerCase().includes('requires one of the following roles: customer');
           
-          console.log('🕵️ isUnauthorized check result:', isUnauthorized);
-
           if (isUnauthorized) {
-            console.log('🔒 401 Unauthorized detected in fetchProfile, logging out...');
             await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
             set({
               user: null,
@@ -221,13 +204,11 @@ export const useAuthStore = create<AuthState>()(
               refreshToken: null,
               isAuthenticated: false,
             });
-            console.log('👋 Logout complete, state reset.');
             return;
           }
 
           if (isCustomerRoleMismatch) {
             const roleError = getCustomerRoleError(get().user?.role);
-            console.log('🚫 Non-customer token detected during profile fetch, clearing session...');
             await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
             set({
               user: null,
@@ -263,9 +244,6 @@ export const useAuthStore = create<AuthState>()(
             // Update AsyncStorage
             await AsyncStorage.setItem('auth_token', access_token);
             await AsyncStorage.setItem('refresh_token', refresh_token);
-
-            // Log the refreshed bearer token
-            console.log('🔄 Token refreshed! New Bearer Token:', access_token);
 
             // Update state
             set({
@@ -339,7 +317,6 @@ import { setLogoutCallback, setTokenUpdateCallback } from '../api/client';
 setLogoutCallback(() => {
   // Force-clear auth state WITHOUT calling the logout API.
   // Calling logout() from here would hit POST /auth/logout → 401 → retry → infinite loop.
-  console.log('[Auth] JWT expired or refresh failed — force clearing session');
   AsyncStorage.multiRemove(['auth_token', 'refresh_token']).catch(console.error);
   useAuthStore.setState({
     user: null,
@@ -354,8 +331,7 @@ setLogoutCallback(() => {
 });
 
 setTokenUpdateCallback((token, refreshToken) => {
-  console.log('🔄 Sychronizing refreshed token to Zustand store');
-  useAuthStore.setState({ 
+  useAuthStore.setState({
     token, 
     refreshToken 
   });

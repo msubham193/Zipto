@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,8 +9,9 @@ import {
   PermissionsAndroid,
   Platform,
   PixelRatio,
+  useColorScheme,
 } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,7 +21,6 @@ import Geolocation from 'react-native-geolocation-service';
 import BottomTabBar from './BottomTabBar';
 import Spinner from '../components/Spinner';
 import { useAuthStore } from '../store/useAuthStore';
-import { MAPBOX_PUBLIC_TOKEN } from '../config/mapboxToken';
 
 // ─── Responsive Utilities ────────────────────────────────────────────────────
 
@@ -38,9 +38,31 @@ const sp = (size: number) => Math.round(scaleW(size));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 const isLargeScreen = SCREEN_WIDTH >= 428;
 
-// ─── Mapbox Init ─────────────────────────────────────────────────────────────
+// ─── Night mode map style (applied after 7 PM, before 6 AM) ─────────────────
+const NIGHT_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+];
 
-Mapbox.setAccessToken(MAPBOX_PUBLIC_TOKEN);
+function isNightTime(): boolean {
+  const hour = new Date().getHours();
+  return hour >= 19 || hour < 6; // 7 PM to 6 AM
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -48,20 +70,51 @@ const Home = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const isFocused = useIsFocused();
 
-  const cameraRef = useRef<Mapbox.Camera>(null);
+  const mapRef = useRef<MapView>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [isServicesVisible, setIsServicesVisible] = useState(true);
   const [_locationPermissionGranted, setLocationPermissionGranted] = useState(false);
 
   const { token, isAuthenticated } = useAuthStore();
+  const colorScheme = useColorScheme();
   const defaultCenter: [number, number] = [85.8245, 20.2961];
 
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      console.log('🏠 Home Screen - Bearer Token:', token);
-    }
-  }, [isAuthenticated, token]);
+  // Use night style only when it's actually night time (not just device dark mode)
+  const mapStyle = useMemo(() => (isNightTime() ? NIGHT_MAP_STYLE : []), []);
+
+  const watchIdRef = useRef<number | null>(null);
+
+  const startLocationTracking = useCallback(() => {
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        const newLocation: [number, number] = [longitude, latitude];
+        setUserLocation(newLocation);
+        if (mapRef.current) {
+          mapRef.current.animateToRegion({
+            latitude,
+            longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }, 1000);
+        }
+      },
+      error => console.log('Location error:', error),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+    );
+
+    // 100m distance filter — Home screen doesn't need fine-grained updates
+    const watchId = Geolocation.watchPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([longitude, latitude]);
+      },
+      error => console.log('Error watching location:', error),
+      { enableHighAccuracy: false, distanceFilter: 100 },
+    );
+    watchIdRef.current = watchId;
+  }, []);
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -90,76 +143,51 @@ const Home = () => {
       }
     };
     requestLocationPermission();
-  }, []);
+    return () => {
+      if (watchIdRef.current !== null) {
+        Geolocation.clearWatch(watchIdRef.current);
+      }
+    };
+  }, [startLocationTracking]);
 
-  const startLocationTracking = () => {
-    Geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        const newLocation: [number, number] = [longitude, latitude];
-        setUserLocation(newLocation);
-        if (cameraRef.current) {
-          cameraRef.current.setCamera({
-            centerCoordinate: newLocation,
-            zoomLevel: 15,
-            animationDuration: 1000,
-          });
-        }
-      },
-      error => console.log('Location error:', error),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
-    );
-
-    const watchId = Geolocation.watchPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation([longitude, latitude]);
-      },
-      error => console.log('Error watching location:', error),
-      { enableHighAccuracy: false, distanceFilter: 10 },
-    );
-
-    return () => Geolocation.clearWatch(watchId);
-  };
-
-  const services = [
+  const services = useMemo(() => [
     { id: 1, title: 'Send Packages',   icon: 'local-shipping',  gradient: ['#3B82F6', '#2563EB'], description: 'Quick delivery',      serviceCategory: 'send_packages'   },
     { id: 2, title: 'Transport Goods', icon: 'fire-truck',       gradient: ['#10B981', '#059669'], description: 'Heavy items',         serviceCategory: 'transport_goods'  },
     { id: 3, title: 'Food Delivery',   icon: 'restaurant',       gradient: ['#F59E0B', '#D97706'], description: 'Hot & fresh',         serviceCategory: 'food_delivery'    },
     { id: 4, title: 'Medicine',        icon: 'local-pharmacy',   gradient: ['#EF4444', '#DC2626'], description: 'Emergency delivery',  serviceCategory: 'medicine'         },
-  ];
+  ], []);
 
   return (
     <View style={styles.container}>
-      {/* ── Mapbox Map ── */}
-      <Mapbox.MapView
+      {/* ── Google Map ── */}
+      <MapView
+        ref={mapRef}
         style={styles.map}
-        styleURL={Mapbox.StyleURL.Street}
-        logoEnabled={false}
-        attributionEnabled={false}
-        onDidFinishLoadingMap={() => setIsMapLoading(false)}
-        onDidFailLoadingMap={() => setIsMapLoading(false)}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={{
+          latitude: userLocation ? userLocation[1] : defaultCenter[1],
+          longitude: userLocation ? userLocation[0] : defaultCenter[0],
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
+        onMapReady={() => setIsMapLoading(false)}
+        showsUserLocation={false}
+        toolbarEnabled={false}
+        customMapStyle={mapStyle}
+        userInterfaceStyle="light"
       >
-        <Mapbox.Camera
-          ref={cameraRef}
-          zoomLevel={15}
-          centerCoordinate={userLocation || defaultCenter}
-          animationMode="flyTo"
-          animationDuration={1000}
-        />
         {userLocation && (
-          <Mapbox.MarkerView
-            id="userLocationMarker"
-            coordinate={userLocation}
+          <Marker
+            coordinate={{ latitude: userLocation[1], longitude: userLocation[0] }}
             anchor={{ x: 0.5, y: 0.5 }}
           >
             <View style={styles.customMarker}>
               <View style={styles.userLocationPulse} />
               <View style={styles.userLocationDot} />
             </View>
-          </Mapbox.MarkerView>
+          </Marker>
         )}
-      </Mapbox.MapView>
+      </MapView>
 
       {/* ── Main Content Overlay ── */}
       <SafeAreaView style={styles.mainOverlay} edges={['top']}>

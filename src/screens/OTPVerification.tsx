@@ -14,6 +14,7 @@ import {
   Animated,
   Dimensions,
   PixelRatio,
+  Alert,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
@@ -88,7 +89,7 @@ const OTPInput = ({
 const OTPVerification = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { verifyOtp, isLoading, error: authError } = useAuthStore();
+  const { verifyOtp, login, isLoading, error: authError } = useAuthStore();
 
   const { mobile, fullMobile } = route.params || { mobile: '', fullMobile: '' };
 
@@ -96,6 +97,8 @@ const OTPVerification = () => {
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const heroScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -130,12 +133,39 @@ const OTPVerification = () => {
       // when isAuthenticated becomes true in the auth store.
       // AppNavigator uses needsProfileSetup to pick the initial screen.
     } catch (err: any) {
-      console.log('Verification error', err);
       setError(err?.message || 'Verification failed. Please try again.');
     }
   };
 
-  const handleResendOTP = () => console.log('Resend OTP');
+  const startResendCooldown = () => {
+    setResendCooldown(30);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0) return;
+    try {
+      await login(fullMobile || mobile);
+      startResendCooldown();
+      Alert.alert('OTP Sent', 'A new OTP has been sent to your number.');
+    } catch {
+      Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -198,11 +228,15 @@ const OTPVerification = () => {
                 <TouchableOpacity
                   onPress={handleResendOTP}
                   style={styles.resendButton}
-                  activeOpacity={0.7}
+                  activeOpacity={resendCooldown > 0 ? 1 : 0.7}
+                  disabled={resendCooldown > 0}
                 >
                   <Text style={styles.resendText}>
                     Didn't receive code?{' '}
-                    <Text style={styles.resendLink}>Resend OTP</Text>
+                    {resendCooldown > 0
+                      ? <Text style={styles.resendCooldown}>Resend in {resendCooldown}s</Text>
+                      : <Text style={styles.resendLink}>Resend OTP</Text>
+                    }
                   </Text>
                 </TouchableOpacity>
 
@@ -386,6 +420,11 @@ const styles = StyleSheet.create({
   resendLink: {
     color: '#2563EB',
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
+  },
+  resendCooldown: {
+    color: '#94A3B8',
+    fontWeight: '500',
     fontFamily: 'Poppins-Regular',
   },
 

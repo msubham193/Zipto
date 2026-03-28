@@ -15,18 +15,15 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { vehicleApi } from '../api/vehicle';
-import { mapboxApi } from '../api/mapbox';
+import { googleMapsApi } from '../api/googleMaps';
 import { useBookingStore } from '../store/useBookingStore';
-import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken';
 
 const { width, height } = Dimensions.get('window');
-
-Mapbox.setAccessToken(MAPBOX_PUBLIC_TOKEN);
 
 type BookingStatus = 'searching' | 'assigned' | 'arriving' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -36,6 +33,21 @@ interface DriverInfo {
   vehicle_number?: string;
   rating?: number;
   total_trips?: number;
+}
+
+/** Haversine distance in km — for display only, no API call */
+function haversineKm(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 const CANCEL_REASONS = [
@@ -49,7 +61,7 @@ const CANCEL_REASONS = [
 const LiveTracking = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const cameraRef = useRef<Mapbox.Camera>(null);
+  const mapRef = useRef<MapView>(null);
 
   const {
     bookingId,
@@ -71,6 +83,7 @@ const LiveTracking = () => {
   const [pickupOtp, setPickupOtp] = useState<string | null>(null);
   // realBookingId is set once a driver accepts — until then we only have offer_id
   const [realBookingId, setRealBookingId] = useState<string | null>(null);
+  const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
   const [successModal, setSuccessModal] = useState(false);
@@ -283,6 +296,7 @@ const LiveTracking = () => {
         }
         if (data.delivery_otp) setOtp(data.delivery_otp);
         if (data.pickup_otp)   setPickupOtp(data.pickup_otp);
+        if (data.driver_location) setDriverLocation(data.driver_location);
       }
     } catch (err: any) {
       console.log('Booking fetch error:', err?.message);
@@ -294,13 +308,14 @@ const LiveTracking = () => {
     fetchBookingDetails();
   }, [fetchBookingDetails]);
 
-  // Poll for updates every 5 seconds
+  // Smart polling — faster while searching, slower once stable
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (bookingStatus !== 'completed' && bookingStatus !== 'cancelled') {
-        fetchBookingDetails();
-      }
-    }, 5000);
+    if (bookingStatus === 'completed' || bookingStatus === 'cancelled') return;
+    const pollInterval =
+      bookingStatus === 'searching' ? 4000 :   // 4s while finding driver
+      bookingStatus === 'assigned'  ? 6000 :   // 6s once driver assigned
+                                      10000;   // 10s during ride (in_progress/arriving)
+    const interval = setInterval(fetchBookingDetails, pollInterval);
     return () => clearInterval(interval);
   }, [bookingStatus, fetchBookingDetails]);
 
@@ -317,33 +332,43 @@ const LiveTracking = () => {
     return () => clearTimeout(timer);
   }, [bookingStatus, searchCountdown]);
 
-  // Fetch actual road route from Mapbox Directions API
+  // Fetch road route once — googleMapsApi internally caches for 5 min
+  const routeFetchedRef = useRef(false);
   useEffect(() => {
+    if (routeFetchedRef.current) return;
+    let cancelled = false;
     const fetchRoute = async () => {
-      const coords = await mapboxApi.getDirections(pickupCenter, dropCenter);
-      if (coords) {
+      const coords = await googleMapsApi.getDirections(pickupCenter, dropCenter);
+      if (!cancelled && coords) {
         setRouteCoordinates(coords);
+        routeFetchedRef.current = true;
       }
     };
     fetchRoute();
+    return () => { cancelled = true; };
   }, [pickupCenter, dropCenter]);
 
-  // Fit map to show both markers
+  // Fit map to show all markers (pickup, drop, driver if present)
+  const lastFitRef = useRef(0);
   useEffect(() => {
-    if (cameraRef.current && pickupCoords && dropCoords) {
-      const minLng = Math.min(pickupCenter[0], dropCenter[0]);
-      const maxLng = Math.max(pickupCenter[0], dropCenter[0]);
-      const minLat = Math.min(pickupCenter[1], dropCenter[1]);
-      const maxLat = Math.max(pickupCenter[1], dropCenter[1]);
+    if (!mapRef.current || !pickupCoords || !dropCoords) return;
+    // Throttle to max once per 5s to prevent jank from driver location updates
+    const now = Date.now();
+    if (now - lastFitRef.current < 5000) return;
+    lastFitRef.current = now;
 
-      cameraRef.current.fitBounds(
-        [maxLng, maxLat],
-        [minLng, minLat],
-        [80, 80, 300, 80],
-        1000,
-      );
+    const points = [
+      { latitude: pickupCenter[1], longitude: pickupCenter[0] },
+      { latitude: dropCenter[1], longitude: dropCenter[0] },
+    ];
+    if (driverLocation) {
+      points.push(driverLocation);
     }
-  }, [dropCenter, dropCoords, pickupCenter, pickupCoords]);
+    mapRef.current.fitToCoordinates(points, {
+      edgePadding: { top: 80, right: 80, bottom: 300, left: 80 },
+      animated: true,
+    });
+  }, [dropCenter, dropCoords, pickupCenter, pickupCoords, driverLocation]);
 
   const handleCall = () => {
     if (driver?.phone) {
@@ -468,20 +493,20 @@ const LiveTracking = () => {
 
   const statusConfig = getStatusConfig();
 
-  // Use real route if available, fallback to straight line
-  const routeLineGeoJSON: GeoJSON.FeatureCollection = {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: routeCoordinates || [pickupCenter, dropCenter],
-        },
-      },
-    ],
-  };
+  // Distance from driver to pickup (km) — only when driver location is known
+  const driverToPickupKm = useMemo(() => {
+    if (!driverLocation || !pickupCoords) return null;
+    return haversineKm(
+      driverLocation.latitude, driverLocation.longitude,
+      pickupCoords.latitude, pickupCoords.longitude,
+    );
+  }, [driverLocation, pickupCoords]);
+
+  // Convert [lng, lat][] route to {latitude, longitude}[] for react-native-maps
+  const polylineCoords = useMemo(() => {
+    const coords = routeCoordinates || [pickupCenter, dropCenter];
+    return coords.map(c => ({ latitude: c[1], longitude: c[0] }));
+  }, [routeCoordinates, pickupCenter, dropCenter]);
 
   // Pick vehicle icon name based on vehicle type
   const getVehicleIcon = () => {
@@ -503,74 +528,74 @@ const LiveTracking = () => {
 
   return (
     <View style={styles.container}>
-      {/* MapBox Map */}
-      <Mapbox.MapView
+      {/* Google Map */}
+      <MapView
+        ref={mapRef}
         style={styles.map}
-        styleURL={Mapbox.StyleURL.Street}
-        logoEnabled={false}
-        attributionEnabled={false}
-        scaleBarEnabled={false}
-        onDidFinishLoadingMap={() => setMapReady(true)}
-        onDidFailLoadingMap={() => setMapReady(true)}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={{
+          latitude: pickupCenter[1],
+          longitude: pickupCenter[0],
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }}
+        onMapReady={() => setMapReady(true)}
+        showsUserLocation={false}
+        toolbarEnabled={false}
+        userInterfaceStyle="light"
       >
-        <Mapbox.Camera
-          ref={cameraRef}
-          centerCoordinate={pickupCenter}
-          zoomLevel={13}
-          animationDuration={0}
+        {/* Route line between pickup and drop */}
+        <Polyline
+          coordinates={polylineCoords}
+          strokeColor="#2563EB"
+          strokeWidth={4}
         />
 
-        {/* Route line between pickup and drop */}
-        <Mapbox.ShapeSource id="routeLine" shape={routeLineGeoJSON}>
-          <Mapbox.LineLayer
-            id="routeLineLine"
-            style={{
-              lineColor: '#2563EB',
-              lineWidth: 4,
-              lineCap: 'round',
-              lineJoin: 'round',
-            }}
-          />
-        </Mapbox.ShapeSource>
-
-        {/* Vehicle Marker at Pickup */}
-        <Mapbox.PointAnnotation
-          id="vehicle-marker"
-          coordinate={pickupCenter}
-          title="Vehicle"
-        >
-          <View style={styles.vehicleMarkerContainer}>
-            <View style={styles.vehicleMarker}>
-              <Icon name={getVehicleIcon()} size={22} color="#FFFFFF" />
-            </View>
-            <View style={styles.vehicleMarkerArrow} />
-          </View>
-        </Mapbox.PointAnnotation>
-
-        {/* Pickup dot */}
-        <Mapbox.PointAnnotation
-          id="pickup-marker"
-          coordinate={pickupCenter}
+        {/* Pickup Marker — blue location pin */}
+        <Marker
+          coordinate={{ latitude: pickupCenter[1], longitude: pickupCenter[0] }}
           title="Pickup"
-        >
-          <View style={styles.pickupDotOuter}>
-            <View style={styles.pickupDotInner} />
-          </View>
-        </Mapbox.PointAnnotation>
-
-        {/* Drop Marker with vehicle icon */}
-        <Mapbox.PointAnnotation
-          id="drop-marker"
-          coordinate={dropCenter}
-          title="Drop"
+          anchor={{ x: 0.5, y: 1 }}
         >
           <View style={styles.markerContainer}>
-            <View style={[styles.marker, styles.dropMarker]}>
-              <Icon name={getVehicleIcon()} size={16} color="#FFFFFF" />
+            <View style={[styles.markerBubble, styles.pickupBubble]}>
+              <Icon name="location-on" size={20} color="#FFFFFF" />
             </View>
+            <View style={[styles.markerArrow, { borderTopColor: '#2563EB' }]} />
           </View>
-        </Mapbox.PointAnnotation>
-      </Mapbox.MapView>
+        </Marker>
+
+        {/* Drop Marker — green flag pin */}
+        <Marker
+          coordinate={{ latitude: dropCenter[1], longitude: dropCenter[0] }}
+          title="Drop-off"
+          anchor={{ x: 0.5, y: 1 }}
+        >
+          <View style={styles.markerContainer}>
+            <View style={[styles.markerBubble, styles.dropBubble]}>
+              <Icon name="flag" size={20} color="#FFFFFF" />
+            </View>
+            <View style={[styles.markerArrow, { borderTopColor: '#059669' }]} />
+          </View>
+        </Marker>
+
+        {/* Driver Marker — moving vehicle (only after driver accepts) */}
+        {driverLocation && bookingStatus !== 'searching' && (
+          <Marker
+            coordinate={driverLocation}
+            title={driver?.name || 'Driver'}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
+            <View style={styles.driverMarkerContainer}>
+              <View style={styles.driverMarkerPulse} />
+              <View style={styles.driverMarkerBubble}>
+                <Icon name={getVehicleIcon()} size={20} color="#FFFFFF" />
+              </View>
+            </View>
+          </Marker>
+        )}
+      </MapView>
 
       {/* Map Loading Overlay */}
       {!mapReady && (
@@ -625,6 +650,22 @@ const LiveTracking = () => {
           {bookingStatus === 'searching' && (
             <View style={styles.countdownBarBg}>
               <View style={[styles.countdownBarFill, { width: `${(searchCountdown / 60) * 100}%` }]} />
+            </View>
+          )}
+
+          {/* Driver distance badge */}
+          {driverToPickupKm !== null && (bookingStatus === 'assigned' || bookingStatus === 'arriving') && (
+            <View style={styles.distanceBadge}>
+              <Icon name="directions-car" size={16} color="#2563EB" />
+              <Text style={styles.distanceBadgeText}>
+                Driver is{' '}
+                <Text style={styles.distanceBadgeValue}>
+                  {driverToPickupKm < 1
+                    ? `${Math.round(driverToPickupKm * 1000)} m`
+                    : `${driverToPickupKm.toFixed(1)} km`}
+                </Text>{' '}
+                away from pickup
+              </Text>
             </View>
           )}
 
@@ -1039,76 +1080,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  // Markers
+  // ── Map Markers ───────────────────────────────────────────────────────────
   markerContainer: {
     alignItems: 'center',
   },
-  marker: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  markerBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  pickupMarker: {
-    backgroundColor: '#2563EB',
-  },
-  dropMarker: {
-    backgroundColor: '#059669',
-  },
-  // Vehicle marker
-  vehicleMarkerContainer: {
-    alignItems: 'center',
-  },
-  vehicleMarker: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#2563EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 5,
     elevation: 8,
   },
-  vehicleMarkerArrow: {
+  pickupBubble: {
+    backgroundColor: '#2563EB',
+  },
+  dropBubble: {
+    backgroundColor: '#059669',
+  },
+  markerArrow: {
     width: 0,
     height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
     borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#2563EB',
-    marginTop: -2,
+    marginTop: -1,
   },
-  // Pickup dot
-  pickupDotOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(37, 99, 235, 0.2)',
+  // ── Driver moving marker ──────────────────────────────────────────────────
+  driverMarkerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverMarkerPulse: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(37, 99, 235, 0.18)',
+  },
+  driverMarkerBubble: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#1D4ED8',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  pickupDotInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#2563EB',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#FFFFFF',
+    shadowColor: '#1D4ED8',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 10,
   },
   // Bottom Card
   bottomCard: {
@@ -1169,6 +1200,29 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#F59E0B',
     borderRadius: 2,
+  },
+  // Driver distance badge
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  distanceBadgeText: {
+    fontSize: 13,
+    color: '#374151',
+    flex: 1,
+  },
+  distanceBadgeValue: {
+    fontWeight: '700',
+    color: '#2563EB',
   },
   // OTP
   otpContainer: {

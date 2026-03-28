@@ -15,6 +15,7 @@ export interface ActiveBookingData {
   pickupCoords?: { latitude: number; longitude: number };
   dropCoords?: { latitude: number; longitude: number };
   paymentMethod: 'cash' | 'online';
+  paidBy?: 'sender' | 'receiver';
 }
 
 interface BookingStore {

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
+  Alert,
   Dimensions,
   PixelRatio,
 } from 'react-native';
@@ -35,7 +36,7 @@ const Support = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
   const supportOptions = [
-    { id: 1, title: 'Live Chat',  icon: 'chat-bubble-outline', desc: 'Chat with our support team',   color: '#3B82F6', onPress: () => console.log('Open chat') },
+    { id: 1, title: 'Live Chat',  icon: 'chat-bubble-outline', desc: 'Chat with our support team',   color: '#3B82F6', onPress: () => Alert.alert('Coming Soon', 'Live chat will be available in a future update.') },
     { id: 2, title: 'Call Us',    icon: 'phone',               desc: '1800-123-4567 (Toll Free)',    color: '#10B981', onPress: () => Linking.openURL('tel:18001234567') },
     { id: 3, title: 'Email Us',   icon: 'email',               desc: 'support@zipto.com',            color: '#F59E0B', onPress: () => Linking.openURL('mailto:support@zipto.com') },
     { id: 4, title: 'WhatsApp',   icon: 'whatsapp',            desc: 'Message us on WhatsApp',       color: '#16A34A', onPress: () => Linking.openURL('https://wa.me/918001234567') },

@@ -13,6 +13,7 @@ import {
   ScrollView,
   Dimensions,
   PixelRatio,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -77,13 +78,13 @@ const Login = () => {
         mobile: phoneNumber,
         fullMobile: countryCode + phoneNumber,
       });
-    } catch (err) {
-      console.log('Login error', err);
+    } catch {
+      // error displayed via authError from store
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    console.log('Login with:', provider);
+  const handleSocialLogin = (_provider: string) => {
+    Alert.alert('Coming Soon', 'Social login will be available in a future update.');
   };
 
   return (

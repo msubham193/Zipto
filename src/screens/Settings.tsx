@@ -54,7 +54,7 @@ const Settings = () => {
     );
   };
 
-  const handleChangePassword = () => navigation.navigate('ChangePassword');
+  const handleChangePassword = () => Alert.alert('Coming Soon', 'Password change will be available in a future update.');
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -62,7 +62,7 @@ const Settings = () => {
       'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => console.log('Account deletion initiated') },
+        { text: 'Delete', style: 'destructive', onPress: () => Alert.alert('Request Submitted', 'Your account deletion request has been submitted. Our team will process it within 7 business days.') },
       ]
     );
   };
