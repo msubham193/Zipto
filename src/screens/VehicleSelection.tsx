@@ -34,11 +34,11 @@ const fs = (size: number) =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VEHICLE_IMAGES: Record<string, any> = {
-  bike:       require('../assets/images/vehicle2.png'),
-  scooty:     require('../assets/images/scooter.png'),
-  auto:       require('../assets/images/vehicle1.png'),
-  pickup:     require('../assets/images/vehicle3.png'),
-  mini_truck: require('../assets/images/vehicle3.png'),
+  bike:       require('../assets/images/bike_img.png'),
+  scooty:     require('../assets/images/scooter_img.png'),
+  auto:       require('../assets/images/auto_img.png'),
+  pickup:     require('../assets/images/pickup_img.png'),
+  mini_truck: require('../assets/images/truck_img.png'),
   tata_ace:   require('../assets/images/vehicle3.png'),
   tata_407:   require('../assets/images/vehicle3.png'),
 };
