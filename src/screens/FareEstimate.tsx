@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Image,
   Dimensions,
   PixelRatio,
+  Animated,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
@@ -26,40 +27,28 @@ import { WebView } from 'react-native-webview';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Base design dimensions (iPhone 14 Pro / 393pt wide)
 const BASE_WIDTH = 393;
 const BASE_HEIGHT = 852;
 
-/** Scale a size relative to screen width */
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-
-/** Scale a size relative to screen height */
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-/** Moderate scale – less aggressive than linear (factor 0–1) */
 const ms = (size: number, factor = 0.45) =>
   size + (scaleW(size) - size) * factor;
-
-/** Normalize font size accounting for pixel density */
 const nf = (size: number) =>
   Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-
-/** Responsive spacing */
 const sp = (size: number) => Math.round(scaleW(size));
 
-// Small screen flag (iPhone SE, older Androids ≤ 360pt wide)
 const isSmallScreen = SCREEN_WIDTH <= 360;
-// Large screen flag (tablets / large phones ≥ 428pt wide)
 const isLargeScreen = SCREEN_WIDTH >= 428;
 
 // ─── Vehicle Image Map ────────────────────────────────────────────────────────
 
 const VEHICLE_IMAGES: Record<string, any> = {
-  bike: require('../assets/images/vehicle2.png'),
-  scooty: require('../assets/images/scooty.png'),
-  auto: require('../assets/images/vehicle1.png'),
-  pickup: require('../assets/images/vehicle3.png'),
-  mini_truck: require('../assets/images/vehicle3.png'),
+  bike: require('../assets/images/bike_img.png'),
+  scooty: require('../assets/images/scooter_img.png'),
+  auto: require('../assets/images/auto_img.png'),
+  pickup: require('../assets/images/pickup_img.png'),
+  mini_truck: require('../assets/images/truck_img.png'),
   tata_ace: require('../assets/images/vehicle3.png'),
   tata_407: require('../assets/images/vehicle3.png'),
 };
@@ -77,6 +66,10 @@ const FareEstimate = () => {
   const [error, setError] = useState<string | null>(null);
   const [paymentModal, setPaymentModal] = useState<{ html: string; bookingId: string } | null>(null);
 
+  // Animated value for the "Who Pays?" slider pill (0 = sender, 1 = receiver)
+  const sliderAnim = useRef(new Animated.Value(0)).current;
+  const [sliderWidth, setSliderWidth] = useState(0);
+
   const { user } = useAuthStore();
   const { setActiveBooking } = useBookingStore();
   const {
@@ -87,6 +80,17 @@ const FareEstimate = () => {
   } = route.params || {};
 
   const selectedVehicleType = vehicle?.vehicleType || 'bike';
+
+  // ── Who Pays slider handler ─────────────────────────────────────────────────
+  const handlePaidByChange = (value: 'sender' | 'receiver') => {
+    setPaidBy(value);
+    Animated.spring(sliderAnim, {
+      toValue: value === 'sender' ? 0 : 1,
+      useNativeDriver: false,
+      tension: 180,
+      friction: 18,
+    }).start();
+  };
 
   // ── Fetch fare estimate ─────────────────────────────────────────────────────
   const fetchFareEstimate = useCallback(async () => {
@@ -240,7 +244,6 @@ const FareEstimate = () => {
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
       const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
 
-      // Persist active booking so the banner shows while searching for a driver
       setActiveBooking({
         id: bookingId,
         status: 'searching',
@@ -323,6 +326,13 @@ const FareEstimate = () => {
     return 'Higher than usual demand';
   };
 
+  // Interpolate pill position using measured container width
+  const halfWidth = sliderWidth > 0 ? sliderWidth / 2 : 0;
+  const pillLeft = sliderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [sp(6), sp(6) + halfWidth],
+  });
+
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
@@ -400,7 +410,7 @@ const FareEstimate = () => {
           </View>
         </View>
 
-        {/* ── Surge Banner (outside card, above breakdown) ── */}
+        {/* ── Surge Banner ── */}
         {hasSurge && (
           <View style={styles.surgeBanner}>
             <View style={styles.surgeBannerLeft}>
@@ -464,50 +474,60 @@ const FareEstimate = () => {
           </View>
         </View>
 
-        {/* ── Who Pays? ── */}
+        {/* ── Who Pays? (Slider) ── */}
         <Text style={styles.sectionTitle}>Who Pays?</Text>
-        <View style={styles.paymentContainer}>
-          {/* Sender */}
+        <View
+          style={styles.whoPaysSlider}
+          onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
+        >
+          {/* Animated sliding pill — only render after layout is measured */}
+          {sliderWidth > 0 && (
+            <Animated.View style={[styles.sliderPill, { left: pillLeft, width: halfWidth - sp(6) }]} />
+          )}
+
+          {/* Sender option */}
           <TouchableOpacity
-            style={[styles.paymentOption, paidBy === 'sender' && styles.selectedPayment]}
-            onPress={() => setPaidBy('sender')}
-            activeOpacity={0.9}
+            style={styles.sliderOption}
+            onPress={() => handlePaidByChange('sender')}
+            activeOpacity={0.85}
           >
-            <View style={styles.paymentLeft}>
-              <View style={[styles.iconBox, paidBy === 'sender' && styles.selectedIconBox]}>
-                <Icon name="person" size={sp(20)} color={paidBy === 'sender' ? '#2563EB' : '#6B7280'} />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, paidBy === 'sender' && styles.selectedPaymentText]}>
-                  Sender Pays
-                </Text>
-                <Text style={styles.paymentSub}>Collect at pickup</Text>
-              </View>
+            <View style={[styles.sliderIconBox, paidBy === 'sender' && styles.sliderIconBoxActive]}>
+              <Icon
+                name="person"
+                size={sp(18)}
+                color={paidBy === 'sender' ? '#FFFFFF' : '#6B7280'}
+              />
             </View>
-            <View style={[styles.radio, paidBy === 'sender' && styles.radioSelected]}>
-              {paidBy === 'sender' && <View style={styles.radioInner} />}
+            <View style={styles.sliderTextBlock}>
+              <Text style={[styles.sliderLabel, paidBy === 'sender' && styles.sliderLabelActive]}>
+                Sender pays
+              </Text>
+              <Text style={[styles.sliderSub, paidBy === 'sender' && styles.sliderSubActive]}>
+                Collect at pickup
+              </Text>
             </View>
           </TouchableOpacity>
 
-          {/* Receiver */}
+          {/* Receiver option */}
           <TouchableOpacity
-            style={[styles.paymentOption, paidBy === 'receiver' && styles.selectedPayment]}
-            onPress={() => setPaidBy('receiver')}
-            activeOpacity={0.9}
+            style={styles.sliderOption}
+            onPress={() => handlePaidByChange('receiver')}
+            activeOpacity={0.85}
           >
-            <View style={styles.paymentLeft}>
-              <View style={[styles.iconBox, paidBy === 'receiver' && styles.selectedIconBox]}>
-                <Icon name="person-outline" size={sp(20)} color={paidBy === 'receiver' ? '#2563EB' : '#6B7280'} />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, paidBy === 'receiver' && styles.selectedPaymentText]}>
-                  Receiver Pays
-                </Text>
-                <Text style={styles.paymentSub}>Collect at delivery</Text>
-              </View>
+            <View style={[styles.sliderIconBox, paidBy === 'receiver' && styles.sliderIconBoxActive]}>
+              <Icon
+                name="person-outline"
+                size={sp(18)}
+                color={paidBy === 'receiver' ? '#FFFFFF' : '#6B7280'}
+              />
             </View>
-            <View style={[styles.radio, paidBy === 'receiver' && styles.radioSelected]}>
-              {paidBy === 'receiver' && <View style={styles.radioInner} />}
+            <View style={styles.sliderTextBlock}>
+              <Text style={[styles.sliderLabel, paidBy === 'receiver' && styles.sliderLabelActive]}>
+                Receiver pays
+              </Text>
+              <Text style={[styles.sliderSub, paidBy === 'receiver' && styles.sliderSubActive]}>
+                Collect at delivery
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -598,7 +618,6 @@ const FareEstimate = () => {
               <Icon name="close" size={sp(24)} color="#1F2937" />
             </TouchableOpacity>
             <Text style={styles.paymentModalTitle}>Complete Payment</Text>
-            {/* Spacer to keep title centred */}
             <View style={{ width: sp(24) }} />
           </View>
           {paymentModal?.html && (
@@ -891,7 +910,68 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ── Payment options ──────────────────────────────────────────────────────────
+  // ── Who Pays Slider ──────────────────────────────────────────────────────────
+  whoPaysSlider: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(14),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: sp(6),
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  sliderPill: {
+    position: 'absolute',
+    top: sp(6),
+    bottom: sp(6),
+    backgroundColor: '#2563EB',
+    borderRadius: sp(10),
+  },
+  sliderOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(10),
+    paddingVertical: sp(isSmallScreen ? 10 : 13),
+    paddingHorizontal: sp(isSmallScreen ? 10 : 14),
+    zIndex: 1,
+  },
+  sliderIconBox: {
+    width: sp(isSmallScreen ? 32 : 36),
+    height: sp(isSmallScreen ? 32 : 36),
+    borderRadius: sp(isSmallScreen ? 16 : 18),
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  sliderIconBoxActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  sliderTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  sliderLabel: {
+    fontSize: nf(isSmallScreen ? 13 : 14),
+    fontWeight: '500',
+    color: '#374151',
+  },
+  sliderLabelActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  sliderSub: {
+    fontSize: nf(isSmallScreen ? 10 : 11),
+    color: '#9CA3AF',
+    marginTop: sp(1),
+  },
+  sliderSubActive: {
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
+
+  // ── Payment method options ───────────────────────────────────────────────────
   paymentContainer: {
     gap: sp(12),
   },
@@ -976,7 +1056,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 10,
-    // Reserve room for iOS home indicator
     paddingBottom: sp(isSmallScreen ? 10 : 14),
   },
   priceContainer: {
