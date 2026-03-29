@@ -145,6 +145,28 @@ client.interceptors.response.use(
   }
 );
 
+export const notificationApi = {
+  registerFcmToken: async (token: string) => {
+    const response = await client.put('/notification/fcm-token', { token });
+    return response.data;
+  },
+
+  getNotifications: async () => {
+    const response = await client.get('/notification/customer');
+    return response.data;
+  },
+
+  markAllRead: async () => {
+    const response = await client.post('/notification/customer/read-all');
+    return response.data;
+  },
+
+  clearAll: async () => {
+    const response = await client.delete('/notification/customer/clear');
+    return response.data;
+  },
+};
+
 export const authApi = {
   registerCustomer: async (phone: string) => {
     const response = await client.post('/auth/customer/register', {

@@ -25,6 +25,7 @@ import Support from '../screens/Support';
 import FAQs from '../screens/FAQS';
 import Settings from '../screens/Settings';
 import NotificationSettings from '../screens/NotificationSettings';
+import Notifications from '../screens/Notifications';
 import TermsAndConditions from '../screens/TermsAndConditions';
 import PrivacyPolicy from '../screens/PrivacyPolicy';
 import AboutUs from '../screens/AboutUs';
@@ -188,10 +189,10 @@ const AppNavigator = () => {
         }}
       />
       
-      {/* Placeholder screens */}
       <Stack.Screen
         name="Notifications"
-        component={() => <PlaceholderScreen name="Notifications" />}
+        component={Notifications}
+        options={{animation: 'slide_from_right'}}
       />
       <Stack.Screen
         name="ScheduleDelivery"
