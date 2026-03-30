@@ -2,15 +2,12 @@ import React, { useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
-  Image,
   Text,
   Animated,
   Dimensions,
   PixelRatio,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
 import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
@@ -29,182 +26,194 @@ const fs = (size: number) =>
   Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 // ─────────────────────────────────────────────────────────────────────────────
 
+const ZIPTO_LETTERS = ['Z', 'i', 'p', 't', 'o'];
+
+// Zomato-style: each letter pops in with scale + rotate spring
+const LetterPop = ({
+  letter,
+  delay,
+}: {
+  letter: string;
+  delay: number;
+}) => {
+  const scale   = useRef(new Animated.Value(0.1)).current;
+  const rotate  = useRef(new Animated.Value(-20)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        tension: 80,
+        friction: 6,
+        useNativeDriver: true,
+        delay,
+      }),
+      Animated.timing(rotate, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+        delay,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+        delay,
+      }),
+    ]);
+    anim.start();
+    return () => anim.stop();
+  }, [delay]);
+
+  const rotateInterpolate = rotate.interpolate({
+    inputRange: [-20, 0],
+    outputRange: ['-20deg', '0deg'],
+  });
+
+  return (
+    <Animated.Text
+      style={[
+        styles.ziptoLetter,
+        {
+          opacity,
+          transform: [{ scale }, { rotate: rotateInterpolate }],
+        },
+      ]}
+    >
+      {letter}
+    </Animated.Text>
+  );
+};
+
 const Splash = () => {
   const navigation = useNavigation<any>();
   const { isAuthenticated, token } = useAuthStore();
 
-  // ── Animation values ──────────────────────────────────────────────────────
-  const logoScale   = useRef(new Animated.Value(0.3)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const textSlideY  = useRef(new Animated.Value(20)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const taglineSlideY  = useRef(new Animated.Value(10)).current;
+  const poweredOpacity = useRef(new Animated.Value(0)).current;
+
+  // Last letter delay + a small buffer before tagline shows
+  const LETTER_STAGGER = 110;           // ms between each letter pop
+  const LAST_LETTER_DELAY = (ZIPTO_LETTERS.length - 1) * LETTER_STAGGER;
+  const TAGLINE_DELAY = LAST_LETTER_DELAY + 250;
+  const POWERED_DELAY = LAST_LETTER_DELAY + 520;
 
   useEffect(() => {
     if (isAuthenticated && token) {
       console.log('👤 Already authenticated! Bearer Token:', token);
     }
 
-    // Sequence: logo pops in → text fades up → tagline fades in
-    Animated.sequence([
-      // 1. Logo: scale + fade in
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          tension: 60,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]),
-      // 2. Text slides up & fades in
-      Animated.parallel([
-        Animated.timing(textOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(textSlideY, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]),
-      // 3. Tagline fades in
+    // Tagline slides up after letters finish
+    Animated.parallel([
       Animated.timing(taglineOpacity, {
         toValue: 1,
-        duration: 350,
+        duration: 400,
+        delay: TAGLINE_DELAY,
+        useNativeDriver: true,
+      }),
+      Animated.timing(taglineSlideY, {
+        toValue: 0,
+        duration: 400,
+        delay: TAGLINE_DELAY,
         useNativeDriver: true,
       }),
     ]).start();
 
+    // Powered-by fades in last
+    Animated.timing(poweredOpacity, {
+      toValue: 1,
+      duration: 400,
+      delay: POWERED_DELAY,
+      useNativeDriver: true,
+    }).start();
+
     const timer = setTimeout(() => {
       navigation.replace('Login');
-    }, 2500);
+    }, 2800);
 
     return () => clearTimeout(timer);
   }, [navigation, isAuthenticated, token]);
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#1E3A8A', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
+      {/* ── Letter row ── */}
       <View style={styles.content}>
-        <View style={styles.logoContainer}>
-
-          {/* Logo — animated scale + opacity, tintColor white */}
-          <Animated.View
-            style={{
-              opacity: logoOpacity,
-              transform: [{ scale: logoScale }],
-            }}
-          >
-            <Image
-              source={require('../assets/images/logo_zipto.png')}
-              style={styles.logoImage}
-              resizeMode="contain"
+        <View style={styles.lettersRow}>
+          {ZIPTO_LETTERS.map((letter, index) => (
+            <LetterPop
+              key={letter + index}
+              letter={letter}
+              delay={index * LETTER_STAGGER}
             />
-          </Animated.View>
-
-          {/* Gradient "Zipto" text — slides up + fades in */}
-          <Animated.View
-            style={{
-              opacity: textOpacity,
-              transform: [{ translateY: textSlideY }],
-            }}
-          >
-            <MaskedView
-              maskElement={
-                <Text style={styles.ziptoTextMask}>Zipto</Text>
-              }
-            >
-              <LinearGradient
-                colors={['#FFFFFF', '#E0E7FF', '#C7D2FE']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={[styles.ziptoTextMask, { opacity: 0 }]}>
-                  Zipto
-                </Text>
-              </LinearGradient>
-            </MaskedView>
-          </Animated.View>
-
-          {/* Tagline */}
-          <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
-            Deliver Anything, Anywhere
-          </Animated.Text>
+          ))}
         </View>
+
+        {/* Tagline */}
+        <Animated.Text
+          style={[
+            styles.tagline,
+            {
+              opacity: taglineOpacity,
+              transform: [{ translateY: taglineSlideY }],
+            },
+          ]}
+        >
+          Last-Mile Delivery
+        </Animated.Text>
       </View>
 
       {/* Bottom branding */}
-      <Animated.Text style={[styles.poweredBy, { opacity: taglineOpacity }]}>
+      <Animated.Text style={[styles.poweredBy, { opacity: poweredOpacity }]}>
         Powered by Zipto Technologies
       </Animated.Text>
     </View>
   );
 };
 
-// ─── Derived responsive values ────────────────────────────────────────────────
-const logoSize = ms(200);
-
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1E3A8A',
+    backgroundColor: '#1E22AD',   // matches Zipto logo background exactly
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoContainer: {
-    justifyContent: 'center',
+
+  // Row of animated letters
+  lettersRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
 
-  // White logo
-  logoImage: {
-    width: logoSize,
-    height: logoSize,
-   
-  },
+ziptoLetter: {
+  fontSize: fs(92),   // ← increased to match Zomato-scale hero text
+  fontWeight: 'normal',
+  color: '#FFFFFF',
+  fontFamily: 'Cocon-Regular',
+  letterSpacing: ms(0.5),  // ← slightly tighter — large text needs less spacing
+},
 
-  // Gradient text mask
-  ziptoTextMask: {
-    fontSize: fs(42),
-    fontWeight: 'bold',
-    marginTop: scaleH(8),
-    letterSpacing: ms(2),
-    textAlign: 'center',
-    color: '#FFFFFF',           // needed for MaskedView mask element
-    fontFamily: 'Poppins-Regular',
-  },
+tagline: {
+  fontSize: fs(12),
+  color: 'rgba(255,255,255,0.72)',
+  fontFamily: 'Cocon-Regular',
+  letterSpacing: ms(4),       // ← wider tracking like "AN ETERNAL COMPANY"
+  textTransform: 'uppercase',
+  marginTop: 0,               // ← divider handles spacing now
+  textAlign: 'center',
+},
 
-  // Tagline below Zipto text
-  tagline: {
-    fontSize: fs(14),
-    color: 'rgba(255,255,255,0.75)',
-    fontFamily: 'Poppins-Regular',
-    letterSpacing: ms(0.5),
-    marginTop: scaleH(10),
-    textAlign: 'center',
-  },
-
-  // Bottom label
   poweredBy: {
     fontSize: fs(12),
-    color: 'rgba(255,255,255,0.45)',
-    fontFamily: 'Poppins-Regular',
+    color: 'rgba(255,255,255,0.38)',
+    fontFamily: 'Cocon-Regular',
     textAlign: 'center',
     paddingBottom: scaleH(32),
   },

@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { notificationApi } from '../api/client';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   View,
   StyleSheet,
@@ -32,8 +39,10 @@ const BASE_HEIGHT = 852;
 
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const nf = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+const nf = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 const sp = (size: number) => Math.round(scaleW(size));
 
 const isSmallScreen = SCREEN_WIDTH <= 360;
@@ -44,20 +53,76 @@ const NIGHT_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
-  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
-  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+  {
+    featureType: 'administrative.locality',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#d59563' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#d59563' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#263c3f' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#6b9a76' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#38414e' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#212a37' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#9ca5b3' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#746855' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#1f2835' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#f3d19c' }],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{ color: '#2f3948' }],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#d59563' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#17263c' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#515c6d' }],
+  },
 ];
 
 function isNightTime(): boolean {
@@ -68,14 +133,18 @@ function isNightTime(): boolean {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const Home = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const isFocused = useIsFocused();
 
   const mapRef = useRef<MapView>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
+    null,
+  );
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [isServicesVisible, setIsServicesVisible] = useState(true);
-  const [_locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [_locationPermissionGranted, setLocationPermissionGranted] =
+    useState(false);
 
   const { token, isAuthenticated } = useAuthStore();
   const colorScheme = useColorScheme();
@@ -104,12 +173,15 @@ const Home = () => {
         const newLocation: [number, number] = [longitude, latitude];
         setUserLocation(newLocation);
         if (mapRef.current) {
-          mapRef.current.animateToRegion({
-            latitude,
-            longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }, 1000);
+          mapRef.current.animateToRegion(
+            {
+              latitude,
+              longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            },
+            1000,
+          );
         }
       },
       error => console.log('Location error:', error),
@@ -136,7 +208,8 @@ const Home = () => {
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
               title: 'Location Permission',
-              message: 'Zipto needs access to your location to show your position on the map.',
+              message:
+                'Zipto needs access to your location to show your position on the map.',
               buttonNeutral: 'Ask Me Later',
               buttonNegative: 'Cancel',
               buttonPositive: 'OK',
@@ -162,12 +235,43 @@ const Home = () => {
     };
   }, [startLocationTracking]);
 
-  const services = useMemo(() => [
-    { id: 1, title: 'Send Packages',   icon: 'local-shipping',  gradient: ['#3B82F6', '#2563EB'], description: 'Quick delivery',      serviceCategory: 'send_packages'   },
-    { id: 2, title: 'Transport Goods', icon: 'fire-truck',       gradient: ['#10B981', '#059669'], description: 'Heavy items',         serviceCategory: 'transport_goods'  },
-    { id: 3, title: 'Food Delivery',   icon: 'restaurant',       gradient: ['#F59E0B', '#D97706'], description: 'Hot & fresh',         serviceCategory: 'food_delivery'    },
-    { id: 4, title: 'Medicine',        icon: 'local-pharmacy',   gradient: ['#EF4444', '#DC2626'], description: 'Emergency delivery',  serviceCategory: 'medicine'         },
-  ], []);
+  const services = useMemo(
+    () => [
+      {
+        id: 1,
+        title: 'Send Packages',
+        icon: 'local-shipping',
+        gradient: ['#3B82F6', '#2563EB'],
+        description: 'Quick delivery',
+        serviceCategory: 'send_packages',
+      },
+      {
+        id: 2,
+        title: 'Transport Goods',
+        icon: 'fire-truck',
+        gradient: ['#10B981', '#059669'],
+        description: 'Heavy items',
+        serviceCategory: 'transport_goods',
+      },
+      {
+        id: 3,
+        title: 'Food Delivery',
+        icon: 'restaurant',
+        gradient: ['#F59E0B', '#D97706'],
+        description: 'Hot & fresh',
+        serviceCategory: 'food_delivery',
+      },
+      {
+        id: 4,
+        title: 'Medicine',
+        icon: 'local-pharmacy',
+        gradient: ['#EF4444', '#DC2626'],
+        description: 'Emergency delivery',
+        serviceCategory: 'medicine',
+      },
+    ],
+    [],
+  );
 
   return (
     <View style={styles.container}>
@@ -190,7 +294,10 @@ const Home = () => {
       >
         {userLocation && (
           <Marker
-            coordinate={{ latitude: userLocation[1], longitude: userLocation[0] }}
+            coordinate={{
+              latitude: userLocation[1],
+              longitude: userLocation[0],
+            }}
             anchor={{ x: 0.5, y: 0.5 }}
           >
             <View style={styles.customMarker}>
@@ -206,13 +313,6 @@ const Home = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoSection}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../assets/images/logo_zipto.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
             <Text style={styles.ziptoText}>Zipto</Text>
           </View>
 
@@ -243,6 +343,18 @@ const Home = () => {
               )}
             </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Wallet')}
+            style={styles.walletButton}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons
+              name="account-balance-wallet"
+              size={sp(isSmallScreen ? 20 : 24)}
+              color="#3B82F6"
+            />
+            <Text style={styles.walletText}>Wallet</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Bottom Content */}
@@ -275,7 +387,9 @@ const Home = () => {
                       />
                     </View>
                     <Text style={styles.serviceTitle}>{service.title}</Text>
-                    <Text style={styles.serviceDescription}>{service.description}</Text>
+                    <Text style={styles.serviceDescription}>
+                      {service.description}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -396,9 +510,9 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   ziptoText: {
-    fontSize: nf(isSmallScreen ? 16 : 18),
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
+    fontSize: nf(isSmallScreen ? 20 : 22), 
+    // fontWeight: 'bold',
+    fontFamily: 'Cocon-Regular',
     color: '#3B82F6',
   },
   headerActions: {

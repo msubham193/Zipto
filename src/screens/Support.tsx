@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   Alert,
   Dimensions,
   PixelRatio,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,18 +19,75 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const BASE_WIDTH  = 390;
 const BASE_HEIGHT = 844;
-
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
+const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+// ─────────────────────────────────────────────────────────────────────────────
 
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const COLORS = {
+  bg:           '#F5F7FA',
+  surface:      '#FFFFFF',
+  surfaceAlt:   '#F0F4FF',
+  border:       '#E8ECF4',
+  borderLight:  '#F1F5F9',
+  ink:          '#111827',
+  inkMid:       '#4B5563',
+  inkLight:     '#9CA3AF',
+  accent:       '#2563EB',
+  accentLight:  '#EEF3FF',
+  green:        '#059669',
+  greenLight:   '#ECFDF5',
+  amber:        '#D97706',
+  amberLight:   '#FFFBEB',
+  whatsapp:     '#16A34A',
+  whatsappLt:   '#F0FDF4',
+  purple:       '#7C3AED',
+  purpleLight:  '#F5F3FF',
+  rose:         '#E11D48',
+  roseLight:    '#FFF1F2',
+  pink:         '#DB2777',
+  pinkLight:    '#FDF4FF',
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+const FadeInView = ({ delay = 0, children }: { delay?: number; children: React.ReactNode }) => {
+  const opacity   = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(14)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity,    { toValue: 1, duration: 380, delay, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 380, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
+};
+
+// ─── Pill badge ───────────────────────────────────────────────────────────────
+const Badge = ({ label, color }: { label: string; color: string }) => (
+  <View style={[badgeStyle.wrap, { backgroundColor: color + '18' }]}>
+    <View style={[badgeStyle.dot, { backgroundColor: color }]} />
+    <Text style={[badgeStyle.text, { color }]}>{label}</Text>
+  </View>
+);
+const badgeStyle = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: scaleW(10), paddingVertical: scaleH(4),
+    borderRadius: 999, gap: scaleW(5),
+  },
+  dot:  { width: ms(6), height: ms(6), borderRadius: 99 },
+  text: { fontSize: fs(11), fontFamily: 'Poppins-SemiBold', letterSpacing: 0.3 },
+});
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Support = () => {
@@ -40,35 +98,93 @@ const Support = () => {
     { id: 2, title: 'Call Us',    icon: 'phone',               desc: '+91 90900 29996 (24×7)',       color: '#10B981', onPress: () => Linking.openURL('tel:+919090029996') },
     { id: 3, title: 'Email Us',   icon: 'email',               desc: 'supportzipto@gmail.com',       color: '#F59E0B', onPress: () => Linking.openURL('mailto:supportzipto@gmail.com') },
     { id: 4, title: 'WhatsApp',   icon: 'whatsapp',            desc: 'Message us on WhatsApp',       color: '#16A34A', onPress: () => Linking.openURL('https://wa.me/919090029996') },
+  const contactOptions = [
+    {
+      id: 1, title: 'Live Chat',
+      icon: 'chat-bubble-outline',
+      desc: 'Average response under 2 min',
+      badge: 'Online Now', badgeColor: COLORS.green,
+      accent: COLORS.accent, light: COLORS.accentLight,
+      onPress: () => Alert.alert('Coming Soon', 'Live chat will be available soon.'),
+    },
+    {
+      id: 2, title: 'Call Us',
+      icon: 'phone',
+      desc: '1800-123-4567 · Toll Free',
+      badge: '24 / 7', badgeColor: COLORS.green,
+      accent: COLORS.green, light: COLORS.greenLight,
+      onPress: () => Linking.openURL('tel:18001234567'),
+    },
+    {
+      id: 3, title: 'Email Support',
+      icon: 'mail-outline',
+      desc: 'support@zipto.com',
+      badge: '< 4 hrs', badgeColor: COLORS.amber,
+      accent: COLORS.amber, light: COLORS.amberLight,
+      onPress: () => Linking.openURL('mailto:support@zipto.com'),
+    },
+    {
+      id: 4, title: 'WhatsApp',
+      icon: 'message',
+      desc: 'Message us directly',
+      badge: 'Instant', badgeColor: COLORS.whatsapp,
+      accent: COLORS.whatsapp, light: COLORS.whatsappLt,
+      onPress: () => Linking.openURL('https://wa.me/918001234567'),
+    },
   ];
 
   const quickHelp = [
-    { id: 1, icon: 'help-outline', title: 'Help Center',    desc: 'Browse FAQs and guides',    color: '#8B5CF6' },
-    { id: 2, icon: 'rate-review',  title: 'Report an Issue',desc: 'Let us know your problem',  color: '#EF4444' },
-    { id: 3, icon: 'feedback',     title: 'Share Feedback', desc: 'Help us improve',           color: '#EC4899' },
+    { id: 1, icon: 'help-outline',  title: 'Help Center',    desc: 'FAQs & guides', accent: COLORS.purple, light: COLORS.purpleLight },
+    { id: 2, icon: 'flag-outlined', title: 'Report Issue',   desc: 'Flag a problem', accent: COLORS.rose,   light: COLORS.roseLight  },
+    { id: 3, icon: 'rate-review',   title: 'Feedback',       desc: 'Share thoughts', accent: COLORS.pink,   light: COLORS.pinkLight  },
+  ];
+
+  const hours = [
+    { label: 'Monday – Friday',  value: '9:00 AM – 8:00 PM' },
+    { label: 'Saturday – Sunday', value: '10:00 AM – 6:00 PM' },
+    { label: 'Emergency Line',    value: '24 / 7 Available' },
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header */}
+
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+            <MaterialIcons name="arrow-back" size={ms(20)} color={COLORS.ink} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Support</Text>
-          <View style={styles.placeholder} />
+          {/* Right action: optional help icon */}
+          <TouchableOpacity style={styles.backBtn} activeOpacity={0.7}>
+            <MaterialIcons name="help-outline" size={ms(20)} color={COLORS.inkMid} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView
-          style={styles.scrollView}
+          style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Support Hero */}
-          <View style={styles.supportHeader}>
-            <View style={styles.supportIconContainer}>
-              <MaterialIcons name="support-agent" size={ms(64)} color="#3B82F6" />
+
+          {/* ── Hero ── */}
+          <FadeInView delay={0}>
+            <View style={styles.hero}>
+              <View style={styles.heroIconRing}>
+                <View style={styles.heroIconInner}>
+                  <MaterialIcons name="support-agent" size={ms(34)} color={COLORS.accent} />
+                </View>
+              </View>
+              <Text style={styles.heroTitle}>How can we help?</Text>
+              <Text style={styles.heroSub}>Our team is available around the clock to assist you with anything you need.</Text>
+              <Badge label="● All systems operational" color={COLORS.green} />
+            </View>
+          </FadeInView>
+
+          {/* ── Divider label ── */}
+          <FadeInView delay={80}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>CONTACT CHANNELS</Text>
             </View>
             <Text style={styles.supportTitle}>How can we help you?</Text>
             <Text style={styles.supportSubtitle}>We're here 24×7 to assist you</Text>
@@ -86,325 +202,357 @@ const Support = () => {
               >
                 <View style={[styles.cardIconContainer, { backgroundColor: `${option.color}15` }]}>
                   <MaterialIcons name={option.icon} size={ms(28)} color={option.color} />
-                </View>
-                <View style={styles.supportContent}>
-                  <Text style={styles.supportCardTitle}>{option.title}</Text>
-                  <Text style={styles.supportCardDesc}>{option.desc}</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
-              </TouchableOpacity>
-            ))}
-          </View>
+          </FadeInView>
 
-          {/* Quick Help */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Help</Text>
-            <View style={styles.quickHelpGrid}>
+          {/* ── Contact cards ── */}
+          {contactOptions.map((opt, i) => (
+            <FadeInView key={opt.id} delay={120 + i * 60}>
+              <TouchableOpacity style={styles.contactCard} onPress={opt.onPress} activeOpacity={0.75}>
+                <View style={[styles.contactIconWrap, { backgroundColor: opt.light }]}>
+                  <MaterialIcons name={opt.icon} size={ms(22)} color={opt.accent} />
+                </View>
+                <View style={styles.contactBody}>
+                  <Text style={styles.contactTitle}>{opt.title}</Text>
+                  <Text style={styles.contactDesc}>{opt.desc}</Text>
+                </View>
+                <View style={styles.contactRight}>
+                  <Badge label={opt.badge} color={opt.badgeColor} />
+                  <MaterialIcons name="chevron-right" size={ms(18)} color={COLORS.inkLight} style={{ marginTop: scaleH(6) }} />
+                </View>
+              </TouchableOpacity>
+            </FadeInView>
+          ))}
+
+          {/* ── Quick Help ── */}
+          <FadeInView delay={380}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>SELF-SERVICE</Text>
+            </View>
+            <View style={styles.quickRow}>
               {quickHelp.map(item => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.quickHelpCard}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.quickHelpIcon, { backgroundColor: `${item.color}15` }]}>
-                    <MaterialIcons name={item.icon} size={ms(28)} color={item.color} />
+                <TouchableOpacity key={item.id} style={styles.quickCard} activeOpacity={0.75}>
+                  <View style={[styles.quickIconWrap, { backgroundColor: item.light }]}>
+                    <MaterialIcons name={item.icon} size={ms(22)} color={item.accent} />
                   </View>
-                  <Text style={styles.quickHelpTitle}>{item.title}</Text>
-                  <Text style={styles.quickHelpDesc}>{item.desc}</Text>
+                  <Text style={styles.quickTitle}>{item.title}</Text>
+                  <Text style={styles.quickDesc}>{item.desc}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </FadeInView>
 
-          {/* Working Hours */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeader}>
-              <MaterialIcons name="schedule" size={ms(24)} color="#3B82F6" />
-              <Text style={styles.infoTitle}>Support Hours</Text>
+          {/* ── Hours ── */}
+          <FadeInView delay={440}>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.cardIconSmall, { backgroundColor: COLORS.accentLight }]}>
+                  <MaterialIcons name="schedule" size={ms(16)} color={COLORS.accent} />
+                </View>
+                <Text style={styles.cardTitle}>Support Hours</Text>
+              </View>
+              {hours.map((row, i) => (
+                <View
+                  key={i}
+                  style={[styles.hoursRow, i === hours.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}
+                >
+                  <Text style={styles.hoursLabel}>{row.label}</Text>
+                  <Text style={[styles.hoursValue, row.label === 'Emergency Line' && { color: COLORS.green }]}>
+                    {row.value}
+                  </Text>
+                </View>
+              ))}
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Monday - Friday:</Text>
-              <Text style={styles.infoValue}>9:00 AM - 8:00 PM</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Saturday - Sunday:</Text>
-              <Text style={styles.infoValue}>10:00 AM - 6:00 PM</Text>
-            </View>
-            <View style={[styles.infoRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-              <Text style={styles.infoLabel}>Emergency Support:</Text>
-              <Text style={styles.infoValue}>24/7 Available</Text>
-            </View>
-          </View>
+          </FadeInView>
 
-          {/* Office Address */}
-          <View style={styles.addressCard}>
-            <View style={styles.addressHeader}>
-              <MaterialIcons name="location-on" size={ms(24)} color="#EF4444" />
-              <Text style={styles.addressTitle}>Office Address</Text>
+          {/* ── Address ── */}
+          <FadeInView delay={500}>
+            <View style={[styles.card, { marginBottom: scaleH(32) }]}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.cardIconSmall, { backgroundColor: COLORS.roseLight }]}>
+                  <MaterialIcons name="location-on" size={ms(16)} color={COLORS.rose} />
+                </View>
+                <Text style={styles.cardTitle}>Office Address</Text>
+              </View>
+              <View style={styles.addressBlock}>
+                <Text style={styles.addressLine}>Zipto Headquarters</Text>
+                <Text style={styles.addressSub}>123 Business Park, 2nd Floor</Text>
+                <Text style={styles.addressSub}>Chandrasekharpur, Bhubaneswar</Text>
+                <Text style={styles.addressSub}>Odisha – 751001, India</Text>
+              </View>
+              <TouchableOpacity style={styles.directionsBtn} activeOpacity={0.75}>
+                <MaterialIcons name="directions" size={ms(16)} color={COLORS.accent} />
+                <Text style={styles.directionsText}>Get Directions</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.addressText}>
-              Zipto Headquarters{'\n'}
-              123 Business Park, 2nd Floor{'\n'}
-              Chandrasekharpur, Bhubaneswar{'\n'}
-              Odisha - 751001, India
-            </Text>
-            <TouchableOpacity style={styles.directionsButton}>
-              <MaterialIcons name="directions" size={ms(18)} color="#3B82F6" />
-              <Text style={styles.directionsText}>Get Directions</Text>
-            </TouchableOpacity>
-          </View>
+          </FadeInView>
+
         </ScrollView>
       </SafeAreaView>
     </View>
   );
 };
 
-// ─── Derived responsive values ────────────────────────────────────────────────
-const backBtnSize      = ms(40);
-const heroIconSize     = ms(120);
-const cardIconSize     = ms(56);
-const quickHelpIconSz  = ms(56);
+// ─── Derived sizes ────────────────────────────────────────────────────────────
+const BTN_SIZE      = ms(40);
+const HERO_RING     = ms(96);
+const HERO_INNER    = ms(68);
+const CONTACT_ICON  = ms(48);
+const QUICK_ICON    = ms(52);
+const CARD_ICON_SM  = ms(34);
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  root:      { flex: 1, backgroundColor: COLORS.bg },
   safeArea:  { flex: 1 },
 
-  // ── Header ──
+  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: scaleW(20),
+    paddingVertical: scaleH(14),
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: COLORS.border,
   },
-  backButton: {
-    width: backBtnSize,
-    height: backBtnSize,
-    borderRadius: backBtnSize / 2,
-    backgroundColor: '#F1F5F9',
+  backBtn: {
+    width: BTN_SIZE, height: BTN_SIZE,
+    borderRadius: BTN_SIZE / 2,
+    backgroundColor: COLORS.bg,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   headerTitle: {
-    fontSize: fs(20),
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
+    fontSize: fs(17),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.ink,
+    letterSpacing: 0.1,
   },
-  placeholder: { width: backBtnSize },
 
-  scrollView: { flex: 1 },
-  scrollContent: { padding: scaleW(16) },
+  // ── Scroll ──────────────────────────────────────────────────────────────────
+  scroll:        { flex: 1 },
+  scrollContent: { paddingHorizontal: scaleW(20), paddingTop: scaleH(28) },
 
-  // ── Hero ──
-  supportHeader: {
+  // ── Hero ────────────────────────────────────────────────────────────────────
+  hero: {
     alignItems: 'center',
-    paddingVertical: scaleH(32),
-    marginBottom: scaleH(8),
+    marginBottom: scaleH(32),
   },
-  supportIconContainer: {
-    width: heroIconSize,
-    height: heroIconSize,
-    borderRadius: heroIconSize / 2,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+  heroIconRing: {
+    width: HERO_RING, height: HERO_RING,
+    borderRadius: HERO_RING / 2,
+    borderWidth: 1.5, borderColor: COLORS.border,
+    justifyContent: 'center', alignItems: 'center',
     marginBottom: scaleH(20),
+    backgroundColor: COLORS.surface,
+    // subtle shadow
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  supportTitle: {
-    fontSize: fs(24),
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-    marginBottom: scaleH(8),
+  heroIconInner: {
+    width: HERO_INNER, height: HERO_INNER,
+    borderRadius: HERO_INNER / 2,
+    backgroundColor: COLORS.accentLight,
+    justifyContent: 'center', alignItems: 'center',
   },
-  supportSubtitle: {
+  heroTitle: {
+    fontSize: fs(26),
+    fontFamily: 'Poppins-Bold',
+    color: COLORS.ink,
+    marginBottom: scaleH(10),
+    letterSpacing: -0.4,
+  },
+  heroSub: {
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
-    color: '#64748B',
+    color: COLORS.inkMid,
+    textAlign: 'center',
+    lineHeight: fs(14) * 1.65,
+    marginBottom: scaleH(18),
+    paddingHorizontal: scaleW(12),
   },
 
-  // ── Section ──
-  section: { marginBottom: scaleH(24) },
-  sectionTitle: {
-    fontSize: fs(18),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
+  // ── Section label ────────────────────────────────────────────────────────────
+  sectionHeader: {
     marginBottom: scaleH(12),
   },
+  sectionLabel: {
+    fontSize: fs(10),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.inkLight,
+    letterSpacing: 1.4,
+  },
 
-  // ── Support card (list) ──
-  supportCard: {
+  // ── Contact card ─────────────────────────────────────────────────────────────
+  contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: ms(16),
-    borderRadius: ms(12),
+    backgroundColor: COLORS.surface,
+    borderRadius: ms(14),
+    paddingVertical: scaleH(14),
+    paddingHorizontal: scaleW(14),
     marginBottom: scaleH(10),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
   },
-  cardIconContainer: {
-    width: cardIconSize,
-    height: cardIconSize,
-    borderRadius: cardIconSize / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
+  contactIconWrap: {
+    width: CONTACT_ICON, height: CONTACT_ICON,
+    borderRadius: ms(12),
+    justifyContent: 'center', alignItems: 'center',
     marginRight: scaleW(14),
     flexShrink: 0,
   },
-  supportContent:   { flex: 1 },
-  supportCardTitle: {
-    fontSize: fs(16),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-    marginBottom: scaleH(4),
+  contactBody: { flex: 1 },
+  contactTitle: {
+    fontSize: fs(15),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.ink,
+    marginBottom: scaleH(2),
   },
-  supportCardDesc: {
-    fontSize: fs(13),
+  contactDesc: {
+    fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
-    color: '#64748B',
+    color: COLORS.inkMid,
+  },
+  contactRight: {
+    alignItems: 'flex-end',
+    marginLeft: scaleW(8),
   },
 
-  // ── Quick help grid ──
-  quickHelpGrid: {
+  // ── Quick help ───────────────────────────────────────────────────────────────
+  quickRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: scaleW(12),
+    gap: scaleW(10),
+    marginBottom: scaleH(24),
   },
-  quickHelpCard: {
+  quickCard: {
     flex: 1,
-    minWidth: '30%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
+    borderRadius: ms(14),
     padding: ms(14),
-    borderRadius: ms(12),
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
   },
-  quickHelpIcon: {
-    width: quickHelpIconSz,
-    height: quickHelpIconSz,
-    borderRadius: quickHelpIconSz / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: scaleH(12),
+  quickIconWrap: {
+    width: QUICK_ICON, height: QUICK_ICON,
+    borderRadius: ms(13),
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: scaleH(10),
   },
-  quickHelpTitle: {
-    fontSize: fs(13),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-    marginBottom: scaleH(4),
+  quickTitle: {
+    fontSize: fs(12),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.ink,
     textAlign: 'center',
+    marginBottom: scaleH(3),
   },
-  quickHelpDesc: {
-    fontSize: fs(11),
+  quickDesc: {
+    fontSize: fs(10),
     fontFamily: 'Poppins-Regular',
-    color: '#64748B',
+    color: COLORS.inkLight,
     textAlign: 'center',
   },
 
-  // ── Info card (hours) ──
-  infoCard: {
-    backgroundColor: '#FFFFFF',
+  // ── Shared card ──────────────────────────────────────────────────────────────
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: ms(14),
     padding: ms(18),
-    borderRadius: ms(12),
-    marginBottom: scaleH(16),
+    marginBottom: scaleH(14),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
   },
-  infoHeader: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: scaleW(10),
     marginBottom: scaleH(16),
   },
-  infoTitle: {
-    fontSize: fs(16),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
+  cardIconSmall: {
+    width: CARD_ICON_SM, height: CARD_ICON_SM,
+    borderRadius: ms(10),
+    justifyContent: 'center', alignItems: 'center',
   },
-  infoRow: {
+  cardTitle: {
+    fontSize: fs(15),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.ink,
+  },
+
+  // ── Hours ────────────────────────────────────────────────────────────────────
+  hoursRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: scaleH(10),
+    alignItems: 'center',
+    paddingVertical: scaleH(11),
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: COLORS.borderLight,
   },
-  infoLabel: {
-    fontSize: fs(14),
+  hoursLabel: {
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
-    color: '#64748B',
+    color: COLORS.inkMid,
   },
-  infoValue: {
-    fontSize: fs(14),
-    fontWeight: '500',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
+  hoursValue: {
+    fontSize: fs(13),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.ink,
   },
 
-  // ── Address card ──
-  addressCard: {
-    backgroundColor: '#FFFFFF',
-    padding: ms(18),
-    borderRadius: ms(12),
+  // ── Address ──────────────────────────────────────────────────────────────────
+  addressBlock: {
     marginBottom: scaleH(16),
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    paddingLeft: scaleW(2),
   },
-  addressHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scaleW(10),
-    marginBottom: scaleH(12),
-  },
-  addressTitle: {
-    fontSize: fs(16),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-  },
-  addressText: {
+  addressLine: {
     fontSize: fs(14),
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-    lineHeight: fs(14) * 1.6,
-    marginBottom: scaleH(14),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.ink,
+    marginBottom: scaleH(4),
   },
-  directionsButton: {
+  addressSub: {
+    fontSize: fs(13),
+    fontFamily: 'Poppins-Regular',
+    color: COLORS.inkMid,
+    lineHeight: fs(13) * 1.7,
+  },
+  directionsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: scaleW(6),
-    paddingVertical: scaleH(10),
-    paddingHorizontal: scaleW(16),
-    backgroundColor: '#EFF6FF',
-    borderRadius: ms(8),
+    paddingVertical: scaleH(11),
+    backgroundColor: COLORS.accentLight,
+    borderRadius: ms(10),
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   directionsText: {
-    fontSize: fs(14),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#3B82F6',
+    fontSize: fs(13),
+    fontFamily: 'Poppins-SemiBold',
+    color: COLORS.accent,
+    letterSpacing: 0.2,
   },
 });
 
