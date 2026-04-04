@@ -187,7 +187,7 @@ const OTPVerification = () => {
           >
             <View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/images/heroimg3.jpeg')}
+                source={require('../assets/images/OTP.png')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />

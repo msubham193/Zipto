@@ -203,7 +203,7 @@ const AboutUs = () => {
                 </View>
                 <View style={styles.contactInfo}>
                   <Text style={styles.contactLabel}>Email</Text>
-                  <Text style={styles.contactValue}>support@zipto.com</Text>
+                  <Text style={styles.contactValue}>contact@ridezipto.com</Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
               </TouchableOpacity>
@@ -212,14 +212,14 @@ const AboutUs = () => {
 
               <TouchableOpacity
                 style={styles.contactItem}
-                onPress={() => Linking.openURL('tel:18001234567')}
+                onPress={() => Linking.openURL('tel:+919090029996')}
               >
                 <View style={styles.contactIconContainer}>
                   <MaterialIcons name="phone" size={ms(20)} color="#10B981" />
                 </View>
                 <View style={styles.contactInfo}>
                   <Text style={styles.contactLabel}>Phone</Text>
-                  <Text style={styles.contactValue}>1800-123-4567</Text>
+                  <Text style={styles.contactValue}>+91 9090029996</Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
               </TouchableOpacity>
@@ -233,7 +233,7 @@ const AboutUs = () => {
                 <View style={styles.contactInfo}>
                   <Text style={styles.contactLabel}>Address</Text>
                   <Text style={styles.contactValue}>
-                    123 Business Park, Bhubaneswar, Odisha
+                   Plot No-781, Maharishi College Rd, in front of DN Kingsland, Saheed Nagar, Bhubaneswar, Odisha 751007
                   </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />

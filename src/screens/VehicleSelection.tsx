@@ -192,12 +192,9 @@ const VehicleSelection = () => {
 
           <View style={styles.info}>
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.details} numberOfLines={1}>
-              {item.capacity}{item.bestFor ? ` • ${item.bestFor}` : ''}
-            </Text>
-            <Text style={styles.rateInfo}>
-              ₹{item.basePrice} base · first {item.baseDistanceKm}km included
-            </Text>
+           <Text style={styles.details} numberOfLines={1}>
+  {item.capacity}
+</Text>
           </View>
 
           <View style={styles.priceContainer}>
