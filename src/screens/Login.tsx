@@ -103,7 +103,7 @@ const Login = () => {
           <View style={styles.heroContainer}>
             <View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/images/heroimg2.jpeg')}
+                source={require('../assets/images/number.png')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />

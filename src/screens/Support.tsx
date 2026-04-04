@@ -55,7 +55,7 @@ const COLORS = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FadeInView = ({ delay = 0, children }: { delay?: number; children: React.ReactNode }) => {
-  const opacity   = useRef(new Animated.Value(0)).current;
+  const opacity    = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
@@ -105,18 +105,18 @@ const Support = () => {
     {
       id: 2, title: 'Call Us',
       icon: 'phone',
-      desc: '1800-123-4567 · Toll Free',
+      desc: '+91 90900 29996',
       badge: '24 / 7', badgeColor: COLORS.green,
       accent: COLORS.green, light: COLORS.greenLight,
-      onPress: () => Linking.openURL('tel:18001234567'),
+      onPress: () => Linking.openURL('tel:+919090029996'),
     },
     {
       id: 3, title: 'Email Support',
       icon: 'mail-outline',
-      desc: 'support@zipto.com',
+      desc: 'supportzipto@gmail.com',
       badge: '< 4 hrs', badgeColor: COLORS.amber,
       accent: COLORS.amber, light: COLORS.amberLight,
-      onPress: () => Linking.openURL('mailto:support@zipto.com'),
+      onPress: () => Linking.openURL('mailto:support@ridezipto.com'),
     },
     {
       id: 4, title: 'WhatsApp',
@@ -124,18 +124,18 @@ const Support = () => {
       desc: 'Message us directly',
       badge: 'Instant', badgeColor: COLORS.whatsapp,
       accent: COLORS.whatsapp, light: COLORS.whatsappLt,
-      onPress: () => Linking.openURL('https://wa.me/918001234567'),
+      onPress: () => Linking.openURL('https://wa.me/919090029996'),
     },
   ];
 
   const quickHelp = [
-    { id: 1, icon: 'help-outline',  title: 'Help Center',    desc: 'FAQs & guides', accent: COLORS.purple, light: COLORS.purpleLight },
-    { id: 2, icon: 'flag-outlined', title: 'Report Issue',   desc: 'Flag a problem', accent: COLORS.rose,   light: COLORS.roseLight  },
-    { id: 3, icon: 'rate-review',   title: 'Feedback',       desc: 'Share thoughts', accent: COLORS.pink,   light: COLORS.pinkLight  },
+    { id: 1, icon: 'help-outline',  title: 'Help Center',  desc: 'FAQs & guides',  accent: COLORS.purple, light: COLORS.purpleLight },
+    { id: 2, icon: 'flag',          title: 'Report Issue', desc: 'Flag a problem', accent: COLORS.rose,   light: COLORS.roseLight  },
+    { id: 3, icon: 'rate-review',   title: 'Feedback',     desc: 'Share thoughts', accent: COLORS.pink,   light: COLORS.pinkLight  },
   ];
 
   const hours = [
-    { label: 'Monday – Friday',  value: '9:00 AM – 8:00 PM' },
+    { label: 'Monday – Friday',   value: '9:00 AM – 8:00 PM' },
     { label: 'Saturday – Sunday', value: '10:00 AM – 6:00 PM' },
     { label: 'Emergency Line',    value: '24 / 7 Available' },
   ];
@@ -150,7 +150,6 @@ const Support = () => {
             <MaterialIcons name="arrow-back" size={ms(20)} color={COLORS.ink} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Support</Text>
-          {/* Right action: optional help icon */}
           <TouchableOpacity style={styles.backBtn} activeOpacity={0.7}>
             <MaterialIcons name="help-outline" size={ms(20)} color={COLORS.inkMid} />
           </TouchableOpacity>
@@ -176,7 +175,7 @@ const Support = () => {
             </View>
           </FadeInView>
 
-          {/* ── Divider label ── */}
+          {/* ── Contact channels label ── */}
           <FadeInView delay={80}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>CONTACT CHANNELS</Text>
@@ -272,16 +271,16 @@ const Support = () => {
 };
 
 // ─── Derived sizes ────────────────────────────────────────────────────────────
-const BTN_SIZE      = ms(40);
-const HERO_RING     = ms(96);
-const HERO_INNER    = ms(68);
-const CONTACT_ICON  = ms(48);
-const QUICK_ICON    = ms(52);
-const CARD_ICON_SM  = ms(34);
+const BTN_SIZE     = ms(40);
+const HERO_RING    = ms(96);
+const HERO_INNER   = ms(68);
+const CONTACT_ICON = ms(48);
+const QUICK_ICON   = ms(52);
+const CARD_ICON_SM = ms(34);
 
 const styles = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: COLORS.bg },
-  safeArea:  { flex: 1 },
+  root:     { flex: 1, backgroundColor: COLORS.bg },
+  safeArea: { flex: 1 },
 
   // ── Header ──────────────────────────────────────────────────────────────────
   header: {
@@ -326,7 +325,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     marginBottom: scaleH(20),
     backgroundColor: COLORS.surface,
-    // subtle shadow
     shadowColor: COLORS.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
@@ -391,7 +389,7 @@ const styles = StyleSheet.create({
     marginRight: scaleW(14),
     flexShrink: 0,
   },
-  contactBody: { flex: 1 },
+  contactBody:  { flex: 1 },
   contactTitle: {
     fontSize: fs(15),
     fontFamily: 'Poppins-SemiBold',

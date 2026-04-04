@@ -205,9 +205,9 @@ const PrivacyPolicy = () => {
               <Text style={styles.sectionText}>
                 If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
               </Text>
-              <Text style={styles.contactText}>Email: privacy@zipto.com</Text>
-              <Text style={styles.contactText}>Phone: 1800-123-4567</Text>
-              <Text style={styles.contactText}>Address: Data Protection Officer, Zipto, 123 Business Park, Bhubaneswar, Odisha 751001</Text>
+              <Text style={styles.contactText}>Email: legal@ridezipto.com</Text>
+              <Text style={styles.contactText}>Phone: +919090029996</Text>
+              <Text style={styles.contactText}>Address: Plot No-781, Maharishi College Rd, in front of DN Kingsland, Saheed Nagar, Bhubaneswar, Odisha 751007</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>

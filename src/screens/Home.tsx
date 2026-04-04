@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { notificationApi } from '../api/client';
+// import React, {
+//   useState,
+//   useRef,
+//   useEffect,
+//   useMemo,
+//   useCallback,
+// } from 'react';
 import {
   View,
   StyleSheet,
@@ -336,18 +343,7 @@ const Home = () => {
               )}
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Wallet')}
-            style={styles.walletButton}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="account-balance-wallet"
-              size={sp(isSmallScreen ? 20 : 24)}
-              color="#3B82F6"
-            />
-            <Text style={styles.walletText}>Wallet</Text>
-          </TouchableOpacity>
+        
         </View>
 
         {/* Bottom Content */}
