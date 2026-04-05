@@ -53,7 +53,6 @@ export interface UIVehicle {
   minimumFare: number;
   baseDistanceKm: number;
   startingFare: number;        // baseFare + platform fee (incl. GST)
-  capacity: string;
   helperCharge: number;
   helperAvailable: boolean;
   bestFor: string | null;
@@ -106,12 +105,6 @@ const VehicleSelection = () => {
         const transformedVehicles: UIVehicle[] = vehiclesData
           .filter((v: VehiclePricing) => v.is_active)
           .map((vehicle: VehiclePricing) => {
-            const capMin = vehicle.capacity_min || 0;
-            const capMax = vehicle.capacity_max || 0;
-            const capacity =
-              capMin > 0 && capMax > 0 ? `${capMin}–${capMax} kg`
-              : capMax > 0 ? `Up to ${capMax} kg`
-              : 'Any load';
             const baseFare      = parseFloat(vehicle.base_fare);
             const minimumFare   = parseFloat(vehicle.minimum_fare);
             const baseDistKm    = parseFloat(vehicle.base_distance_km) || 2;
@@ -126,7 +119,6 @@ const VehicleSelection = () => {
               minimumFare,
               baseDistanceKm: baseDistKm,
               startingFare,
-              capacity,
               helperCharge: parseFloat(vehicle.helper_charge_per_person) || 200,
               helperAvailable: vehicle.helper_available,
               bestFor: vehicle.best_for,
@@ -192,9 +184,6 @@ const VehicleSelection = () => {
 
           <View style={styles.info}>
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-           <Text style={styles.details} numberOfLines={1}>
-  {item.capacity}
-</Text>
           </View>
 
           <View style={styles.priceContainer}>
