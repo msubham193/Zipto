@@ -91,7 +91,7 @@ const OTPVerification = () => {
   const navigation = useNavigation<any>();
   const { verifyOtp, login, isLoading, error: authError } = useAuthStore();
 
-  const { mobile, fullMobile } = route.params || { mobile: '', fullMobile: '' };
+  const { mobile, fullMobile, isNewUser = true } = route.params || { mobile: '', fullMobile: '', isNewUser: true };
 
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -202,9 +202,14 @@ const OTPVerification = () => {
               ]}
             >
               <View style={styles.formSection}>
-                <Text style={styles.title}>Verify OTP</Text>
+                <Text style={styles.title}>
+                  {isNewUser ? 'Verify OTP' : 'Welcome back!'}
+                </Text>
                 <Text style={styles.subtitle}>
-                  We've sent a 6-digit code to {'\n'}+91 {mobile}
+                  {isNewUser
+                    ? `We've sent a 6-digit code to create your account`
+                    : `We've sent a 6-digit code to verify it's you`}
+                  {'\n'}+91 {mobile}
                 </Text>
 
                 {/* OTP Input */}

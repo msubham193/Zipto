@@ -73,10 +73,11 @@ const Login = () => {
     }
     setError('');
     try {
-      await login(countryCode + phoneNumber);
+      const res = await login(countryCode + phoneNumber);
       navigation.navigate('OTPVerification', {
         mobile: phoneNumber,
         fullMobile: countryCode + phoneNumber,
+        isNewUser: res?.isNewUser !== false,
       });
     } catch {
       // error displayed via authError from store

@@ -40,8 +40,6 @@ export interface VehiclePricing {
   surge_multiplier: string;
   free_waiting_minutes: number;
   waiting_charge_per_minute: string;
-  capacity_min: number;
-  capacity_max: number;
   best_for: string | null;
   night_surcharge_percent: string;
   multi_stop_fee: string;
