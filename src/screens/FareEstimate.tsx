@@ -24,12 +24,9 @@ import { useBookingStore } from '../store/useBookingStore';
 import { WebView } from 'react-native-webview';
 
 // ─── Responsive Utilities ────────────────────────────────────────────────────
-
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const BASE_WIDTH = 393;
 const BASE_HEIGHT = 852;
-
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
 const ms = (size: number, factor = 0.45) =>
@@ -37,12 +34,10 @@ const ms = (size: number, factor = 0.45) =>
 const nf = (size: number) =>
   Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 const sp = (size: number) => Math.round(scaleW(size));
-
 const isSmallScreen = SCREEN_WIDTH <= 360;
 const isLargeScreen = SCREEN_WIDTH >= 428;
 
 // ─── Vehicle Image Map ────────────────────────────────────────────────────────
-
 const VEHICLE_IMAGES: Record<string, any> = {
   bike: require('../assets/images/bike_img.png'),
   scooty: require('../assets/images/scooter_img.png'),
@@ -53,8 +48,13 @@ const VEHICLE_IMAGES: Record<string, any> = {
   tata_407: require('../assets/images/vehicle3.png'),
 };
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Payment Icon Map ─────────────────────────────────────────────────────────
+const PAYMENT_ICONS: Record<'cash' | 'online', any> = {
+  cash: require('../assets/images/cash.png'),
+  online: require('../assets/images/bhim.png'),
+};
 
+// ─── Component ───────────────────────────────────────────────────────────────
 const FareEstimate = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -72,6 +72,7 @@ const FareEstimate = () => {
 
   const { user } = useAuthStore();
   const { setActiveBooking } = useBookingStore();
+
   const {
     vehicle, pickup, drop, pickupCoords, dropCoords,
     city, serviceCategory, senderName, senderMobile,
@@ -99,14 +100,12 @@ const FareEstimate = () => {
       setError(null);
       if (!pickupCoords || !dropCoords) throw new Error('Location coordinates are required');
       if (!vehicle?.vehicleType) throw new Error('Vehicle type is required');
-
       const response = await vehicleApi.estimateFare({
         pickup_location: { latitude: pickupCoords.latitude, longitude: pickupCoords.longitude, address: pickup || '' },
         drop_location: { latitude: dropCoords.latitude, longitude: dropCoords.longitude, address: drop || '' },
         vehicle_type: selectedVehicleType,
         number_of_helpers: helperCount || 0,
       });
-
       if (response.success && response.data) {
         setEstimateData(response.data);
       } else {
@@ -188,7 +187,6 @@ const FareEstimate = () => {
       const message = JSON.parse(event.nativeEvent.data);
       const bookingId = paymentModal?.bookingId || '';
       setPaymentModal(null);
-
       if (message.type === 'PAYMENT_SUCCESS') {
         setBookingLoading(true);
         const verifyResponse = await vehicleApi.verifyPayment({
@@ -234,16 +232,13 @@ const FareEstimate = () => {
         alternative_phone: alternativePhone || undefined,
         paid_by: paidBy,
       };
-
       const bookingResponse = await vehicleApi.createBooking(bookingData);
       if (!bookingResponse.success) {
         Alert.alert('Booking Failed', bookingResponse.message || 'Failed to create booking. Please try again.');
         return;
       }
-
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
       const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
-
       setActiveBooking({
         id: bookingId,
         status: 'searching',
@@ -258,7 +253,6 @@ const FareEstimate = () => {
         paymentMethod: selectedPayment,
         paidBy,
       });
-
       if (selectedPayment === 'online') {
         const orderResponse = await vehicleApi.createPaymentOrder({ booking_id: bookingId, amount });
         if (!orderResponse.success || !orderResponse.data?.order_id) {
@@ -304,7 +298,6 @@ const FareEstimate = () => {
 
   const breakdown = estimateData?.breakdown;
   const totalFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
-
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
   const surgeExtra = hasSurge && breakdown?.subtotal
@@ -370,7 +363,6 @@ const FareEstimate = () => {
               </Text>
             </View>
           </View>
-
           <View style={styles.routeContainer}>
             <View style={styles.timelineContainer}>
               <View style={[styles.dot, styles.pickupDot]} />
@@ -392,7 +384,6 @@ const FareEstimate = () => {
               </View>
             </View>
           </View>
-
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Icon name="schedule" size={sp(16)} color="#6B7280" />
@@ -465,9 +456,7 @@ const FareEstimate = () => {
               <Text style={styles.rowValue}>₹{helperCost || 0}</Text>
             </View>
           )}
-
           <View style={styles.divider} />
-
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Estimate</Text>
             <Text style={styles.totalValue}>₹{totalFare}</Text>
@@ -480,12 +469,9 @@ const FareEstimate = () => {
           style={styles.whoPaysSlider}
           onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
         >
-          {/* Animated sliding pill — only render after layout is measured */}
           {sliderWidth > 0 && (
             <Animated.View style={[styles.sliderPill, { left: pillLeft, width: halfWidth - sp(6) }]} />
           )}
-
-          {/* Sender option */}
           <TouchableOpacity
             style={styles.sliderOption}
             onPress={() => handlePaidByChange('sender')}
@@ -507,8 +493,6 @@ const FareEstimate = () => {
               </Text>
             </View>
           </TouchableOpacity>
-
-          {/* Receiver option */}
           <TouchableOpacity
             style={styles.sliderOption}
             onPress={() => handlePaidByChange('receiver')}
@@ -535,6 +519,7 @@ const FareEstimate = () => {
         {/* ── Payment Method ── */}
         <Text style={styles.sectionTitle}>Payment Method</Text>
         <View style={styles.paymentContainer}>
+
           {/* Cash */}
           <TouchableOpacity
             style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
@@ -542,14 +527,19 @@ const FareEstimate = () => {
             activeOpacity={0.9}
           >
             <View style={styles.paymentLeft}>
+              {/* ── Cash asset icon ── */}
               <View style={[styles.iconBox, selectedPayment === 'cash' && styles.selectedIconBox]}>
-                <Icon name="payments" size={sp(20)} color={selectedPayment === 'cash' ? '#2563EB' : '#6B7280'} />
+                <Image
+                  source={PAYMENT_ICONS.cash}
+                  style={styles.paymentIconImg}
+                  resizeMode="contain"
+                />
               </View>
               <View>
                 <Text style={[styles.paymentTitle, selectedPayment === 'cash' && styles.selectedPaymentText]}>
                   Cash
                 </Text>
-                <Text style={styles.paymentSub}>Pay to driver</Text>
+                <Text style={styles.paymentSub}>Pay to Rider</Text>
               </View>
             </View>
             <View style={[styles.radio, selectedPayment === 'cash' && styles.radioSelected]}>
@@ -564,8 +554,13 @@ const FareEstimate = () => {
             activeOpacity={0.9}
           >
             <View style={styles.paymentLeft}>
+              {/* ── Online / UPI asset icon ── */}
               <View style={[styles.iconBox, selectedPayment === 'online' && styles.selectedIconBox]}>
-                <Icon name="credit-card" size={sp(20)} color={selectedPayment === 'online' ? '#2563EB' : '#6B7280'} />
+                <Image
+                  source={PAYMENT_ICONS.online}
+                  style={styles.paymentIconImg}
+                  resizeMode="contain"
+                />
               </View>
               <View>
                 <Text style={[styles.paymentTitle, selectedPayment === 'online' && styles.selectedPaymentText]}>
@@ -578,6 +573,7 @@ const FareEstimate = () => {
               {selectedPayment === 'online' && <View style={styles.radioInner} />}
             </View>
           </TouchableOpacity>
+
         </View>
       </ScrollView>
 
@@ -641,13 +637,11 @@ const FareEstimate = () => {
 };
 
 // ─── Responsive Styles ────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-
   // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
@@ -670,13 +664,11 @@ const styles = StyleSheet.create({
     minWidth: sp(40),
     alignItems: 'center',
   },
-
   // ── Scroll content ───────────────────────────────────────────────────────────
   content: {
     padding: sp(16),
     paddingBottom: sp(100),
   },
-
   // ── Card ─────────────────────────────────────────────────────────────────────
   card: {
     backgroundColor: '#FFFFFF',
@@ -690,7 +682,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F3F4F6',
   },
-
   sectionTitle: {
     fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '600',
@@ -699,7 +690,6 @@ const styles = StyleSheet.create({
     marginBottom: sp(12),
     marginLeft: sp(4),
   },
-
   // ── Vehicle row ──────────────────────────────────────────────────────────────
   vehicleInfoRow: {
     flexDirection: 'row',
@@ -728,7 +718,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: sp(2),
   },
-
   // ── Route timeline ───────────────────────────────────────────────────────────
   routeContainer: {
     flexDirection: 'row',
@@ -782,7 +771,6 @@ const styles = StyleSheet.create({
     color: '#111827',
     lineHeight: nf(isSmallScreen ? 18 : 20),
   },
-
   // ── Stats row ────────────────────────────────────────────────────────────────
   statsRow: {
     flexDirection: 'row',
@@ -809,7 +797,6 @@ const styles = StyleSheet.create({
     height: sp(20),
     backgroundColor: '#D1D5DB',
   },
-
   // ── Breakdown rows ───────────────────────────────────────────────────────────
   row: {
     flexDirection: 'row',
@@ -854,7 +841,6 @@ const styles = StyleSheet.create({
     color: '#2563EB',
     flexShrink: 0,
   },
-
   // ── Surge banner ─────────────────────────────────────────────────────────────
   surgeBanner: {
     flexDirection: 'row',
@@ -909,7 +895,6 @@ const styles = StyleSheet.create({
     color: '#B91C1C',
     fontWeight: '700',
   },
-
   // ── Who Pays Slider ──────────────────────────────────────────────────────────
   whoPaysSlider: {
     flexDirection: 'row',
@@ -970,7 +955,6 @@ const styles = StyleSheet.create({
   sliderSubActive: {
     color: 'rgba(255, 255, 255, 0.75)',
   },
-
   // ── Payment method options ───────────────────────────────────────────────────
   paymentContainer: {
     gap: sp(12),
@@ -998,7 +982,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: sp(isSmallScreen ? 36 : 40),
     height: sp(isSmallScreen ? 36 : 40),
-    borderRadius: sp(isSmallScreen ? 18 : 20),
+    borderRadius: sp(isSmallScreen ? 10 : 12),
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1006,6 +990,11 @@ const styles = StyleSheet.create({
   },
   selectedIconBox: {
     backgroundColor: '#DBEAFE',
+  },
+  // ── Asset icon inside payment iconBox ────────────────────────────────────────
+  paymentIconImg: {
+    width: sp(isSmallScreen ? 22 : 26),
+    height: sp(isSmallScreen ? 22 : 26),
   },
   paymentTitle: {
     fontSize: nf(isSmallScreen ? 14 : 16),
@@ -1040,7 +1029,6 @@ const styles = StyleSheet.create({
     borderRadius: sp(5),
     backgroundColor: '#2563EB',
   },
-
   // ── Footer ───────────────────────────────────────────────────────────────────
   footer: {
     backgroundColor: '#FFFFFF',
@@ -1081,7 +1069,6 @@ const styles = StyleSheet.create({
     fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '600',
   },
-
   // ── Loading / Error ──────────────────────────────────────────────────────────
   loadingContainer: {
     flex: 1,
@@ -1121,7 +1108,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: nf(15),
   },
-
   // ── Payment modal ────────────────────────────────────────────────────────────
   paymentModalContainer: {
     flex: 1,

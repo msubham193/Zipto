@@ -21,33 +21,29 @@ import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const BASE_WIDTH  = 390;
 const BASE_HEIGHT = 844;
-
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
 const ms = (size: number, factor = 0.45) =>
   size + (scaleW(size) - size) * factor;
-
 const fs = (size: number) =>
   Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
 
-// Hero heights scaled to screen
+// ─────────────────────────────────────────────────────────────────────────────
 const HERO_HEIGHT_OPEN   = scaleH(250);
 const HERO_HEIGHT_CLOSED = scaleH(120);
 
 const Login = () => {
   const navigation = useNavigation<any>();
   const { t } = useTranslation();
-
   const [countryCode, setCountryCode] = useState('+91');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
+  // ── NEW: terms agreement checkbox state ────────────────────────────────────
+  const [termsAgreed, setTermsAgreed] = useState(false);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
@@ -66,9 +62,17 @@ const Login = () => {
 
   const { login, isLoading, error: authError } = useAuthStore();
 
+  // Button is enabled only when both number is filled and terms are agreed
+  const isButtonEnabled = phoneNumber.length === 10 && termsAgreed;
+
   const handleGetOTP = async () => {
     if (phoneNumber.length !== 10) {
       setError('Invalid mobile number');
+      return;
+    }
+    if (!termsAgreed) {
+      // Shouldn't be reachable since button is disabled, but guard anyway
+      setError('Please agree to the Terms & Privacy Policy to continue.');
       return;
     }
     setError('');
@@ -128,10 +132,8 @@ const Login = () => {
 
                 <View style={styles.inputRow}>
                   <View style={styles.codeInput}>
-                    {/* ── Indian flag emoji + country code ── */}
                     <Text style={styles.codeText}>🇮🇳 {countryCode}</Text>
                   </View>
-
                   <View
                     style={[
                       styles.phoneInputContainer,
@@ -161,11 +163,45 @@ const Login = () => {
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
 
+                {/* ── Terms & Conditions Checkbox ─────────────────────────── */}
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={() => setTermsAgreed(prev => !prev)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, termsAgreed && styles.checkboxChecked]}>
+                    {termsAgreed && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </View>
+                  <Text style={styles.checkboxLabel}>
+                    I agree to the{' '}
+                    <Text
+                      style={styles.checkboxLink}
+                      onPress={() => Alert.alert('Terms of Service', 'Terms content here.')}
+                    >
+                      Terms of Service
+                    </Text>
+                    {' '}and{' '}
+                    <Text
+                      style={styles.checkboxLink}
+                      onPress={() => Alert.alert('Privacy Policy', 'Privacy policy content here.')}
+                    >
+                      Privacy Policy
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+                {/* ─────────────────────────────────────────────────────────── */}
+
                 <View>
                   <TouchableOpacity
-                    style={styles.otpButton}
+                    style={[
+                      styles.otpButton,
+                      !isButtonEnabled && styles.otpButtonDisabled,
+                    ]}
                     onPress={handleGetOTP}
-                    activeOpacity={0.8}
+                    activeOpacity={isButtonEnabled ? 0.8 : 1}
+                    disabled={!isButtonEnabled}
                   >
                     <Text style={styles.otpButtonText}>
                       {isLoading ? 'Sending...' : 'Get OTP'}
@@ -184,13 +220,11 @@ const Login = () => {
                       <Text style={styles.dividerText}>Or continue with</Text>
                       <View style={styles.divider} />
                     </View>
-
                     <View style={styles.socialContainer}>
                       <TouchableOpacity
                         style={styles.socialButton}
                         onPress={() => handleSocialLogin('Google')}
                       >
-                        {/* ── Google logo ── */}
                         <Image
                           source={require('../assets/images/google_logo1.png')}
                           style={styles.socialLogo}
@@ -198,12 +232,10 @@ const Login = () => {
                         />
                         <Text style={styles.socialButtonText}>Google</Text>
                       </TouchableOpacity>
-
                       <TouchableOpacity
                         style={styles.socialButton}
                         onPress={() => handleSocialLogin('Apple')}
                       >
-                        {/* ── Apple logo ── */}
                         <Image
                           source={require('../assets/images/apple_logo1.png')}
                           style={styles.socialLogo}
@@ -215,14 +247,6 @@ const Login = () => {
                   </>
                 )}
               </View>
-
-              {!keyboardOpen && (
-                <Text style={styles.termsText}>
-                  By continuing, you agree to our{' '}
-                  <Text style={styles.link}>Terms of Service</Text> and{' '}
-                  <Text style={styles.link}>Privacy Policy</Text>.
-                </Text>
-              )}
             </View>
           </View>
         </ScrollView>
@@ -234,6 +258,7 @@ const Login = () => {
 // ─── Derived responsive values ────────────────────────────────────────────────
 const phoneIconSize = ms(28);
 const arrowIconSize = ms(22);
+const checkboxSize  = ms(20);
 
 const styles = StyleSheet.create({
   container: {
@@ -250,14 +275,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scaleW(20),
   },
-
   // ── Hero ──
   heroContainer: {
     paddingHorizontal: scaleW(20),
     paddingTop: scaleH(10),
   },
   heroCard: {
-    // height is set dynamically via inline style
     borderRadius: ms(16),
     overflow: 'hidden',
     borderWidth: 1,
@@ -284,7 +307,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
-
   // ── Content ──
   content: {
     flex: 1,
@@ -307,7 +329,6 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginBottom: scaleH(40),
   },
-
   // ── Inputs ──
   inputContainer: {
     flexDirection: 'row',
@@ -370,7 +391,47 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     marginTop: scaleH(6),
   },
-
+  // ── Checkbox ──────────────────────────────────────────────────────────────
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: scaleH(18),
+    marginBottom: scaleH(4),
+    gap: scaleW(10),
+  },
+  checkbox: {
+    width: checkboxSize,
+    height: checkboxSize,
+    borderRadius: ms(5),
+    borderWidth: 1.8,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: scaleH(1),          // optical alignment with first line of text
+    flexShrink: 0,
+  },
+  checkboxChecked: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: fs(12),
+    fontWeight: '800',
+    lineHeight: fs(14),
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: fs(13),
+    color: '#475569',
+    fontFamily: 'Poppins-Regular',
+    lineHeight: fs(20),
+  },
+  checkboxLink: {
+    color: '#2563EB',
+    fontWeight: '600',
+  },
   // ── OTP Button ──
   otpButton: {
     backgroundColor: '#2563EB',
@@ -379,8 +440,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: scaleH(30),
+    marginTop: scaleH(20),
     marginBottom: scaleH(20),
+  },
+  otpButtonDisabled: {
+    backgroundColor: '#93C5FD',   // washed-out blue when disabled
   },
   otpButtonText: {
     color: '#FFFFFF',
@@ -394,7 +458,6 @@ const styles = StyleSheet.create({
     height: arrowIconSize,
     tintColor: '#eaecf1',
   },
-
   // ── Divider ──
   dividerContainer: {
     flexDirection: 'row',
@@ -411,7 +474,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: fs(13),
   },
-
   // ── Social login ──
   socialContainer: {
     flexDirection: 'row',
@@ -440,8 +502,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
   },
-
-  // ── Footer ──
+  // ── Footer (terms moved to checkbox, kept for potential future use) ────────
   termsText: {
     fontSize: fs(11),
     fontFamily: 'Poppins-Regular',
