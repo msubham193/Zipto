@@ -1,12 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { notificationApi } from '../api/client';
-// import React, {
-//   useState,
-//   useRef,
-//   useEffect,
-//   useMemo,
-//   useCallback,
-// } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,144 +6,97 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  PermissionsAndroid,
-  Platform,
   PixelRatio,
-  useColorScheme,
+  ScrollView,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Geolocation from 'react-native-geolocation-service';
+import { PermissionsAndroid, Platform } from 'react-native';
+import { googleMapsApi as mapboxApi } from '../api/googleMaps';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Geolocation from 'react-native-geolocation-service';
 import BottomTabBar from './BottomTabBar';
-import Spinner from '../components/Spinner';
 import { useAuthStore } from '../store/useAuthStore';
-
-// ─── Responsive Utilities ────────────────────────────────────────────────────
+import { notificationApi } from '../api/client';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const BASE_WIDTH = 393;
 const BASE_HEIGHT = 852;
-
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-const nf = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
+const nf = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 const sp = (size: number) => Math.round(scaleW(size));
 
 const isSmallScreen = SCREEN_WIDTH <= 360;
-const isLargeScreen = SCREEN_WIDTH >= 428;
-
-// ─── Night mode map style (applied after 7 PM, before 6 AM) ─────────────────
-const NIGHT_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-  {
-    featureType: 'administrative.locality',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#d59563' }],
-  },
-  {
-    featureType: 'poi',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#d59563' }],
-  },
-  {
-    featureType: 'poi.park',
-    elementType: 'geometry',
-    stylers: [{ color: '#263c3f' }],
-  },
-  {
-    featureType: 'poi.park',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#6b9a76' }],
-  },
-  {
-    featureType: 'road',
-    elementType: 'geometry',
-    stylers: [{ color: '#38414e' }],
-  },
-  {
-    featureType: 'road',
-    elementType: 'geometry.stroke',
-    stylers: [{ color: '#212a37' }],
-  },
-  {
-    featureType: 'road',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#9ca5b3' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'geometry',
-    stylers: [{ color: '#746855' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'geometry.stroke',
-    stylers: [{ color: '#1f2835' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#f3d19c' }],
-  },
-  {
-    featureType: 'transit',
-    elementType: 'geometry',
-    stylers: [{ color: '#2f3948' }],
-  },
-  {
-    featureType: 'transit.station',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#d59563' }],
-  },
-  {
-    featureType: 'water',
-    elementType: 'geometry',
-    stylers: [{ color: '#17263c' }],
-  },
-  {
-    featureType: 'water',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#515c6d' }],
-  },
-];
-
-function isNightTime(): boolean {
-  const hour = new Date().getHours();
-  return hour >= 19 || hour < 6; // 7 PM to 6 AM
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 const Home = () => {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const isFocused = useIsFocused();
-
-  const mapRef = useRef<MapView>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(
-    null,
-  );
-  const [isMapLoading, setIsMapLoading] = useState(true);
-  const [isServicesVisible, setIsServicesVisible] = useState(true);
-  const [_locationPermissionGranted, setLocationPermissionGranted] =
-    useState(false);
-
-  const { token, isAuthenticated } = useAuthStore();
-  const colorScheme = useColorScheme();
+  const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentLocation, setCurrentLocation] = useState('Locating...');
+
+  const fetchLocation = async () => {
+    setCurrentLocation('Locating...');
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'Zipto needs access to your location to show accurate services.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          setCurrentLocation('Location permission denied');
+          return;
+        }
+      }
+      
+      Geolocation.getCurrentPosition(
+        async position => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const address = await mapboxApi.reverseGeocode(latitude, longitude);
+            
+            // Check if address is the lat/lng fallback from googleMapsApi
+            const isFallbackCoords = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(address?.trim());
+            
+            if (address && !isFallbackCoords) {
+              const shortAddress = address.split(',').slice(0, 2).join(', ');
+              setCurrentLocation(shortAddress);
+            } else {
+              setCurrentLocation('Current Location');
+            }
+          } catch (error) {
+            console.log('Reverse geocode error:', error);
+            setCurrentLocation('Current Location');
+          }
+        },
+        error => {
+          console.log('Geolocation error:', error);
+          setCurrentLocation('Current Location');
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
+      );
+    } catch (err) {
+      console.warn(err);
+      setCurrentLocation('Current Location');
+    }
+  };
 
   useEffect(() => {
-    if (!isAuthenticated) {return;}
+    fetchLocation();
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
     notificationApi.getNotifications()
       .then(res => {
         const list = Array.isArray(res?.data) ? res.data : [];
@@ -159,115 +104,40 @@ const Home = () => {
       })
       .catch(() => {});
   }, [isAuthenticated, isFocused]);
-  const defaultCenter: [number, number] = [85.8245, 20.2961];
-
-  // Use night style only when it's actually night time (not just device dark mode)
-  const mapStyle = useMemo(() => (isNightTime() ? NIGHT_MAP_STYLE : []), []);
-
-  const watchIdRef = useRef<number | null>(null);
-
-  const startLocationTracking = useCallback(() => {
-    Geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        const newLocation: [number, number] = [longitude, latitude];
-        setUserLocation(newLocation);
-        if (mapRef.current) {
-          mapRef.current.animateToRegion(
-            {
-              latitude,
-              longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            },
-            1000,
-          );
-        }
-      },
-      error => console.log('Location error:', error),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
-    );
-
-    // 100m distance filter — Home screen doesn't need fine-grained updates
-    const watchId = Geolocation.watchPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation([longitude, latitude]);
-      },
-      error => console.log('Error watching location:', error),
-      { enableHighAccuracy: false, distanceFilter: 100 },
-    );
-    watchIdRef.current = watchId;
-  }, []);
-
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      try {
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title: 'Location Permission',
-              message:
-                'Zipto needs access to your location to show your position on the map.',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            },
-          );
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            setLocationPermissionGranted(true);
-            startLocationTracking();
-          }
-        } else {
-          setLocationPermissionGranted(true);
-          startLocationTracking();
-        }
-      } catch (err) {
-        console.warn('Permission error:', err);
-      }
-    };
-    requestLocationPermission();
-    return () => {
-      if (watchIdRef.current !== null) {
-        Geolocation.clearWatch(watchIdRef.current);
-      }
-    };
-  }, [startLocationTracking]);
 
   const services = useMemo(
     () => [
       {
         id: 1,
-        title: 'Send Packages',
-        icon: 'local-shipping',
-        gradient: ['#3B82F6', '#2563EB'],
-        description: 'Quick delivery',
-        serviceCategory: 'send_packages',
+        title: 'From Restaurant',
+        description: 'Food from any restaurant',
+        serviceCategory: 'food_delivery',
+        image: require('../assets/images/food_restaurant.png'),
+        bgColor: '#FFF5F0',
       },
       {
         id: 2,
-        title: 'Transport Goods',
-        icon: 'fire-truck',
-        gradient: ['#10B981', '#059669'],
-        description: 'Heavy items',
-        serviceCategory: 'transport_goods',
+        title: 'From Pharmacy',
+        description: 'Medicines from any pharmacy',
+        serviceCategory: 'medicine',
+        image: require('../assets/images/pharmacy_medicine.png'),
+        bgColor: '#F0FFF8',
       },
       {
         id: 3,
-        title: 'Food Delivery',
-        icon: 'restaurant',
-        gradient: ['#F59E0B', '#D97706'],
-        description: 'Hot & fresh',
-        serviceCategory: 'food_delivery',
+        title: 'Send Parcel',
+        description: 'Parcels & packages',
+        serviceCategory: 'send_packages',
+        image: require('../assets/images/send_parcel.png'),
+        bgColor: '#F3F4F6',
       },
       {
         id: 4,
-        title: 'Medicine',
-        icon: 'local-pharmacy',
-        gradient: ['#EF4444', '#DC2626'],
-        description: 'Emergency delivery',
-        serviceCategory: 'medicine',
+        title: 'Move Goods',
+        description: 'Goods & bulk items',
+        serviceCategory: 'transport_goods',
+        image: require('../assets/images/move_goods.png'),
+        bgColor: '#EFF6FF',
       },
     ],
     [],
@@ -275,366 +145,315 @@ const Home = () => {
 
   return (
     <View style={styles.container}>
-      {/* ── Google Map ── */}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          latitude: userLocation ? userLocation[1] : defaultCenter[1],
-          longitude: userLocation ? userLocation[0] : defaultCenter[0],
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-        onMapReady={() => setIsMapLoading(false)}
-        showsUserLocation={false}
-        toolbarEnabled={false}
-        customMapStyle={mapStyle}
-        userInterfaceStyle="light"
-      >
-        {userLocation && (
-          <Marker
-            coordinate={{
-              latitude: userLocation[1],
-              longitude: userLocation[0],
-            }}
-            anchor={{ x: 0.5, y: 0.5 }}
-          >
-            <View style={styles.customMarker}>
-              <View style={styles.userLocationPulse} />
-              <View style={styles.userLocationDot} />
-            </View>
-          </Marker>
-        )}
-      </MapView>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
+        {/* Sticky Header */}
+        <View style={{ paddingHorizontal: sp(16) }}>
+          <View style={styles.header}>
+            <View style={styles.headerTop}>
+              <Text style={styles.ziptoText}>zipto</Text>
+              <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => navigation.navigate('Wallet')} style={styles.headerIconBtn} activeOpacity={0.7}>
+                  <MaterialIcons name="account-balance-wallet" size={sp(isSmallScreen ? 20 : 22)} color="#1E3A8A" />
+                </TouchableOpacity>
 
-      {/* ── Main Content Overlay ── */}
-      <SafeAreaView style={styles.mainOverlay} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.logoSection}>
-            <Text style={styles.ziptoText}>Zipto</Text>
-          </View>
-
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Wallet')}
-              style={styles.headerIconBtn}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="account-balance-wallet" size={sp(isSmallScreen ? 22 : 26)} color="#3B82F6" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setUnreadCount(0);
-                navigation.navigate('Notifications');
-              }}
-              style={styles.headerIconBtn}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="notifications" size={sp(isSmallScreen ? 22 : 26)} color="#3B82F6" />
-              {unreadCount > 0 && (
-                <View style={styles.notifBadge}>
-                  <Text style={styles.notifBadgeText}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        
-        </View>
-
-        {/* Bottom Content */}
-        <View style={styles.bottomContainer}>
-          {isServicesVisible && (
-            <View style={styles.servicesContainer}>
-              <Text style={styles.servicesTitle}>Our Services</Text>
-              <View style={styles.servicesGrid}>
-                {services.map(service => (
-                  <TouchableOpacity
-                    key={service.id}
-                    style={styles.serviceCard}
-                    onPress={() =>
-                      navigation.navigate('PickupDropSelection', {
-                        serviceCategory: service.serviceCategory,
-                      })
-                    }
-                    activeOpacity={0.8}
-                  >
-                    <View
-                      style={[
-                        styles.serviceIconContainer,
-                        { backgroundColor: service.gradient[0] },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={service.icon}
-                        size={sp(isSmallScreen ? 26 : isLargeScreen ? 36 : 32)}
-                        color="#FFFFFF"
-                      />
+                <TouchableOpacity
+                  onPress={() => {
+                    setUnreadCount(0);
+                    navigation.navigate('Notifications');
+                  }}
+                  style={styles.headerIconBtn}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="notifications" size={sp(isSmallScreen ? 20 : 22)} color="#1E3A8A" />
+                  {unreadCount > 0 && (
+                    <View style={styles.notifBadge}>
+                      <Text style={styles.notifBadgeText}>
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </Text>
                     </View>
-                    <Text style={styles.serviceTitle}>{service.title}</Text>
-                    <Text style={styles.serviceDescription}>
-                      {service.description}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
-          )}
+            <TouchableOpacity 
+              style={styles.headerLocation} 
+              onPress={fetchLocation}
+              activeOpacity={0.6}
+            >
+              <MaterialIcons name="location-on" size={sp(20)} color="#1E3A8A" />
+              <Text style={styles.locationText} numberOfLines={1} ellipsizeMode="tail">
+                {currentLocation}
+              </Text>
+              <MaterialIcons name="keyboard-arrow-down" size={sp(20)} color="#1A1A1A" />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Hero Banner */}
+          <View style={styles.heroBanner}>
+            <Image 
+              source={require('../assets/images/banner.png')} 
+              style={styles.heroBannerImage} 
+              resizeMode="contain" 
+            />
+          </View>
+
+          {/* Services */}
+          <View style={styles.servicesContainer}>
+            <Text style={styles.servicesTitle}>What do you want us to pick up?</Text>
+            <Text style={styles.servicesSubTitle}>We'll pick it up and deliver it to you</Text>
+            <View style={styles.servicesGrid}>
+              {services.map(service => (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.serviceCard}
+                  onPress={() =>
+                    navigation.navigate('PickupDropSelection', {
+                      serviceCategory: service.serviceCategory,
+                    })
+                  }
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.serviceCardTop}>
+                    <View style={styles.serviceImageContainer}>
+                      <Image source={service.image} style={styles.serviceImage} resizeMode="contain" />
+                    </View>
+                    <View style={styles.serviceArrow}>
+                      <MaterialIcons name="arrow-forward" size={sp(14)} color="#1A1A1A" />
+                    </View>
+                  </View>
+                  <View style={styles.serviceCardBottom}>
+                    <Text style={styles.serviceCardTitle} numberOfLines={1}>{service.title}</Text>
+                    <Text style={styles.serviceDescription} numberOfLines={2}>{service.description}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Info Banner */}
+          <View style={styles.infoBanner}>
+            <View style={styles.infoIconContainer}>
+              <MaterialIcons name="verified-user" size={sp(18)} color="#1E3A8A" />
+            </View>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>We only handle pickup & delivery.</Text>
+              <Text style={styles.infoDesc}>Product quality is managed by the seller.</Text>
+            </View>
+          </View>
+        </ScrollView>
       </SafeAreaView>
 
-      {/* ── Bottom Navigation ── */}
+      {/* Bottom Navigation */}
       <BottomTabBar />
-
-      {/* ── FAB ── */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setIsServicesVisible(!isServicesVisible)}
-        activeOpacity={0.8}
-      >
-        <MaterialIcons
-          name={isServicesVisible ? 'close' : 'menu'}
-          size={sp(28)}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
-
-      {/* ── Loading Spinner ── */}
-      <Spinner
-        visible={isFocused && isMapLoading}
-        overlay={true}
-        size="large"
-        color="#3B82F6"
-      />
     </View>
   );
 };
-
-// ─── Responsive Styles ────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
-  // ── Map ──────────────────────────────────────────────────────────────────────
-  map: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    ...StyleSheet.absoluteFillObject,
+  scrollContent: {
+    paddingHorizontal: sp(16),
+    paddingBottom: sp(100), // padding for bottom tab bar
   },
-
-  // ── User location marker ─────────────────────────────────────────────────────
-  customMarker: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: sp(40),
-    height: sp(40),
-  },
-  userLocationPulse: {
-    position: 'absolute',
-    width: sp(40),
-    height: sp(40),
-    borderRadius: sp(20),
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-  },
-  userLocationDot: {
-    width: sp(16),
-    height: sp(16),
-    borderRadius: sp(8),
-    backgroundColor: '#3B82F6',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    elevation: 6,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-  },
-
-  // ── Overlay ──────────────────────────────────────────────────────────────────
-  mainOverlay: {
-    flex: 1,
-    justifyContent: 'space-between',
-    padding: sp(16),
-    paddingBottom: 0,
-  },
-
-  // ── Header ───────────────────────────────────────────────────────────────────
+  
+  // Header
   header: {
+    marginTop: sp(10),
+    marginBottom: sp(16),
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(12),
+    padding: sp(12),
+    borderWidth: 1,
+    borderColor: '#E8ECF0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    padding: sp(isSmallScreen ? 10 : 12),
-    paddingHorizontal: sp(isSmallScreen ? 12 : 16),
-    borderRadius: sp(12),
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  logoSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: sp(8),
-    flex: 1,
-  },
-  logoContainer: {
-    width: sp(isSmallScreen ? 34 : 40),
-    height: sp(isSmallScreen ? 34 : 40),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
+    marginBottom: sp(12),
   },
   ziptoText: {
-    fontSize: nf(isSmallScreen ? 20 : 22), 
-    // fontWeight: 'bold',
+    fontSize: nf(32),
     fontFamily: 'Cocon-Regular',
-    color: '#3B82F6',
+    color: '#0047C3', 
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: sp(4),
+    gap: sp(8),
   },
   headerIconBtn: {
-    width: sp(38),
-    height: sp(38),
-    borderRadius: sp(19),
+    width: sp(36),
+    height: sp(36),
+    borderRadius: sp(18),
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    position: 'relative',
   },
   notifBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 0,
+    right: 0,
     backgroundColor: '#EF4444',
     borderRadius: 8,
     minWidth: 16,
     height: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 3,
   },
   notifBadgeText: {
     fontSize: 9,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-
-  // ── Bottom container ─────────────────────────────────────────────────────────
-  bottomContainer: {
-    marginBottom: sp(80),
+  headerLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(4),
+  },
+  locationText: {
+    fontSize: nf(14),
+    fontFamily: 'Poppins-Medium',
+    color: '#1A1A1A',
+    maxWidth: sp(220),
   },
 
-  // ── Services panel ───────────────────────────────────────────────────────────
-  servicesContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: sp(isSmallScreen ? 12 : 16),
+  // Hero Banner
+  heroBanner: {
+    marginBottom: sp(24),
+    width: '100%',
+    aspectRatio: 16 / 8, // Typical banner aspect ratio (2:1)
+  },
+  heroBannerImage: {
+    width: '100%',
+    height: '100%',
     borderRadius: sp(16),
-    marginBottom: sp(12),
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  },
+
+  // Services
+  servicesContainer: {
+    marginBottom: sp(24),
   },
   servicesTitle: {
-    fontSize: nf(isSmallScreen ? 15 : 18),
-    fontWeight: 'bold',
+    fontSize: nf(isSmallScreen ? 18 : 20),
+    fontWeight: '800',
+    fontFamily: 'Poppins-Bold',
+    color: '#111827',
+    marginBottom: sp(2),
+  },
+  servicesSubTitle: {
+    fontSize: nf(isSmallScreen ? 13 : 14),
     fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-    marginBottom: sp(12),
+    color: '#6B7280',
+    marginBottom: sp(16),
   },
   servicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: sp(isSmallScreen ? 8 : 0),
+    rowGap: sp(12),
   },
   serviceCard: {
     width: '48%',
-    backgroundColor: '#F8FAFC',
-    padding: sp(isSmallScreen ? 10 : 12),
-    borderRadius: sp(12),
-    marginBottom: sp(isSmallScreen ? 8 : 12),
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: sp(14),
+    borderRadius: sp(16),
+    height: sp(150),
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#F1F5F9',
   },
-  serviceIconContainer: {
-    width: sp(isSmallScreen ? 46 : isLargeScreen ? 64 : 56),
-    height: sp(isSmallScreen ? 46 : isLargeScreen ? 64 : 56),
-    borderRadius: sp(isSmallScreen ? 23 : isLargeScreen ? 32 : 28),
+  serviceCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  serviceImageContainer: {
+    width: sp(48),
+    height: sp(48),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: sp(8),
+    borderRadius: sp(12),
+    overflow: 'hidden',
   },
-  serviceTitle: {
-    fontSize: nf(isSmallScreen ? 11 : 13),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
+  serviceImage: {
+    width: '100%',
+    height: '100%',
+  },
+  serviceArrow: {
+    width: sp(24),
+    height: sp(24),
+    borderRadius: sp(12),
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  serviceCardBottom: {
+    marginTop: sp(10),
+  },
+  serviceCardTitle: {
+    fontSize: nf(isSmallScreen ? 13 : 14),
+    fontWeight: '700',
+    fontFamily: 'Poppins-SemiBold',
     color: '#0F172A',
-    textAlign: 'center',
-    marginBottom: sp(3),
+    marginBottom: sp(2),
   },
   serviceDescription: {
     fontSize: nf(isSmallScreen ? 10 : 11),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    textAlign: 'center',
+    lineHeight: nf(isSmallScreen ? 14 : 16),
   },
 
-  walletButton: {
+  // Info Banner
+  infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E8ECF0',
+    borderRadius: sp(12),
+    padding: sp(16),
+    marginBottom: sp(24),
+  },
+  infoIconContainer: {
+    width: sp(36),
+    height: sp(36),
+    borderRadius: sp(18),
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: sp(12),
-    paddingVertical: sp(6),
-    borderRadius: sp(20),
-    gap: sp(4),
-  },
-  walletText: {
-    fontSize: nf(13),
-    fontFamily: 'Poppins-Regular',
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-
-  // ── FAB ──────────────────────────────────────────────────────────────────────
-  fab: {
-    position: 'absolute',
-    bottom: sp(100),
-    right: sp(20),
-    width: sp(isSmallScreen ? 50 : 56),
-    height: sp(isSmallScreen ? 50 : 56),
-    borderRadius: sp(isSmallScreen ? 25 : 28),
-    backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    marginRight: sp(12),
+  },
+  infoTextContainer: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontWeight: '700',
+    fontFamily: 'Poppins-SemiBold',
+    color: '#1E293B',
+  },
+  infoDesc: {
+    fontSize: nf(isSmallScreen ? 11 : 12),
+    fontFamily: 'Poppins-Regular',
+    color: '#64748B',
+    marginTop: sp(2),
   },
 });
 

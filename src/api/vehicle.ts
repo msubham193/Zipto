@@ -89,6 +89,7 @@ export interface CreateBookingRequest {
   receiver_phone?: string;
   alternative_phone?: string;
   paid_by?: 'sender' | 'receiver';
+  coins_to_redeem?: number;
 }
 
 export interface CreateBookingResponse {
@@ -185,11 +186,14 @@ export interface BookingDetails {
   } | null;
   vehicle: any | null;
   otp?: string;
+  pickup_otp?: string;
+  pickup_otp_verified?: boolean;
   delivery_otp?: string;
+  delivery_otp_verified?: boolean;
+  otp_verified?: boolean;
   receiver_name?: string;
   receiver_phone?: string;
   alternative_phone?: string;
-  otp_verified?: boolean;
   vehicle_type?: string;
   payments?: {
     id: string;

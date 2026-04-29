@@ -55,6 +55,8 @@ export type AppStackParamList = {
     fare?: number;
     showBookingSuccess?: boolean;
     paymentMethod?: 'cash' | 'online';
+    /** Pass true when navigating from MyOrders — bookingId is a real DB ID, not an offer ID */
+    isRealBooking?: boolean;
   };
   Payment: undefined;
   BookingHistory: undefined;

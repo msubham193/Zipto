@@ -198,9 +198,11 @@ const MyOrders = () => {
       bookingId: b.id,
       pickup: getPickupAddress(b),
       drop: getDropAddress(b),
-      pickupCoords, dropCoords,
+      pickupCoords,
+      dropCoords,
       vehicleType: b.vehicle_type || b.booking_type || 'delivery',
       fare: parseFloat(b.estimated_fare) || 0,
+      isRealBooking: true, // skip offer-polling — this is a DB booking ID
     });
   };
 

@@ -14,6 +14,7 @@ import {
   Vibration,
   TextInput,
   ScrollView,
+  PixelRatio,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +25,18 @@ import { googleMapsApi } from '../api/googleMaps';
 import { useBookingStore } from '../store/useBookingStore';
 
 const { width, height } = Dimensions.get('window');
+
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+
+const scaleW = (size: number) => (width / BASE_WIDTH) * size;
+const scaleH = (size: number) => (height / BASE_HEIGHT) * size;
+
+const ms = (size: number, factor = 0.45) =>
+  size + (scaleW(size) - size) * factor;
+
+const fs = (size: number) =>
+  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
 type BookingStatus = 'searching' | 'assigned' | 'arriving' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -73,16 +86,26 @@ const LiveTracking = () => {
     fare = 0,
     showBookingSuccess = false,
     paymentMethod = 'cash',
+    // True when opened from MyOrders — bookingId is a real DB ID, not a Redis offer ID
+    isRealBooking = false,
   } = route.params || {};
 
   const { updateActiveBookingId, updateActiveBookingStatus, clearActiveBooking } = useBookingStore();
 
-  const [bookingStatus, setBookingStatus] = useState<BookingStatus>('searching');
+  // When re-opening from MyOrders we already have a real booking ID — skip offer polling
+  // and start in 'assigned' so the countdown/offer-polling effects don't fire
+  const [bookingStatus, setBookingStatus] = useState<BookingStatus>(
+    isRealBooking ? 'assigned' : 'searching',
+  );
   const [driver, setDriver] = useState<DriverInfo | null>(null);
   const [otp, setOtp] = useState<string | null>(null);
   const [pickupOtp, setPickupOtp] = useState<string | null>(null);
-  // realBookingId is set once a driver accepts — until then we only have offer_id
-  const [realBookingId, setRealBookingId] = useState<string | null>(null);
+  const [pickupOtpVerified, setPickupOtpVerified] = useState(false);
+  const [deliveryOtpVerified, setDeliveryOtpVerified] = useState(false);
+  // realBookingId: set immediately if re-opening, else set once driver accepts
+  const [realBookingId, setRealBookingId] = useState<string | null>(
+    isRealBooking ? bookingId : null,
+  );
   const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
@@ -274,7 +297,8 @@ const LiveTracking = () => {
         } else if (status === 'completed') {
           setBookingStatus('completed');
           clearActiveBooking();
-        } else if (status === 'in_progress' || status === 'picked_up') {
+        } else if (status === 'in_progress' || status === 'picked_up' || status === 'ongoing') {
+          // 'ongoing' is the real backend status after pickup OTP is verified
           setBookingStatus('in_progress');
           updateActiveBookingStatus('in_progress');
         } else if (status === 'driver_arriving' || status === 'arriving') {
@@ -294,9 +318,11 @@ const LiveTracking = () => {
             total_trips: (data as any).driver_stats?.total_trips,
           });
         }
-        if (data.delivery_otp) setOtp(data.delivery_otp);
-        if (data.pickup_otp)   setPickupOtp(data.pickup_otp);
-        if (data.driver_location) setDriverLocation(data.driver_location);
+        if (data.delivery_otp)        setOtp(data.delivery_otp);
+        if (data.pickup_otp)           setPickupOtp(data.pickup_otp);
+        if (data.pickup_otp_verified != null)  setPickupOtpVerified(!!data.pickup_otp_verified);
+        if (data.delivery_otp_verified != null) setDeliveryOtpVerified(!!data.delivery_otp_verified);
+        if (data.driver_location)      setDriverLocation(data.driver_location);
       }
     } catch (err: any) {
       console.log('Booking fetch error:', err?.message);
@@ -411,7 +437,7 @@ const LiveTracking = () => {
       }
 
       setBookingStatus('cancelled');
-      Alert.alert('Booking Cancelled', 'Your booking has been cancelled.');
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch (err: any) {
       setCancelling(false);
       Alert.alert(
@@ -613,12 +639,12 @@ const LiveTracking = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Icon name="arrow-back" size={24} color="#1F2937" />
+            <Icon name="arrow-back" size={ms(24)} color="#1F2937" />
           </TouchableOpacity>
 
           <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg, borderColor: statusConfig.border }]}>
             {bookingStatus === 'searching' ? (
-              <ActivityIndicator size="small" color={statusConfig.color} style={{ marginRight: 8 }} />
+              <ActivityIndicator size="small" color={statusConfig.color} style={{ marginRight: ms(8) }} />
             ) : (
               <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
             )}
@@ -630,185 +656,139 @@ const LiveTracking = () => {
 
         {/* Bottom Card */}
         <View style={styles.bottomCard}>
-          {/* Status Info */}
-          <View style={[styles.statusRow, { backgroundColor: statusConfig.bg, borderColor: statusConfig.border }]}>
-            <Icon name={statusConfig.icon} size={24} color={statusConfig.color} />
-            <View style={styles.statusInfo}>
-              <Text style={[styles.statusTitle, { color: statusConfig.color }]}>
-                {statusConfig.title}
-              </Text>
-              <Text style={styles.statusSubtitle}>{statusConfig.subtitle}</Text>
+          {/* Draggable handle indicator (visual only) */}
+          <View style={styles.bottomCardHandle} />
+
+          {/* Status Header */}
+          <View style={styles.statusHeaderRow}>
+            <View style={styles.statusTitleCol}>
+              <Text style={styles.statusTitleMain}>{statusConfig.title}</Text>
+              <Text style={styles.statusSubtitleMain}>{statusConfig.subtitle}</Text>
             </View>
             {bookingStatus === 'searching' && (
               <View style={styles.countdownBadge}>
-                <Text style={styles.countdownText}>{searchCountdown}</Text>
+                <Text style={styles.countdownText}>{searchCountdown}s</Text>
+              </View>
+            )}
+            {(bookingStatus === 'assigned' || bookingStatus === 'arriving') && driverToPickupKm !== null && (
+              <View style={styles.distanceBadgeModern}>
+                <Icon name="schedule" size={ms(16)} color="#2563EB" />
+                <Text style={styles.distanceBadgeTextModern}>
+                  {driverToPickupKm < 1
+                    ? `${Math.round(driverToPickupKm * 1000)} m`
+                    : `${driverToPickupKm.toFixed(1)} km`} away
+                </Text>
               </View>
             )}
           </View>
 
-          {/* Countdown progress bar */}
           {bookingStatus === 'searching' && (
-            <View style={styles.countdownBarBg}>
-              <View style={[styles.countdownBarFill, { width: `${(searchCountdown / 60) * 100}%` }]} />
-            </View>
+             <View style={styles.countdownBarBg}>
+               <View style={[styles.countdownBarFill, { width: `${(searchCountdown / 60) * 100}%` }]} />
+             </View>
           )}
 
-          {/* Driver distance badge */}
-          {driverToPickupKm !== null && (bookingStatus === 'assigned' || bookingStatus === 'arriving') && (
-            <View style={styles.distanceBadge}>
-              <Icon name="directions-car" size={16} color="#2563EB" />
-              <Text style={styles.distanceBadgeText}>
-                Driver is{' '}
-                <Text style={styles.distanceBadgeValue}>
-                  {driverToPickupKm < 1
-                    ? `${Math.round(driverToPickupKm * 1000)} m`
-                    : `${driverToPickupKm.toFixed(1)} km`}
-                </Text>{' '}
-                away from pickup
-              </Text>
-            </View>
-          )}
-
-          {/* Pickup OTP — show when driver assigned but trip not started */}
-          {pickupOtp && (bookingStatus === 'assigned' || bookingStatus === 'arriving') && (
-            <View style={styles.otpContainer}>
-              <View style={styles.otpLabelRow}>
-                <Icon name="inventory" size={16} color="#2563EB" />
-                <Text style={[styles.otpLabel, {color: '#2563EB', fontWeight: '700'}]}>
-                  Pickup OTP — Share when driver arrives
-                </Text>
-              </View>
-              <View style={styles.otpBox}>
-                {pickupOtp.split('').map((digit, index) => (
-                  <View key={index} style={[styles.otpDigit, {borderColor: '#2563EB', backgroundColor: '#EFF6FF'}]}>
-                    <Text style={[styles.otpDigitText, {color: '#1E40AF'}]}>{digit}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Delivery OTP — show during and after trip */}
-          {otp && bookingStatus === 'in_progress' && (
-            <View style={styles.otpContainer}>
-              <View style={styles.otpLabelRow}>
-                <Icon name="local-shipping" size={16} color="#059669" />
-                <Text style={[styles.otpLabel, {color: '#059669', fontWeight: '700'}]}>
-                  Delivery OTP — Share when package arrives
-                </Text>
-              </View>
-              <View style={styles.otpBox}>
-                {otp.split('').map((digit, index) => (
-                  <View key={index} style={[styles.otpDigit, {borderColor: '#059669', backgroundColor: '#F0FDF4'}]}>
-                    <Text style={[styles.otpDigitText, {color: '#065F46'}]}>{digit}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
+          <View style={styles.divider} />
 
           {/* Driver Card (when assigned) */}
           {driver && bookingStatus !== 'searching' && (
-            <>
-              <View style={styles.divider} />
+            <View style={styles.driverSection}>
               <View style={styles.driverHeader}>
                 <View style={styles.driverAvatar}>
-                  <Icon name="person" size={28} color="#2563EB" />
+                  <Icon name="person" size={ms(32)} color="#2563EB" />
                 </View>
                 <View style={styles.driverInfo}>
                   <Text style={styles.driverName}>{driver.name}</Text>
-                  {driver.vehicle_number && (
-                    <Text style={styles.vehicleInfo}>{vehicleType} · {driver.vehicle_number}</Text>
-                  )}
-                  {driver.total_trips != null && driver.total_trips > 0 && (
-                    <Text style={styles.tripsText}>{driver.total_trips} trips completed</Text>
-                  )}
-                </View>
-                <View style={styles.driverBadgesCol}>
+                  <Text style={styles.vehicleInfo}>{vehicleType.toUpperCase()} • {driver.vehicle_number || 'WAITING'}</Text>
                   {driver.rating != null && (
                     <View style={styles.ratingBadge}>
-                      <Icon name="star" size={14} color="#F59E0B" />
+                      <Icon name="star" size={ms(12)} color="#F59E0B" />
                       <Text style={styles.ratingText}>{Number(driver.rating).toFixed(1)}</Text>
                     </View>
                   )}
                 </View>
+                
+                <View style={styles.actionRowModern}>
+                  <TouchableOpacity style={styles.actionIconBtn} onPress={handleCall}>
+                    <Icon name="call" size={ms(20)} color="#2563EB" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionIconBtn}>
+                    <Icon name="chat" size={ms(20)} color="#2563EB" />
+                  </TouchableOpacity>
+                </View>
               </View>
+            </View>
+          )}
 
-              <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.actionBtn} onPress={handleCall}>
-                  <View style={styles.actionIcon}>
-                    <Icon name="call" size={20} color="#2563EB" />
-                  </View>
-                  <Text style={styles.actionText}>Call</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn}>
-                  <View style={styles.actionIcon}>
-                    <Icon name="chat" size={20} color="#2563EB" />
-                  </View>
-                  <Text style={styles.actionText}>Chat</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn}>
-                  <View style={styles.actionIcon}>
-                    <Icon name="share" size={20} color="#2563EB" />
-                  </View>
-                  <Text style={styles.actionText}>Share</Text>
-                </TouchableOpacity>
+          {/* OTP Sections */}
+          {pickupOtp && !pickupOtpVerified && (bookingStatus === 'assigned' || bookingStatus === 'arriving') && (
+            <View style={styles.otpBlock}>
+              <View style={styles.otpBlockLeft}>
+                <Text style={styles.otpBlockLabel}>Pickup OTP</Text>
+                <Text style={styles.otpBlockSub}>Share with partner</Text>
               </View>
-            </>
+              <View style={styles.otpBlockRight}>
+                <Text style={styles.otpBigText}>{pickupOtp}</Text>
+              </View>
+            </View>
+          )}
+
+          {otp && !deliveryOtpVerified && bookingStatus === 'in_progress' && (
+            <View style={[styles.otpBlock, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+              <View style={styles.otpBlockLeft}>
+                <Text style={[styles.otpBlockLabel, { color: '#065F46' }]}>Delivery OTP</Text>
+                <Text style={[styles.otpBlockSub, { color: '#059669' }]}>Share with partner</Text>
+              </View>
+              <View style={[styles.otpBlockRight, { borderLeftColor: '#BBF7D0' }]}>
+                <Text style={[styles.otpBigText, { color: '#065F46', letterSpacing: ms(4) }]}>{otp}</Text>
+              </View>
+            </View>
           )}
 
           {/* Booking Details */}
-          <View style={styles.divider} />
-          <View style={styles.routeSection}>
-            <View style={styles.routeRow}>
-              <View style={styles.routeDots}>
-                <View style={[styles.routeDot, { backgroundColor: '#2563EB' }]} />
-                <View style={styles.routeLine} />
-                <View style={[styles.routeDot, { backgroundColor: '#059669' }]} />
+          <View style={styles.routeSectionModern}>
+            <View style={styles.routeRowModern}>
+              <View style={styles.routeDotsModern}>
+                <View style={[styles.routeDotModern, { backgroundColor: '#2563EB' }]} />
+                <View style={styles.routeLineModern} />
+                <View style={[styles.routeDotModern, { backgroundColor: '#EF4444' }]} />
               </View>
-              <View style={styles.routeAddresses}>
-                <View style={styles.routeItem}>
-                  <Text style={styles.routeLabel}>Pickup</Text>
-                  <Text style={styles.routeAddress} numberOfLines={1}>{pickup || 'Pickup location'}</Text>
+              <View style={styles.routeAddressesModern}>
+                <View style={styles.routeItemModern}>
+                  <Text style={styles.routeAddressTextModern} numberOfLines={1}>{pickup || 'Pickup location'}</Text>
                 </View>
-                <View style={styles.routeItem}>
-                  <Text style={styles.routeLabel}>Drop-off</Text>
-                  <Text style={styles.routeAddress} numberOfLines={1}>{drop || 'Drop location'}</Text>
+                <View style={styles.routeItemModern}>
+                  <Text style={styles.routeAddressTextModern} numberOfLines={1}>{drop || 'Drop location'}</Text>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Fare & Vehicle */}
-          <View style={styles.fareRow}>
-            <View style={styles.fareItem}>
-              <Icon name="local-shipping" size={18} color="#6B7280" />
-              <Text style={styles.fareLabel}>{vehicleType}</Text>
+          {/* Cancel & Payment Details */}
+          <View style={styles.bottomActionsRow}>
+            <View style={styles.fareContainerModern}>
+               <Text style={styles.fareLabelModern}>To Pay</Text>
+               <View style={styles.fareAmountRow}>
+                 <Text style={styles.fareValueModern}>₹{fare}</Text>
+                 <View style={styles.paymentMethodBadge}>
+                   <Text style={styles.paymentMethodModern}>{paymentMethod.toUpperCase()}</Text>
+                 </View>
+               </View>
             </View>
-            <View style={styles.fareItem}>
-              <Icon name="payments" size={18} color="#6B7280" />
-              <Text style={styles.fareValue}>₹{fare}</Text>
-            </View>
+
+            {bookingStatus !== 'completed' && bookingStatus !== 'cancelled' ? (
+              <TouchableOpacity style={styles.cancelBtnModern} onPress={handleCancel}>
+                <Text style={styles.cancelBtnTextModern}>Cancel</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.homeBtnModern}
+                onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+              >
+                <Text style={styles.homeBtnTextModern}>Home</Text>
+              </TouchableOpacity>
+            )}
           </View>
-
-          {/* Cancel Button */}
-          {bookingStatus !== 'completed' && bookingStatus !== 'cancelled' && (
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Icon name="close" size={18} color="#DC2626" />
-              <Text style={styles.cancelText}>Cancel Booking</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Go Home Button (completed/cancelled) */}
-          {(bookingStatus === 'completed' || bookingStatus === 'cancelled') && (
-            <TouchableOpacity
-              style={styles.homeButton}
-              onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
-            >
-              <Icon name="home" size={20} color="#FFFFFF" />
-              <Text style={styles.homeButtonText}>Back to Home</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </SafeAreaView>
 
@@ -1038,21 +1018,21 @@ const styles = StyleSheet.create({
   topSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    gap: 12,
+    paddingHorizontal: ms(16),
+    paddingTop: ms(8),
+    gap: ms(12),
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: ms(44),
+    height: ms(44),
+    borderRadius: ms(22),
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: ms(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: ms(8),
     elevation: 3,
   },
   statusBadge: {
@@ -1060,59 +1040,59 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: ms(16),
+    paddingVertical: ms(12),
+    borderRadius: ms(24),
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: ms(2) },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: ms(8),
     elevation: 3,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    width: ms(8),
+    height: ms(8),
+    borderRadius: ms(4),
+    marginRight: ms(8),
   },
   statusBadgeText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fs(14),
+    fontWeight: '700',
   },
   // ── Map Markers ───────────────────────────────────────────────────────────
   markerContainer: {
     alignItems: 'center',
   },
   markerBubble: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: ms(2.5),
     borderColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+    shadowOffset: { width: 0, height: ms(4) },
+    shadowOpacity: 0.35,
+    shadowRadius: ms(6),
+    elevation: 10,
   },
   pickupBubble: {
     backgroundColor: '#2563EB',
   },
   dropBubble: {
-    backgroundColor: '#059669',
+    backgroundColor: '#EF4444',
   },
   markerArrow: {
     width: 0,
     height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
+    borderLeftWidth: ms(8),
+    borderRightWidth: ms(8),
+    borderTopWidth: ms(10),
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    marginTop: -1,
+    marginTop: ms(-2),
   },
   // ── Driver moving marker ──────────────────────────────────────────────────
   driverMarkerContainer: {
@@ -1121,330 +1101,312 @@ const styles = StyleSheet.create({
   },
   driverMarkerPulse: {
     position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(37, 99, 235, 0.18)',
+    width: ms(64),
+    height: ms(64),
+    borderRadius: ms(32),
+    backgroundColor: 'rgba(37, 99, 235, 0.2)',
   },
   driverMarkerBubble: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: ms(48),
+    height: ms(48),
+    borderRadius: ms(24),
     backgroundColor: '#1D4ED8',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: ms(3),
     borderColor: '#FFFFFF',
     shadowColor: '#1D4ED8',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 10,
+    shadowOffset: { width: 0, height: ms(4) },
+    shadowOpacity: 0.45,
+    shadowRadius: ms(8),
+    elevation: 12,
   },
-  // Bottom Card
+  // Modern Bottom Card
   bottomCard: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
+    borderTopLeftRadius: ms(32),
+    borderTopRightRadius: ms(32),
+    padding: ms(20),
+    paddingBottom: ms(30),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: ms(-10) },
+    shadowOpacity: 0.15,
+    shadowRadius: ms(20),
+    elevation: 20,
   },
-  // Status row
-  statusRow: {
+  bottomCardHandle: {
+    width: ms(40),
+    height: ms(5),
+    backgroundColor: '#E5E7EB',
+    borderRadius: ms(3),
+    alignSelf: 'center',
+    marginBottom: ms(16),
+  },
+  statusHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: ms(12),
   },
-  statusInfo: {
+  statusTitleCol: {
     flex: 1,
-    marginLeft: 12,
   },
-  statusTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 2,
+  statusTitleMain: {
+    fontSize: fs(22),
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: ms(4),
   },
-  statusSubtitle: {
-    fontSize: 12,
+  statusSubtitleMain: {
+    fontSize: fs(14),
     color: '#6B7280',
+    fontWeight: '500',
   },
-  // Countdown
   countdownBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F59E0B',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: ms(12),
+    paddingVertical: ms(6),
+    backgroundColor: '#FEF3C7',
+    borderRadius: ms(12),
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
   countdownText: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#D97706',
+  },
+  distanceBadgeModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: ms(12),
+    paddingVertical: ms(8),
+    borderRadius: ms(20),
+    gap: ms(6),
+  },
+  distanceBadgeTextModern: {
+    fontSize: fs(13),
+    color: '#2563EB',
+    fontWeight: '700',
   },
   countdownBarBg: {
-    height: 4,
-    backgroundColor: '#FDE68A',
-    borderRadius: 2,
-    marginBottom: 12,
+    height: ms(4),
+    backgroundColor: '#FEF3C7',
+    borderRadius: ms(2),
+    marginTop: ms(8),
     overflow: 'hidden',
   },
   countdownBarFill: {
     height: '100%',
     backgroundColor: '#F59E0B',
-    borderRadius: 2,
+    borderRadius: ms(2),
   },
-  // Driver distance badge
-  distanceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  distanceBadgeText: {
-    fontSize: 13,
-    color: '#374151',
-    flex: 1,
-  },
-  distanceBadgeValue: {
-    fontWeight: '700',
-    color: '#2563EB',
-  },
-  // OTP
-  otpContainer: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  otpLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  otpLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  otpBox: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  otpDigit: {
-    width: 40,
-    height: 44,
-    borderRadius: 8,
+  divider: {
+    height: 1,
     backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    marginVertical: ms(16),
   },
-  otpDigitText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+  // Modern Driver Section
+  driverSection: {
+    marginBottom: ms(8),
   },
-  // Driver
   driverHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
   driverAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: ms(52),
+    height: ms(52),
+    borderRadius: ms(26),
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
     borderWidth: 2,
-    borderColor: '#BFDBFE',
+    borderColor: '#DBEAFE',
+    marginRight: ms(16),
   },
   driverInfo: {
     flex: 1,
   },
   driverName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fs(18),
+    fontWeight: '800',
     color: '#111827',
-    marginBottom: 2,
+    marginBottom: ms(2),
   },
   vehicleInfo: {
-    fontSize: 13,
-    color: '#6B7280',
-    textTransform: 'capitalize',
-    marginBottom: 2,
-  },
-  tripsText: {
-    fontSize: 12,
-    color: '#10B981',
+    fontSize: fs(13),
+    color: '#4B5563',
     fontWeight: '600',
-    marginTop: 2,
-  },
-  driverBadgesCol: {
-    alignItems: 'flex-end',
-    gap: 6,
+    marginBottom: ms(4),
   },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
+    paddingHorizontal: ms(8),
+    paddingVertical: ms(4),
+    borderRadius: ms(8),
+    alignSelf: 'flex-start',
   },
   ratingText: {
-    marginLeft: 4,
+    marginLeft: ms(4),
     fontWeight: '700',
     color: '#D97706',
-    fontSize: 13,
+    fontSize: fs(12),
   },
-  // Actions
-  actionRow: {
+  actionRowModern: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 4,
+    gap: ms(12),
   },
-  actionBtn: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  actionIconBtn: {
+    width: ms(44),
+    height: ms(44),
+    borderRadius: ms(22),
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#DBEAFE',
   },
-  actionText: {
-    fontSize: 12,
-    color: '#374151',
-    fontWeight: '600',
+  // Modern OTP Block
+  otpBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    borderStyle: 'dashed',
+    borderRadius: ms(16),
+    padding: ms(16),
+    marginTop: ms(8),
+    marginBottom: ms(8),
   },
-  // Divider
-  divider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 12,
+  otpBlockLeft: {
+    flex: 1,
   },
-  // Route
-  routeSection: {
-    marginBottom: 8,
+  otpBlockLabel: {
+    fontSize: fs(13),
+    fontWeight: '700',
+    color: '#1E40AF',
+    marginBottom: ms(2),
   },
-  routeRow: {
+  otpBlockSub: {
+    fontSize: fs(12),
+    color: '#3B82F6',
+  },
+  otpBlockRight: {
+    borderLeftWidth: 1,
+    borderLeftColor: '#BFDBFE',
+    paddingLeft: ms(16),
+  },
+  otpBigText: {
+    fontSize: fs(24),
+    fontWeight: '800',
+    color: '#1E40AF',
+    letterSpacing: ms(6),
+  },
+  // Route Section Modern
+  routeSectionModern: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: ms(16),
+    padding: ms(16),
+    marginBottom: ms(16),
+    marginTop: ms(8),
+  },
+  routeRowModern: {
     flexDirection: 'row',
   },
-  routeDots: {
+  routeDotsModern: {
     alignItems: 'center',
-    marginRight: 12,
-    paddingVertical: 4,
+    marginRight: ms(16),
+    paddingVertical: ms(4),
   },
-  routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  routeDotModern: {
+    width: ms(10),
+    height: ms(10),
+    borderRadius: ms(5),
   },
-  routeLine: {
+  routeLineModern: {
     width: 2,
     flex: 1,
     backgroundColor: '#E5E7EB',
-    marginVertical: 4,
+    marginVertical: ms(4),
   },
-  routeAddresses: {
+  routeAddressesModern: {
     flex: 1,
     justifyContent: 'space-between',
-    height: 64,
+    height: ms(64),
   },
-  routeItem: {
+  routeItemModern: {
     flex: 1,
     justifyContent: 'center',
   },
-  routeLabel: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginBottom: 1,
-  },
-  routeAddress: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#111827',
-  },
-  // Fare
-  fareRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#F9FAFB',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
-  fareItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  fareLabel: {
-    fontSize: 13,
+  routeAddressTextModern: {
+    fontSize: fs(14),
+    fontWeight: '600',
     color: '#374151',
-    fontWeight: '500',
-    textTransform: 'capitalize',
   },
-  fareValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  // Cancel
-  cancelButton: {
+  // Bottom Actions Row
+  bottomActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+  },
+  fareContainerModern: {
+    flex: 1,
+  },
+  fareLabelModern: {
+    fontSize: fs(13),
+    color: '#6B7280',
+    fontWeight: '600',
+    marginBottom: ms(2),
+  },
+  fareAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(8),
+  },
+  fareValueModern: {
+    fontSize: fs(22),
+    fontWeight: '800',
+    color: '#111827',
+  },
+  paymentMethodBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: ms(8),
+    paddingVertical: ms(4),
+    borderRadius: ms(6),
+  },
+  paymentMethodModern: {
+    fontSize: fs(10),
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  cancelBtnModern: {
     backgroundColor: '#FEF2F2',
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: ms(24),
+    paddingVertical: ms(14),
+    borderRadius: ms(12),
     borderWidth: 1,
     borderColor: '#FECACA',
   },
-  cancelText: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '600',
+  cancelBtnTextModern: {
     color: '#DC2626',
+    fontWeight: '700',
+    fontSize: fs(15),
   },
-  // Home button
-  homeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  homeBtnModern: {
     backgroundColor: '#2563EB',
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
+    paddingHorizontal: ms(24),
+    paddingVertical: ms(14),
+    borderRadius: ms(12),
   },
-  homeButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+  homeBtnTextModern: {
     color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: fs(15),
   },
   successOverlay: {
     flex: 1,

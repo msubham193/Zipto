@@ -15,6 +15,7 @@ import {
   Dimensions,
   PixelRatio,
   Alert,
+  Modal,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
@@ -95,6 +96,7 @@ const OTPVerification = () => {
 
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [sessionModal, setSessionModal] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -129,11 +131,14 @@ const OTPVerification = () => {
     try {
       const phoneToVerify = fullMobile || mobile;
       await verifyOtp(phoneToVerify, otp);
-      // Navigation is handled automatically by RootNavigator
-      // when isAuthenticated becomes true in the auth store.
-      // AppNavigator uses needsProfileSetup to pick the initial screen.
+      // Navigation handled automatically by RootNavigator when isAuthenticated → true
     } catch (err: any) {
-      setError(err?.message || 'Verification failed. Please try again.');
+      const status = err?.response?.status ?? err?.status;
+      if (status === 409) {
+        setSessionModal(true);
+      } else {
+        setError(err?.response?.data?.message || err?.message || 'Verification failed. Please try again.');
+      }
     }
   };
 
@@ -288,6 +293,28 @@ const OTPVerification = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── Already-logged-in modal ── */}
+      <Modal visible={sessionModal} transparent animationType="fade" onRequestClose={() => setSessionModal(false)}>
+        <View style={styles.sessionModalOverlay}>
+          <View style={styles.sessionModalCard}>
+            <View style={styles.sessionModalIconWrap}>
+              <Text style={styles.sessionModalIcon}>🔒</Text>
+            </View>
+            <Text style={styles.sessionModalTitle}>Already Logged In</Text>
+            <Text style={styles.sessionModalBody}>
+              This account is currently active on another device.{'\n\n'}
+              Please log out from that device first, then try again.
+            </Text>
+            <TouchableOpacity
+              style={styles.sessionModalBtn}
+              onPress={() => setSessionModal(false)}
+              activeOpacity={0.85}>
+              <Text style={styles.sessionModalBtnText}>OK, Got It</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -478,6 +505,69 @@ const styles = StyleSheet.create({
     paddingBottom: scaleH(20),
   },
   link: { color: '#2563EB' },
+
+  // ── Session Modal ──
+  sessionModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: scaleW(24),
+  },
+  sessionModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: ms(20),
+    padding: scaleW(28),
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  sessionModalIconWrap: {
+    width: ms(64),
+    height: ms(64),
+    borderRadius: ms(32),
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: scaleH(16),
+  },
+  sessionModalIcon: {
+    fontSize: fs(28),
+  },
+  sessionModalTitle: {
+    fontSize: fs(18),
+    fontWeight: '700',
+    fontFamily: 'Poppins-Regular',
+    color: '#0F172A',
+    marginBottom: scaleH(10),
+    textAlign: 'center',
+  },
+  sessionModalBody: {
+    fontSize: fs(14),
+    fontFamily: 'Poppins-Regular',
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: fs(14) * 1.5,
+    marginBottom: scaleH(24),
+  },
+  sessionModalBtn: {
+    backgroundColor: '#2563EB',
+    borderRadius: ms(12),
+    paddingVertical: scaleH(13),
+    paddingHorizontal: scaleW(32),
+    width: '100%',
+    alignItems: 'center',
+  },
+  sessionModalBtnText: {
+    color: '#FFFFFF',
+    fontSize: fs(15),
+    fontWeight: '700',
+    fontFamily: 'Poppins-Regular',
+  },
 });
 
 export default OTPVerification;

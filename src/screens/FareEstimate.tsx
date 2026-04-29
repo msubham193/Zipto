@@ -18,6 +18,7 @@ import {
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Switch } from 'react-native';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBookingStore } from '../store/useBookingStore';
@@ -65,6 +66,10 @@ const FareEstimate = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentModal, setPaymentModal] = useState<{ html: string; bookingId: string } | null>(null);
+
+  // Zipto Coins
+  const [coinsBalance, setCoinsBalance] = useState(0);
+  const [useCoins, setUseCoins] = useState(false);
 
   // Animated value for the "Who Pays?" slider pill (0 = sender, 1 = receiver)
   const sliderAnim = useRef(new Animated.Value(0)).current;
@@ -118,7 +123,12 @@ const FareEstimate = () => {
     }
   }, [pickupCoords, dropCoords, vehicle?.vehicleType, helperCount, pickup, drop, selectedVehicleType]);
 
-  useEffect(() => { fetchFareEstimate(); }, [fetchFareEstimate]);
+  useEffect(() => {
+    fetchFareEstimate();
+    vehicleApi.getCoinsBalance()
+      .then(res => setCoinsBalance(res?.coins ?? 0))
+      .catch(() => {});
+  }, [fetchFareEstimate]);
 
   // ── Navigation helper ───────────────────────────────────────────────────────
   const navigateToTracking = (
@@ -231,14 +241,17 @@ const FareEstimate = () => {
         receiver_phone: receiverPhone || undefined,
         alternative_phone: alternativePhone || undefined,
         paid_by: paidBy,
+        coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
       };
       const bookingResponse = await vehicleApi.createBooking(bookingData);
       if (!bookingResponse.success) {
-        Alert.alert('Booking Failed', bookingResponse.message || 'Failed to create booking. Please try again.');
+        const raw = bookingResponse.message;
+        const msg = Array.isArray(raw) ? raw.join('\n') : (raw || 'Failed to create booking. Please try again.');
+        Alert.alert('Booking Failed', msg);
         return;
       }
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
-      const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
+      const amount = totalFare;
       setActiveBooking({
         id: bookingId,
         status: 'searching',
@@ -267,7 +280,9 @@ const FareEstimate = () => {
         navigateToTracking(bookingId, false, 'cash');
       }
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || err.message || 'Something went wrong. Please try again.');
+      const raw = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
+      const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
+      Alert.alert('Error', msg);
     } finally {
       setBookingLoading(false);
     }
@@ -297,7 +312,12 @@ const FareEstimate = () => {
   }
 
   const breakdown = estimateData?.breakdown;
-  const totalFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  const baseFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  // 100 coins = ₹2 discount (fixed unit — always exactly 100 coins per redemption)
+  const COINS_PER_REDEMPTION = 100;
+  const RUPEES_PER_REDEMPTION = 2;
+  const coinDiscount = useCoins ? RUPEES_PER_REDEMPTION : 0;
+  const totalFare = Math.max(0, baseFare - coinDiscount);
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
   const surgeExtra = hasSurge && breakdown?.subtotal
@@ -458,10 +478,56 @@ const FareEstimate = () => {
           )}
           <View style={styles.divider} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Estimate</Text>
-            <Text style={styles.totalValue}>₹{totalFare}</Text>
+            <Text style={styles.totalLabel}>Subtotal</Text>
+            <Text style={styles.totalValue}>₹{baseFare}</Text>
           </View>
+          {useCoins && coinDiscount > 0 && (
+            <View style={[styles.row, { marginTop: scaleH(4) }]}>
+              <View style={styles.coinDiscountLabel}>
+                <Icon name="toll" size={sp(14)} color="#7C3AED" />
+                <Text style={styles.coinDiscountText}>Coins Discount (100 coins)</Text>
+              </View>
+              <Text style={styles.coinDiscountValue}>−₹{coinDiscount.toFixed(2)}</Text>
+            </View>
+          )}
+          {useCoins && coinDiscount > 0 && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total Payable</Text>
+                <Text style={[styles.totalValue, { color: '#7C3AED' }]}>₹{totalFare}</Text>
+              </View>
+            </>
+          )}
         </View>
+
+        {/* ── Zipto Coins ── */}
+        {coinsBalance >= 100 && (
+          <>
+            <Text style={styles.sectionTitle}>Zipto Coins</Text>
+            <View style={styles.coinsCard}>
+              <View style={styles.coinsCardLeft}>
+                <View style={styles.coinsIconBox}>
+                  <Icon name="toll" size={sp(22)} color="#7C3AED" />
+                </View>
+                <View style={styles.coinsTextBlock}>
+                  <Text style={styles.coinsTitle}>
+                    You have <Text style={styles.coinsBold}>{coinsBalance} coins</Text>
+                  </Text>
+                  <Text style={styles.coinsSub}>
+                    Use 100 coins → get ₹2 off
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={useCoins}
+                onValueChange={setUseCoins}
+                trackColor={{ false: '#E5E7EB', true: '#DDD6FE' }}
+                thumbColor={useCoins ? '#7C3AED' : '#9CA3AF'}
+              />
+            </View>
+          </>
+        )}
 
         {/* ── Who Pays? (Slider) ── */}
         <Text style={styles.sectionTitle}>Who Pays?</Text>
@@ -580,8 +646,14 @@ const FareEstimate = () => {
       {/* ── Footer ── */}
       <View style={styles.footer}>
         <View style={styles.priceContainer}>
-          <Text style={styles.finalPriceLabel}>Final Amount</Text>
-          <Text style={styles.finalPrice} adjustsFontSizeToFit numberOfLines={1}>
+          <Text style={styles.finalPriceLabel}>
+            {useCoins && coinDiscount > 0 ? 'Payable (after coins)' : 'Final Amount'}
+          </Text>
+          {useCoins && coinDiscount > 0 && (
+            <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>
+          )}
+          <Text style={[styles.finalPrice, useCoins && coinDiscount > 0 && { color: '#7C3AED' }]}
+            adjustsFontSizeToFit numberOfLines={1}>
             ₹{totalFare}
           </Text>
         </View>
@@ -1132,6 +1204,76 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
+  },
+
+  // ── Coin discount row ────────────────────────────────────────────────────────
+  coinDiscountLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(4),
+  },
+  coinDiscountText: {
+    fontSize: nf(13),
+    color: '#7C3AED',
+    fontWeight: '500',
+  },
+  coinDiscountValue: {
+    fontSize: nf(13),
+    color: '#7C3AED',
+    fontWeight: '600',
+  },
+
+  // ── Coins card ───────────────────────────────────────────────────────────────
+  coinsCard: {
+    backgroundColor: '#FAF5FF',
+    borderRadius: ms(14),
+    borderWidth: 1.5,
+    borderColor: '#DDD6FE',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: scaleH(8),
+  },
+  coinsCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: sp(10),
+  },
+  coinsIconBox: {
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(10),
+    backgroundColor: '#EDE9FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coinsTextBlock: {
+    flex: 1,
+  },
+  coinsTitle: {
+    fontSize: nf(13),
+    color: '#374151',
+    fontWeight: '500',
+  },
+  coinsBold: {
+    color: '#7C3AED',
+    fontWeight: '700',
+  },
+  coinsSub: {
+    fontSize: nf(11),
+    color: '#6B7280',
+    marginTop: scaleH(2),
+  },
+
+  // ── Footer strikethrough price ───────────────────────────────────────────────
+  finalPriceStrike: {
+    fontSize: nf(12),
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginTop: scaleH(1),
   },
 });
 

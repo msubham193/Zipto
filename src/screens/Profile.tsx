@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,12 +11,14 @@ import {
   PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/useAuthStore';
 import BottomTabBar from './BottomTabBar';
+import { walletApi } from '../api/client';
+import { vehicleApi } from '../api/vehicle';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -38,6 +40,40 @@ const Profile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { user, logout } = useAuthStore();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [orderCount, setOrderCount] = useState<number | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const [walletRes, ordersRes] = await Promise.allSettled([
+        walletApi.getWallet(),
+        vehicleApi.getCustomerHistory(1, 1),
+      ]);
+
+      if (walletRes.status === 'fulfilled') {
+        const data = walletRes.value?.data;
+        if (typeof data?.balance === 'number') {
+          setWalletBalance(data.balance);
+        }
+      }
+      if (ordersRes.status === 'fulfilled') {
+        const data = ordersRes.value?.data;
+        if (typeof data?.total === 'number') {
+          setOrderCount(data.total);
+        }
+      }
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchStats();
+    }, [fetchStats]),
+  );
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -65,6 +101,7 @@ const Profile = () => {
         { id: 1,  title: 'Edit Profile',       icon: 'person-outline',           color: '#3B82F6', onPress: () => navigation.navigate('EditProfile') },
         { id: 2,  title: 'Saved Addresses',     icon: 'location-on',              color: '#10B981', onPress: () => navigation.navigate('SavedAddresses') },
         { id: 3,  title: 'Wallet',              icon: 'account-balance-wallet',   color: '#8B5CF6', onPress: () => navigation.navigate('Wallet') },
+        { id: 12, title: 'My Orders',           icon: 'local-shipping',           color: '#F97316', onPress: () => navigation.navigate('MyOrders') },
       ],
     },
     {
@@ -118,9 +155,6 @@ const Profile = () => {
             {/* Avatar */}
             <View style={styles.avatarContainer}>
               <MaterialIcons name="person" size={ms(50)} color="#FFFFFF" />
-              <TouchableOpacity style={styles.editAvatarButton}>
-                <MaterialIcons name="camera-alt" size={ms(14)} color="#FFFFFF" />
-              </TouchableOpacity>
             </View>
 
             {/* User info */}
@@ -132,17 +166,29 @@ const Profile = () => {
 
             {/* Stats row */}
             <View style={styles.statsRow}>
-              <View style={styles.statBox}>
+              <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Wallet')} activeOpacity={0.7}>
                 <MaterialIcons name="account-balance-wallet" size={ms(24)} color="#3B82F6" />
-                <Text style={styles.statValue}>₹0</Text>
+                {statsLoading ? (
+                  <ActivityIndicator size="small" color="#3B82F6" style={{ marginTop: scaleH(8) }} />
+                ) : (
+                  <Text style={styles.statValue}>
+                    {walletBalance !== null
+                      ? `₹${walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                      : '₹0'}
+                  </Text>
+                )}
                 <Text style={styles.statLabel}>Wallet</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.statDivider} />
-              <View style={styles.statBox}>
+              <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('MyOrders')} activeOpacity={0.7}>
                 <MaterialIcons name="local-shipping" size={ms(24)} color="#10B981" />
-                <Text style={styles.statValue}>0</Text>
+                {statsLoading ? (
+                  <ActivityIndicator size="small" color="#10B981" style={{ marginTop: scaleH(8) }} />
+                ) : (
+                  <Text style={styles.statValue}>{orderCount ?? 0}</Text>
+                )}
                 <Text style={styles.statLabel}>Orders</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
