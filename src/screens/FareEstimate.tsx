@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   StatusBar,
-  Modal,
   Image,
   Dimensions,
   PixelRatio,
@@ -22,7 +21,7 @@ import { Switch } from 'react-native';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBookingStore } from '../store/useBookingStore';
-import { WebView } from 'react-native-webview';
+// import { WebView } from 'react-native-webview'; // Razorpay disabled — cash only for now
 
 // ─── Responsive Utilities ────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -65,7 +64,6 @@ const FareEstimate = () => {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentModal, setPaymentModal] = useState<{ html: string; bookingId: string } | null>(null);
 
   // Zipto Coins
   const [coinsBalance, setCoinsBalance] = useState(0);
@@ -90,6 +88,9 @@ const FareEstimate = () => {
   // ── Who Pays slider handler ─────────────────────────────────────────────────
   const handlePaidByChange = (value: 'sender' | 'receiver') => {
     setPaidBy(value);
+    if (value === 'receiver') {
+      setSelectedPayment('cash');
+    }
     Animated.spring(sliderAnim, {
       toValue: value === 'sender' ? 0 : 1,
       useNativeDriver: false,
@@ -153,76 +154,6 @@ const FareEstimate = () => {
     });
   };
 
-  // ── Razorpay HTML builder ───────────────────────────────────────────────────
-  const buildRazorpayHTML = (orderId: string, amount: number, currency: string, key: string) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { margin:0; background:#F9FAFB; display:flex; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; }
-    .loader { text-align:center; color:#6B7280; font-size:16px; }
-  </style>
-</head>
-<body>
-  <div class="loader">Opening payment gateway...</div>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script>
-    var options = {
-      key: "${key}", amount: ${Math.round(amount * 100)}, currency: "${currency}",
-      name: "Zipto", description: "Booking Payment", order_id: "${orderId}",
-      prefill: { contact: "${user?.phone || ''}", name: "${user?.name || ''}" },
-      theme: { color: "#2563EB" },
-      handler: function(response) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_SUCCESS", data: response }));
-      },
-      modal: {
-        ondismiss: function() {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_CANCELLED" }));
-        }
-      }
-    };
-    var rzp = new Razorpay(options);
-    rzp.on("payment.failed", function(response) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_FAILED", error: response.error }));
-    });
-    rzp.open();
-  </script>
-</body>
-</html>`;
-
-  // ── WebView message handler ─────────────────────────────────────────────────
-  const handleWebViewMessage = async (event: any) => {
-    try {
-      const message = JSON.parse(event.nativeEvent.data);
-      const bookingId = paymentModal?.bookingId || '';
-      setPaymentModal(null);
-      if (message.type === 'PAYMENT_SUCCESS') {
-        setBookingLoading(true);
-        const verifyResponse = await vehicleApi.verifyPayment({
-          razorpay_order_id: message.data.razorpay_order_id,
-          razorpay_payment_id: message.data.razorpay_payment_id,
-          razorpay_signature: message.data.razorpay_signature,
-          booking_id: bookingId,
-        });
-        setBookingLoading(false);
-        if (!verifyResponse.success) {
-          Alert.alert('Verification Failed', 'Payment collected but verification failed. Contact support.');
-          return;
-        }
-        navigateToTracking(bookingId, false, 'online');
-      } else if (message.type === 'PAYMENT_CANCELLED') {
-        Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-      } else if (message.type === 'PAYMENT_FAILED') {
-        Alert.alert('Payment Failed', message.error?.description || 'Payment could not be completed.');
-      }
-    } catch {
-      setPaymentModal(null);
-      setBookingLoading(false);
-      Alert.alert('Error', 'Something went wrong with the payment.');
-    }
-  };
-
   // ── Confirm booking ─────────────────────────────────────────────────────────
   const handleConfirmBooking = async () => {
     try {
@@ -266,19 +197,7 @@ const FareEstimate = () => {
         paymentMethod: selectedPayment,
         paidBy,
       });
-      if (selectedPayment === 'online') {
-        const orderResponse = await vehicleApi.createPaymentOrder({ booking_id: bookingId, amount });
-        if (!orderResponse.success || !orderResponse.data?.order_id) {
-          Alert.alert('Payment Error', 'Failed to create payment order. Please try again.');
-          return;
-        }
-        const { order_id, currency, key } = orderResponse.data;
-        const html = buildRazorpayHTML(order_id, amount, currency || 'INR', key);
-        setBookingLoading(false);
-        setPaymentModal({ html, bookingId });
-      } else {
-        navigateToTracking(bookingId, false, 'cash');
-      }
+      navigateToTracking(bookingId, false, 'cash');
     } catch (err: any) {
       const raw = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
       const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
@@ -583,64 +502,41 @@ const FareEstimate = () => {
         </View>
 
         {/* ── Payment Method ── */}
-        <Text style={styles.sectionTitle}>Payment Method</Text>
-        <View style={styles.paymentContainer}>
-
-          {/* Cash */}
-          <TouchableOpacity
-            style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
-            onPress={() => setSelectedPayment('cash')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.paymentLeft}>
-              {/* ── Cash asset icon ── */}
-              <View style={[styles.iconBox, selectedPayment === 'cash' && styles.selectedIconBox]}>
-                <Image
-                  source={PAYMENT_ICONS.cash}
-                  style={styles.paymentIconImg}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, selectedPayment === 'cash' && styles.selectedPaymentText]}>
-                  Cash
-                </Text>
-                <Text style={styles.paymentSub}>Pay to Rider</Text>
-              </View>
+        {paidBy === 'sender' && (
+          <>
+            <Text style={styles.sectionTitle}>Payment Method</Text>
+            <View style={styles.paymentContainer}>
+    
+              {/* Cash */}
+              <TouchableOpacity
+                style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
+                onPress={() => setSelectedPayment('cash')}
+                activeOpacity={0.9}
+              >
+                <View style={styles.paymentLeft}>
+                  {/* ── Cash asset icon ── */}
+                  <View style={[styles.iconBox, selectedPayment === 'cash' && styles.selectedIconBox]}>
+                    <Image
+                      source={PAYMENT_ICONS.cash}
+                      style={styles.paymentIconImg}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View>
+                    <Text style={[styles.paymentTitle, selectedPayment === 'cash' && styles.selectedPaymentText]}>
+                      Cash
+                    </Text>
+                    <Text style={styles.paymentSub}>Pay to Rider</Text>
+                  </View>
+                </View>
+                <View style={[styles.radio, selectedPayment === 'cash' && styles.radioSelected]}>
+                  {selectedPayment === 'cash' && <View style={styles.radioInner} />}
+                </View>
+              </TouchableOpacity>
+    
             </View>
-            <View style={[styles.radio, selectedPayment === 'cash' && styles.radioSelected]}>
-              {selectedPayment === 'cash' && <View style={styles.radioInner} />}
-            </View>
-          </TouchableOpacity>
-
-          {/* Online */}
-          <TouchableOpacity
-            style={[styles.paymentOption, selectedPayment === 'online' && styles.selectedPayment]}
-            onPress={() => setSelectedPayment('online')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.paymentLeft}>
-              {/* ── Online / UPI asset icon ── */}
-              <View style={[styles.iconBox, selectedPayment === 'online' && styles.selectedIconBox]}>
-                <Image
-                  source={PAYMENT_ICONS.online}
-                  style={styles.paymentIconImg}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, selectedPayment === 'online' && styles.selectedPaymentText]}>
-                  Online
-                </Text>
-                <Text style={styles.paymentSub}>UPI, Card, Netbanking</Text>
-              </View>
-            </View>
-            <View style={[styles.radio, selectedPayment === 'online' && styles.radioSelected]}>
-              {selectedPayment === 'online' && <View style={styles.radioInner} />}
-            </View>
-          </TouchableOpacity>
-
-        </View>
+          </>
+        )}
       </ScrollView>
 
       {/* ── Footer ── */}
@@ -666,44 +562,6 @@ const FareEstimate = () => {
         />
       </View>
 
-      {/* ── Razorpay Payment Modal ── */}
-      <Modal
-        visible={!!paymentModal}
-        animationType="slide"
-        onRequestClose={() => {
-          setPaymentModal(null);
-          Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-        }}
-      >
-        <SafeAreaView style={styles.paymentModalContainer}>
-          <View style={styles.paymentModalHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                setPaymentModal(null);
-                Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-              }}
-            >
-              <Icon name="close" size={sp(24)} color="#1F2937" />
-            </TouchableOpacity>
-            <Text style={styles.paymentModalTitle}>Complete Payment</Text>
-            <View style={{ width: sp(24) }} />
-          </View>
-          {paymentModal?.html && (
-            <WebView
-              source={{ html: paymentModal.html }}
-              onMessage={handleWebViewMessage}
-              javaScriptEnabled
-              domStorageEnabled
-              startInLoadingState
-              renderLoading={() => (
-                <View style={styles.webviewLoader}>
-                  <ActivityIndicator size="large" color="#2563EB" />
-                </View>
-              )}
-            />
-          )}
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 };

@@ -79,14 +79,17 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.zipto"
+    namespace "com.ridezipto.customer"
     defaultConfig {
-        applicationId "com.zipto"
+        applicationId "com.ridezipto.customer"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         manifestPlaceholders = [usesCleartextTraffic: "false"]
+    }
+    aaptOptions {
+        cruncherEnabled = false
     }
     signingConfigs {
         debug {

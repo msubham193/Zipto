@@ -1,4 +1,4 @@
-package com.zipto
+package com.ridezipto.customer
 
 import android.app.Application
 import android.app.NotificationChannel

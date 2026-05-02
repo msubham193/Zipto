@@ -42,6 +42,8 @@ interface AuthState {
   // Actions
   login: (phone: string) => Promise<any>;
   verifyOtp: (phone: string, otp: string) => Promise<any>;
+  emailLogin: (email: string, password: string) => Promise<any>;
+  emailRegister: (name: string, email: string, password: string) => Promise<any>;
   fetchProfile: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
   logout: () => Promise<void>;
@@ -84,6 +86,52 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: error.response?.data?.message || 'Failed to send OTP'
           });
+          throw error;
+        }
+      },
+
+      emailLogin: async (email: string, password: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await authApi.customerEmailLogin(email, password);
+          if (response.success && response.data) {
+            const { user, access_token, refresh_token, is_new_user } = response.data;
+            if (!isCustomerRole(user?.role)) {
+              const roleError = getCustomerRoleError(user?.role);
+              set({ user: null, profile: null, token: null, refreshToken: null, isAuthenticated: false, isLoading: false, error: roleError });
+              throw new Error(roleError);
+            }
+            await AsyncStorage.setItem('auth_token', access_token);
+            await AsyncStorage.setItem('refresh_token', refresh_token);
+            const profileIncomplete = is_new_user === true || user?.is_profile_complete === false;
+            set({ user, token: access_token, refreshToken: refresh_token, isAuthenticated: true, isLoading: false, isNewUser: !!is_new_user, needsProfileSetup: profileIncomplete });
+            return response.data;
+          }
+          throw new Error('Login failed');
+        } catch (error: any) {
+          const raw = error.response?.data?.message ?? error.message ?? 'Login failed';
+          const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
+          set({ isLoading: false, error: msg });
+          throw error;
+        }
+      },
+
+      emailRegister: async (name: string, email: string, password: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await authApi.customerEmailRegister(name, email, password);
+          if (response.success && response.data) {
+            const { user, access_token, refresh_token } = response.data;
+            await AsyncStorage.setItem('auth_token', access_token);
+            await AsyncStorage.setItem('refresh_token', refresh_token);
+            set({ user, token: access_token, refreshToken: refresh_token, isAuthenticated: true, isLoading: false, isNewUser: true, needsProfileSetup: true });
+            return response.data;
+          }
+          throw new Error('Registration failed');
+        } catch (error: any) {
+          const raw = error.response?.data?.message ?? error.message ?? 'Registration failed';
+          const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
+          set({ isLoading: false, error: msg });
           throw error;
         }
       },

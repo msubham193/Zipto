@@ -214,6 +214,25 @@ export const authApi = {
     return response.data;
   },
 
+  customerEmailLogin: async (email: string, password: string) => {
+    const response = await client.post('/auth/customer/email-login', { email, password });
+    return response.data;
+  },
+
+  customerEmailRegister: async (name: string, email: string, password: string) => {
+    const response = await client.post('/auth/customer/email-register', { name, email, password });
+    return response.data;
+  },
+
+  // Primary auth flow: Firebase idToken → Zipto JWT
+  verifyFirebase: async (idToken: string, role = 'customer') => {
+    const response = await client.post('/auth/verify-firebase', {
+      idToken,
+      role,
+    });
+    return response.data;
+  },
+
 
   getCustomerProfile: async () => {
     const response = await client.get('/customer/profile');
