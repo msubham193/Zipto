@@ -34,23 +34,18 @@ const HERO_HEIGHT_CLOSED = scaleH(120);
 
 const Login = () => {
   const navigation = useNavigation<any>();
-  const [email, setEmail]           = useState('');
-  const [password, setPassword]     = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone]           = useState('');
   const [error, setError]           = useState('');
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
   const [termsAgreed, setTermsAgreed] = useState(false);
 
-  const { emailLogin, isLoading, error: authError, clearError } = useAuthStore();
+  const { login, isLoading, error: authError, clearError } = useAuthStore();
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
-      setKeyboardOpen(true);
       setHeroHeight(HERO_HEIGHT_CLOSED);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardOpen(false);
       setHeroHeight(HERO_HEIGHT_OPEN);
     });
     return () => { showSub.remove(); hideSub.remove(); };
@@ -60,16 +55,16 @@ const Login = () => {
     return () => { clearError(); };
   }, []);
 
-  const isButtonEnabled = email.trim().length > 0 && password.length >= 6 && termsAgreed;
+  const isButtonEnabled = phone.trim().length >= 10 && termsAgreed;
 
-  const handleLogin = async () => {
-    if (!email.trim()) { setError('Please enter your email'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+  const handleGetOTP = async () => {
+    const trimmed = phone.trim();
+    if (trimmed.length < 10) { setError('Please enter a valid 10-digit mobile number'); return; }
     if (!termsAgreed) { setError('Please agree to the Terms & Privacy Policy to continue.'); return; }
     setError('');
     try {
-      await emailLogin(email.trim().toLowerCase(), password);
-      // Navigation handled automatically by RootNavigator when isAuthenticated → true
+      await login(trimmed);
+      navigation.navigate('OTPVerification', { mobile: trimmed });
     } catch {
       // error displayed via authError from store
     }
@@ -100,14 +95,14 @@ const Login = () => {
           <View style={styles.contentWrapper}>
             <View style={styles.content}>
               <View style={styles.formSection}>
-                <Text style={styles.title}>Welcome back</Text>
+                <Text style={styles.title}>Welcome to Zipto</Text>
                 <Text style={styles.subtitle}>
-                  Sign in to continue with the best logistics service.
+                  Enter your mobile number to get started.
                 </Text>
 
-                {/* Email */}
-                <Text style={styles.label}>Email</Text>
-                <View style={[styles.inputContainer, !!error && !email && styles.inputError]}>
+                {/* Phone Number */}
+                <Text style={styles.label}>Mobile Number</Text>
+                <View style={[styles.inputContainer, !!error && !phone && styles.inputError]}>
                   <Image
                     source={require('../assets/images/cell-phone.png')}
                     style={styles.inputIcon}
@@ -115,30 +110,13 @@ const Login = () => {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="you@example.com"
+                    placeholder="10-digit mobile number"
                     placeholderTextColor="#6B7280"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={email}
-                    onChangeText={t => { setEmail(t); setError(''); }}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={phone}
+                    onChangeText={t => { setPhone(t); setError(''); }}
                   />
-                </View>
-
-                {/* Password */}
-                <Text style={[styles.label, { marginTop: scaleH(16) }]}>Password</Text>
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={[styles.input, { flex: 1 }]}
-                    placeholder="••••••••"
-                    placeholderTextColor="#6B7280"
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={t => { setPassword(t); setError(''); }}
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={styles.eyeBtn}>
-                    <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
-                  </TouchableOpacity>
                 </View>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -167,29 +145,17 @@ const Login = () => {
 
                 <TouchableOpacity
                   style={[styles.loginButton, !isButtonEnabled && styles.loginButtonDisabled]}
-                  onPress={handleLogin}
+                  onPress={handleGetOTP}
                   activeOpacity={isButtonEnabled ? 0.8 : 1}
                   disabled={!isButtonEnabled || isLoading}
                 >
                   <Text style={styles.loginButtonText}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                    {isLoading ? 'Sending OTP...' : 'Get OTP'}
                   </Text>
                   <Image
                     source={require('../assets/images/arrow.png')}
                     style={styles.arrowIcon}
                   />
-                </TouchableOpacity>
-
-                {/* Register link */}
-                <TouchableOpacity
-                  style={styles.registerRow}
-                  onPress={() => navigation.navigate('OTPVerification')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.registerText}>
-                    Don't have an account?{' '}
-                    <Text style={styles.registerLink}>Create Account</Text>
-                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -267,11 +233,6 @@ const styles = StyleSheet.create({
     fontSize: fs(15),
     paddingVertical: scaleH(16),
   },
-  eyeBtn: {
-    paddingHorizontal: scaleW(8),
-    paddingVertical: scaleH(16),
-  },
-  eyeText: { fontSize: fs(18) },
   inputError: { borderColor: '#EF4444' },
   errorText: {
     color: '#EF4444',
@@ -337,13 +298,6 @@ const styles = StyleSheet.create({
     height: arrowIconSize,
     tintColor: '#eaecf1',
   },
-  registerRow: { alignSelf: 'center', paddingVertical: scaleH(12) },
-  registerText: {
-    fontSize: fs(14),
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-  },
-  registerLink: { color: '#2563EB', fontWeight: '600' },
 });
 
 export default Login;
