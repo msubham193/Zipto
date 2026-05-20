@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
   Image,
   Dimensions,
   PixelRatio,
-  Animated,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
@@ -21,7 +20,6 @@ import { Switch } from 'react-native';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBookingStore } from '../store/useBookingStore';
-// import { WebView } from 'react-native-webview'; // Razorpay disabled — cash only for now
 
 // ─── Responsive Utilities ────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -48,18 +46,11 @@ const VEHICLE_IMAGES: Record<string, any> = {
   tata_407: require('../assets/images/vehicle3.png'),
 };
 
-// ─── Payment Icon Map ─────────────────────────────────────────────────────────
-const PAYMENT_ICONS: Record<'cash' | 'online', any> = {
-  cash: require('../assets/images/cash.png'),
-  online: require('../assets/images/bhim.png'),
-};
-
 // ─── Component ───────────────────────────────────────────────────────────────
 const FareEstimate = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'online'>('cash');
-  const [paidBy, setPaidBy] = useState<'sender' | 'receiver'>('sender');
+  const paidBy = 'sender';
   const [estimateData, setEstimateData] = useState<FareEstimateResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -68,10 +59,6 @@ const FareEstimate = () => {
   // Zipto Coins
   const [coinsBalance, setCoinsBalance] = useState(0);
   const [useCoins, setUseCoins] = useState(false);
-
-  // Animated value for the "Who Pays?" slider pill (0 = sender, 1 = receiver)
-  const sliderAnim = useRef(new Animated.Value(0)).current;
-  const [sliderWidth, setSliderWidth] = useState(0);
 
   const { user } = useAuthStore();
   const { setActiveBooking } = useBookingStore();
@@ -84,20 +71,6 @@ const FareEstimate = () => {
   } = route.params || {};
 
   const selectedVehicleType = vehicle?.vehicleType || 'bike';
-
-  // ── Who Pays slider handler ─────────────────────────────────────────────────
-  const handlePaidByChange = (value: 'sender' | 'receiver') => {
-    setPaidBy(value);
-    if (value === 'receiver') {
-      setSelectedPayment('cash');
-    }
-    Animated.spring(sliderAnim, {
-      toValue: value === 'sender' ? 0 : 1,
-      useNativeDriver: false,
-      tension: 180,
-      friction: 18,
-    }).start();
-  };
 
   // ── Fetch fare estimate ─────────────────────────────────────────────────────
   const fetchFareEstimate = useCallback(async () => {
@@ -135,7 +108,6 @@ const FareEstimate = () => {
   const navigateToTracking = (
     bookingId: string,
     showBookingSuccess = false,
-    paymentMethod: 'cash' | 'online' = selectedPayment,
   ) => {
     navigation.reset({
       index: 1,
@@ -147,7 +119,7 @@ const FareEstimate = () => {
             bookingId, pickup: pickup || '', drop: drop || '',
             pickupCoords, dropCoords, vehicleType: selectedVehicleType,
             fare: (estimateData?.estimated_fare || 0) + (helperCost || 0),
-            showBookingSuccess, paymentMethod, helperCount, helperCost,
+            showBookingSuccess, paidBy, helperCount, helperCost,
           },
         },
       ],
@@ -158,6 +130,7 @@ const FareEstimate = () => {
   const handleConfirmBooking = async () => {
     try {
       setBookingLoading(true);
+
       const bookingData = {
         name: senderName || user?.name || '',
         mobile_number: senderMobile || user?.phone || '',
@@ -174,6 +147,7 @@ const FareEstimate = () => {
         paid_by: paidBy,
         coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
       };
+
       const bookingResponse = await vehicleApi.createBooking(bookingData);
       if (!bookingResponse.success) {
         const raw = bookingResponse.message;
@@ -181,23 +155,24 @@ const FareEstimate = () => {
         Alert.alert('Booking Failed', msg);
         return;
       }
+
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
-      const amount = totalFare;
+
       setActiveBooking({
         id: bookingId,
         status: 'searching',
         pickupAddress: pickup || '',
         dropAddress: drop || '',
         vehicleType: selectedVehicleType,
-        estimatedFare: amount,
+        estimatedFare: totalFare,
         pickup: pickup || '',
         drop: drop || '',
         pickupCoords,
         dropCoords,
-        paymentMethod: selectedPayment,
         paidBy,
       });
-      navigateToTracking(bookingId, false, 'cash');
+
+      navigateToTracking(bookingId, false);
     } catch (err: any) {
       const raw = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
       const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
@@ -257,13 +232,6 @@ const FareEstimate = () => {
     if (multiplier >= 1.4) return 'Very high booking demand';
     return 'Higher than usual demand';
   };
-
-  // Interpolate pill position using measured container width
-  const halfWidth = sliderWidth > 0 ? sliderWidth / 2 : 0;
-  const pillLeft = sliderAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [sp(6), sp(6) + halfWidth],
-  });
 
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
@@ -448,102 +416,14 @@ const FareEstimate = () => {
           </>
         )}
 
-        {/* ── Who Pays? (Slider) ── */}
-        <Text style={styles.sectionTitle}>Who Pays?</Text>
-        <View
-          style={styles.whoPaysSlider}
-          onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
-        >
-          {sliderWidth > 0 && (
-            <Animated.View style={[styles.sliderPill, { left: pillLeft, width: halfWidth - sp(6) }]} />
-          )}
-          <TouchableOpacity
-            style={styles.sliderOption}
-            onPress={() => handlePaidByChange('sender')}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.sliderIconBox, paidBy === 'sender' && styles.sliderIconBoxActive]}>
-              <Icon
-                name="person"
-                size={sp(18)}
-                color={paidBy === 'sender' ? '#FFFFFF' : '#6B7280'}
-              />
-            </View>
-            <View style={styles.sliderTextBlock}>
-              <Text style={[styles.sliderLabel, paidBy === 'sender' && styles.sliderLabelActive]}>
-                Sender pays
-              </Text>
-              <Text style={[styles.sliderSub, paidBy === 'sender' && styles.sliderSubActive]}>
-                Collect at pickup
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.sliderOption}
-            onPress={() => handlePaidByChange('receiver')}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.sliderIconBox, paidBy === 'receiver' && styles.sliderIconBoxActive]}>
-              <Icon
-                name="person-outline"
-                size={sp(18)}
-                color={paidBy === 'receiver' ? '#FFFFFF' : '#6B7280'}
-              />
-            </View>
-            <View style={styles.sliderTextBlock}>
-              <Text style={[styles.sliderLabel, paidBy === 'receiver' && styles.sliderLabelActive]}>
-                Receiver pays
-              </Text>
-              <Text style={[styles.sliderSub, paidBy === 'receiver' && styles.sliderSubActive]}>
-                Collect at delivery
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
 
-        {/* ── Payment Method ── */}
-        {paidBy === 'sender' && (
-          <>
-            <Text style={styles.sectionTitle}>Payment Method</Text>
-            <View style={styles.paymentContainer}>
-    
-              {/* Cash */}
-              <TouchableOpacity
-                style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
-                onPress={() => setSelectedPayment('cash')}
-                activeOpacity={0.9}
-              >
-                <View style={styles.paymentLeft}>
-                  {/* ── Cash asset icon ── */}
-                  <View style={[styles.iconBox, selectedPayment === 'cash' && styles.selectedIconBox]}>
-                    <Image
-                      source={PAYMENT_ICONS.cash}
-                      style={styles.paymentIconImg}
-                      resizeMode="contain"
-                    />
-                  </View>
-                  <View>
-                    <Text style={[styles.paymentTitle, selectedPayment === 'cash' && styles.selectedPaymentText]}>
-                      Cash
-                    </Text>
-                    <Text style={styles.paymentSub}>Pay to Rider</Text>
-                  </View>
-                </View>
-                <View style={[styles.radio, selectedPayment === 'cash' && styles.radioSelected]}>
-                  {selectedPayment === 'cash' && <View style={styles.radioInner} />}
-                </View>
-              </TouchableOpacity>
-    
-            </View>
-          </>
-        )}
       </ScrollView>
 
       {/* ── Footer ── */}
       <View style={styles.footer}>
         <View style={styles.priceContainer}>
           <Text style={styles.finalPriceLabel}>
-            {useCoins && coinDiscount > 0 ? 'Payable (after coins)' : 'Final Amount'}
+            {useCoins && coinDiscount > 0 ? 'Payable (after coins)' : 'Total Fare'}
           </Text>
           {useCoins && coinDiscount > 0 && (
             <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>

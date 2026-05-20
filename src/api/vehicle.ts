@@ -368,8 +368,33 @@ export const vehicleApi = {
     return response.data;
   },
 
-  getOfferStatus: async (offerId: string): Promise<{ success: boolean; data: { status: 'searching' | 'accepted' | 'expired'; booking_id?: string } }> => {
+  getOfferStatus: async (offerId: string): Promise<{
+    success: boolean;
+    data: {
+      status: 'searching' | 'accepted' | 'timed_out' | 'expired';
+      booking_id?: string;
+      current_fare?: number;
+      suggested_fare?: number;
+      retry_count?: number;
+      can_retry?: boolean;
+    };
+  }> => {
     const response = await client.get(`/booking/offer/${offerId}/status`);
+    return response.data;
+  },
+
+  updateOfferFare: async (offerId: string, newFare: number): Promise<{ success: boolean; data: any }> => {
+    const response = await client.patch(`/booking/offer/${offerId}/fare`, { new_fare: newFare });
+    return response.data;
+  },
+
+  retrySearch: async (offerId: string, newFare: number): Promise<{ success: boolean; data: any }> => {
+    const response = await client.post(`/booking/offer/${offerId}/retry`, { new_fare: newFare });
+    return response.data;
+  },
+
+  cancelOffer: async (offerId: string): Promise<{ success: boolean }> => {
+    const response = await client.put(`/booking/offer/${offerId}/cancel`);
     return response.data;
   },
 

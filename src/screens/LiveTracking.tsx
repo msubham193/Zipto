@@ -22,7 +22,9 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { vehicleApi } from '../api/vehicle';
 import { googleMapsApi } from '../api/googleMaps';
+import { paymentApi } from '../api/client';
 import { useBookingStore } from '../store/useBookingStore';
+import RazorpayCheckout from 'react-native-razorpay';
 
 const { width, height } = Dimensions.get('window');
 
@@ -85,7 +87,7 @@ const LiveTracking = () => {
     vehicleType = 'bike',
     fare = 0,
     showBookingSuccess = false,
-    paymentMethod = 'cash',
+    paidBy: paidByParam = 'sender',
     // True when opened from MyOrders — bookingId is a real DB ID, not a Redis offer ID
     isRealBooking = false,
   } = route.params || {};
@@ -114,6 +116,18 @@ const LiveTracking = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [customCancelReason, setCustomCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [paidBy, setPaidBy] = useState<string>(paidByParam);
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  // Fare retry state
+  const [retryModalVisible, setRetryModalVisible] = useState(false);
+  const [currentFare, setCurrentFare] = useState<number>(fare);
+  const [suggestedFare, setSuggestedFare] = useState<number>(fare + 10);
+  const [retryCount, setRetryCount] = useState(0);
+  const [retryLoading, setRetryLoading] = useState(false);
+  // Live fare (increases mid-search)
+  const [liveFare, setLiveFare] = useState<number>(fare);
+  const [fareIncreasing, setFareIncreasing] = useState(false);
   const [searchCountdown, setSearchCountdown] = useState(60);
   const hasShownSuccessRef = useRef(false);
   const successScale = useRef(new Animated.Value(0)).current;
@@ -273,6 +287,13 @@ const LiveTracking = () => {
           setBookingStatus('assigned');
           updateActiveBookingId(offerData.booking_id);
           updateActiveBookingStatus('accepted');
+        } else if (offerData?.status === 'timed_out') {
+          const curFare = offerData.current_fare ?? liveFare;
+          setCurrentFare(curFare);
+          setSuggestedFare(Math.round(curFare + 10));
+          setRetryCount(offerData.retry_count ?? 0);
+          setLiveFare(curFare);
+          setRetryModalVisible(true);
         } else if (offerData?.status === 'expired') {
           setBookingStatus('cancelled');
           clearActiveBooking();
@@ -323,6 +344,14 @@ const LiveTracking = () => {
         if (data.pickup_otp_verified != null)  setPickupOtpVerified(!!data.pickup_otp_verified);
         if (data.delivery_otp_verified != null) setDeliveryOtpVerified(!!data.delivery_otp_verified);
         if (data.driver_location)      setDriverLocation(data.driver_location);
+        if (data.paid_by)              setPaidBy(data.paid_by);
+        // Use final_fare (includes toll + waiting) as the payment amount once booking completes
+        const finalFare = parseFloat((data as any).final_fare);
+        if (finalFare > 0) setLiveFare(finalFare);
+        // Mark payment done if any payment record is completed
+        if (data.payments?.some((p: any) => p.payment_status === 'completed')) {
+          setPaymentDone(true);
+        }
       }
     } catch (err: any) {
       console.log('Booking fetch error:', err?.message);
@@ -348,12 +377,7 @@ const LiveTracking = () => {
   // 60-second countdown while searching
   useEffect(() => {
     if (bookingStatus !== 'searching') return;
-    if (searchCountdown <= 0) {
-      // Time's up — mark cancelled
-      setBookingStatus('cancelled');
-      clearActiveBooking();
-      return;
-    }
+    if (searchCountdown <= 0) return; // Stop at 0; backend timed_out triggers retry modal via polling
     const timer = setTimeout(() => setSearchCountdown(prev => prev - 1), 1000);
     return () => clearTimeout(timer);
   }, [bookingStatus, searchCountdown]);
@@ -374,13 +398,13 @@ const LiveTracking = () => {
     return () => { cancelled = true; };
   }, [pickupCenter, dropCenter]);
 
-  // Fit map to show all markers (pickup, drop, driver if present)
+  // Fit map to show pickup + drop (+ driver when available)
   const lastFitRef = useRef(0);
   useEffect(() => {
-    if (!mapRef.current || !pickupCoords || !dropCoords) return;
-    // Throttle to max once per 5s to prevent jank from driver location updates
+    if (!mapRef.current || !mapReady || !pickupCoords || !dropCoords) return;
     const now = Date.now();
-    if (now - lastFitRef.current < 5000) return;
+    // Always fit immediately on mapReady; otherwise throttle to once per 5s
+    if (lastFitRef.current !== 0 && now - lastFitRef.current < 5000) return;
     lastFitRef.current = now;
 
     const points = [
@@ -391,16 +415,99 @@ const LiveTracking = () => {
       points.push(driverLocation);
     }
     mapRef.current.fitToCoordinates(points, {
-      edgePadding: { top: 80, right: 80, bottom: 300, left: 80 },
+      edgePadding: { top: 80, right: 80, bottom: 320, left: 80 },
       animated: true,
     });
-  }, [dropCenter, dropCoords, pickupCenter, pickupCoords, driverLocation]);
+  }, [dropCenter, dropCoords, pickupCenter, pickupCoords, driverLocation, mapReady]);
 
   const handleCall = () => {
     if (driver?.phone) {
       Linking.openURL(`tel:${driver.phone}`);
     } else {
       Alert.alert('Unavailable', 'Driver phone number is not available yet.');
+    }
+  };
+
+  const handleIncreaseFare = async () => {
+    const newFare = Math.round(liveFare + 10);
+    try {
+      setFareIncreasing(true);
+      await vehicleApi.updateOfferFare(bookingId, newFare);
+      setLiveFare(newFare);
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message || 'Could not update fare.');
+    } finally {
+      setFareIncreasing(false);
+    }
+  };
+
+  const handleRetrySearch = async () => {
+    try {
+      setRetryLoading(true);
+      await vehicleApi.retrySearch(bookingId, suggestedFare);
+      setRetryModalVisible(false);
+      setCurrentFare(suggestedFare);
+      setLiveFare(suggestedFare);
+      setRetryCount(prev => prev + 1);
+      setSearchCountdown(60);
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message || 'Could not retry. Please try again.');
+    } finally {
+      setRetryLoading(false);
+    }
+  };
+
+  const handleCancelFromRetry = async () => {
+    setRetryModalVisible(false);
+    try {
+      await vehicleApi.cancelOffer(bookingId);
+    } catch {}
+    setBookingStatus('cancelled');
+    clearActiveBooking();
+  };
+
+  const handleOnlinePayment = async () => {
+    if (!realBookingId) {
+      Alert.alert('Error', 'Booking not found. Please refresh and try again.');
+      return;
+    }
+    const payAmount = Math.round(liveFare);
+    if (!payAmount || payAmount <= 0) {
+      Alert.alert('Error', 'Invalid payment amount. Please try again.');
+      return;
+    }
+    try {
+      setPaymentLoading(true);
+      const orderRes = await paymentApi.createOrder({ booking_id: realBookingId, amount: payAmount });
+      const { order_id, key } = orderRes.data ?? orderRes;
+      if (!order_id || !key) throw new Error('Invalid order response from server');
+      const options = {
+        description: 'Zipto Delivery Payment',
+        currency: 'INR',
+        key,
+        amount: payAmount * 100,
+        order_id,
+        name: 'Zipto',
+        theme: { color: '#2563EB' },
+      };
+      const paymentData = await RazorpayCheckout.open(options);
+      await paymentApi.verifyPayment({
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_signature: paymentData.razorpay_signature,
+        booking_id: realBookingId,
+      });
+      setPaymentDone(true);
+      Alert.alert('Payment Successful', 'Your payment has been confirmed!');
+    } catch (err: any) {
+      if (err?.code === 0) {
+        Alert.alert('Payment Cancelled', 'You can pay again from this screen or from Orders.');
+      } else {
+        const msg = err?.description || err?.message || 'Payment could not be completed. Please try again.';
+        Alert.alert('Payment Failed', msg);
+      }
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
@@ -688,6 +795,25 @@ const LiveTracking = () => {
              </View>
           )}
 
+          {/* +₹10 button — after progress bar, prominent, mid-card */}
+          {bookingStatus === 'searching' && (
+            <TouchableOpacity
+              style={styles.fareIncreaseBtnFull}
+              onPress={handleIncreaseFare}
+              disabled={fareIncreasing}
+            >
+              {fareIncreasing
+                ? <ActivityIndicator size="small" color="#2563EB" />
+                : (
+                  <>
+                    <Icon name="trending-up" size={ms(16)} color="#2563EB" style={{ marginRight: ms(6) }} />
+                    <Text style={styles.fareIncreaseBtnText}>+ ₹10 to attract drivers</Text>
+                  </>
+                )
+              }
+            </TouchableOpacity>
+          )}
+
           <View style={styles.divider} />
 
           {/* Driver Card (when assigned) */}
@@ -764,33 +890,153 @@ const LiveTracking = () => {
             </View>
           </View>
 
-          {/* Cancel & Payment Details */}
-          <View style={styles.bottomActionsRow}>
-            <View style={styles.fareContainerModern}>
-               <Text style={styles.fareLabelModern}>To Pay</Text>
-               <View style={styles.fareAmountRow}>
-                 <Text style={styles.fareValueModern}>₹{fare}</Text>
-                 <View style={styles.paymentMethodBadge}>
-                   <Text style={styles.paymentMethodModern}>{paymentMethod.toUpperCase()}</Text>
-                 </View>
-               </View>
+          {/* Bottom Actions */}
+          {bookingStatus === 'completed' ? (
+            /* ── Post-delivery payment section ── */
+            <View style={styles.postDeliverySection}>
+              {paidBy === 'sender' && !paymentDone ? (
+                /* Customer (sender) needs to pay */
+                <View style={styles.paymentDueCard}>
+                  <View style={styles.paymentDueHeader}>
+                    <View style={styles.paymentDueIconBox}>
+                      <Icon name="payments" size={ms(22)} color="#2563EB" />
+                    </View>
+                    <View style={styles.paymentDueTextCol}>
+                      <Text style={styles.paymentDueTitle}>Payment Due</Text>
+                      <Text style={styles.paymentDueSub}>Complete your delivery payment</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.paymentDueAmount}>₹{Math.round(liveFare)}</Text>
+                  <TouchableOpacity
+                    style={styles.payNowBtnLarge}
+                    onPress={handleOnlinePayment}
+                    disabled={paymentLoading}
+                    activeOpacity={0.85}
+                  >
+                    {paymentLoading
+                      ? <ActivityIndicator size="small" color="#FFFFFF" />
+                      : <>
+                          <Icon name="lock" size={ms(16)} color="#FFFFFF" style={{ marginRight: ms(6) }} />
+                          <Text style={styles.payNowBtnLargeText}>Pay ₹{Math.round(liveFare)} Securely</Text>
+                        </>
+                    }
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.homeGhostBtn}
+                    onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+                  >
+                    <Text style={styles.homeGhostBtnText}>Pay Later · Go Home</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : paidBy === 'receiver' ? (
+                /* Receiver pays — sender doesn't owe anything */
+                <View style={styles.receiverPaysCard}>
+                  <Icon name="check-circle" size={ms(28)} color="#059669" />
+                  <View style={styles.receiverPaysText}>
+                    <Text style={styles.receiverPaysTitle}>Delivery Complete</Text>
+                    <Text style={styles.receiverPaysSub}>Receiver pays — fare collected at delivery</Text>
+                  </View>
+                </View>
+              ) : (
+                /* Payment done */
+                <View style={styles.paidCard}>
+                  <Icon name="check-circle" size={ms(28)} color="#059669" />
+                  <View style={styles.paidCardText}>
+                    <Text style={styles.paidCardTitle}>Payment Complete</Text>
+                    <Text style={styles.paidCardSub}>₹{Math.round(liveFare)} paid successfully</Text>
+                  </View>
+                </View>
+              )}
+              {(paidBy !== 'sender' || paymentDone) && (
+                <TouchableOpacity
+                  style={[styles.homeBtnModern, { marginTop: ms(12) }]}
+                  onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+                >
+                  <Text style={styles.homeBtnTextModern}>Home</Text>
+                </TouchableOpacity>
+              )}
             </View>
-
-            {bookingStatus !== 'completed' && bookingStatus !== 'cancelled' ? (
-              <TouchableOpacity style={styles.cancelBtnModern} onPress={handleCancel}>
-                <Text style={styles.cancelBtnTextModern}>Cancel</Text>
-              </TouchableOpacity>
-            ) : (
+          ) : bookingStatus === 'cancelled' ? (
+            <View style={styles.bottomActionsRow}>
+              <View style={styles.fareContainerModern}>
+                <Text style={styles.fareLabelModern}>Fare</Text>
+                <Text style={styles.fareValueModern}>₹{Math.round(liveFare)}</Text>
+              </View>
               <TouchableOpacity
                 style={styles.homeBtnModern}
                 onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
               >
                 <Text style={styles.homeBtnTextModern}>Home</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          ) : (
+            /* Active booking — show fare + cancel */
+            <View style={styles.bottomActionsRow}>
+              <View style={styles.fareContainerModern}>
+                <Text style={styles.fareLabelModern}>
+                  {paidBy === 'receiver' ? 'Receiver Pays' : 'To Pay'}
+                </Text>
+                <View style={styles.fareAmountRow}>
+                  <Text style={styles.fareValueModern}>₹{Math.round(liveFare)}</Text>
+                  <View style={styles.paymentMethodBadge}>
+                    <Text style={styles.paymentMethodModern}>
+                      {paidBy === 'receiver' ? 'RECEIVER' : 'ONLINE'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.actionButtonsRow}>
+                <TouchableOpacity style={styles.cancelBtnModern} onPress={handleCancel}>
+                  <Text style={styles.cancelBtnTextModern}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       </SafeAreaView>
+
+      {/* ── Fare Increase / Retry Modal ── */}
+      <Modal visible={retryModalVisible} transparent animationType="fade">
+        <View style={styles.retryOverlay}>
+          <View style={styles.retryCard}>
+            <View style={styles.retryIconBox}>
+              <Icon name="search-off" size={ms(32)} color="#F59E0B" />
+            </View>
+            <Text style={styles.retryTitle}>No Driver Found</Text>
+            <Text style={styles.retrySub}>
+              No drivers accepted your booking in 60 seconds.{'\n'}
+              Increase the fare to attract more drivers nearby.
+            </Text>
+
+            <View style={styles.retryFareRow}>
+              <View style={styles.retryFareBox}>
+                <Text style={styles.retryFareLabel}>Current Fare</Text>
+                <Text style={styles.retryFareOld}>₹{Math.round(currentFare)}</Text>
+              </View>
+              <Icon name="arrow-forward" size={ms(20)} color="#9CA3AF" />
+              <View style={[styles.retryFareBox, styles.retryFareBoxNew]}>
+                <Text style={styles.retryFareLabel}>New Fare</Text>
+                <Text style={styles.retryFareNew}>₹{Math.round(suggestedFare)}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.retryAcceptBtn}
+              onPress={handleRetrySearch}
+              disabled={retryLoading}
+            >
+              {retryLoading
+                ? <ActivityIndicator color="#FFFFFF" />
+                : <Text style={styles.retryAcceptText}>Search Again at ₹{Math.round(suggestedFare)}</Text>
+              }
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.retryCancelBtn} onPress={handleCancelFromRetry}>
+              <Text style={styles.retryCancelText}>Cancel Booking</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={successModal} transparent animationType="none">
         <View style={styles.successOverlay}>
@@ -838,9 +1084,9 @@ const LiveTracking = () => {
 
             <Text style={styles.successTitle}>Booking Created</Text>
             <Text style={styles.successSubtitle}>
-              {paymentMethod === 'online'
-                ? 'Payment successful. Driver search has started.'
-                : 'Cash payment selected. Driver search has started.'}
+              {paidByParam === 'receiver'
+                ? 'Receiver pays — fare collected at delivery.'
+                : 'Pay after delivery. Driver search has started.'}
             </Text>
           </Animated.View>
         </View>
@@ -1383,6 +1629,266 @@ const styles = StyleSheet.create({
     fontSize: fs(10),
     fontWeight: '700',
     color: '#4B5563',
+  },
+  fareIncreaseBtn: {
+    marginTop: ms(6),
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: ms(8),
+    paddingVertical: ms(5),
+    paddingHorizontal: ms(10),
+    alignSelf: 'flex-start',
+  },
+  fareIncreaseBtnFull: {
+    marginTop: ms(12),
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    borderRadius: ms(12),
+    paddingVertical: ms(12),
+    paddingHorizontal: ms(16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fareIncreaseBtnText: {
+    color: '#2563EB',
+    fontWeight: '700',
+    fontSize: fs(13),
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(8),
+  },
+  // ── Retry modal ───────────────────────────────────────────────────────────
+  retryOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: ms(20),
+  },
+  retryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: ms(20),
+    padding: ms(24),
+    width: '100%',
+    alignItems: 'center',
+  },
+  retryIconBox: {
+    width: ms(64),
+    height: ms(64),
+    borderRadius: ms(32),
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: ms(14),
+  },
+  retryTitle: {
+    fontSize: fs(20),
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: ms(8),
+  },
+  retrySub: {
+    fontSize: fs(14),
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: fs(20),
+    marginBottom: ms(20),
+  },
+  retryFareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(12),
+    marginBottom: ms(10),
+    width: '100%',
+    justifyContent: 'center',
+  },
+  retryFareBox: {
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: ms(12),
+    paddingVertical: ms(10),
+    paddingHorizontal: ms(20),
+  },
+  retryFareBoxNew: {
+    backgroundColor: '#ECFDF5',
+  },
+  retryFareLabel: {
+    fontSize: fs(11),
+    color: '#6B7280',
+    marginBottom: ms(2),
+  },
+  retryFareOld: {
+    fontSize: fs(20),
+    fontWeight: '700',
+    color: '#6B7280',
+    textDecorationLine: 'line-through',
+  },
+  retryFareNew: {
+    fontSize: fs(20),
+    fontWeight: '700',
+    color: '#059669',
+  },
+  retryNote: {
+    fontSize: fs(12),
+    color: '#9CA3AF',
+    marginBottom: ms(20),
+  },
+  retryAcceptBtn: {
+    backgroundColor: '#2563EB',
+    borderRadius: ms(12),
+    paddingVertical: ms(14),
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: ms(10),
+  },
+  retryAcceptText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: fs(15),
+  },
+  retryCancelBtn: {
+    paddingVertical: ms(12),
+    width: '100%',
+    alignItems: 'center',
+  },
+  retryCancelText: {
+    color: '#EF4444',
+    fontWeight: '600',
+    fontSize: fs(14),
+  },
+  payNowBtn: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: ms(20),
+    paddingVertical: ms(14),
+    borderRadius: ms(12),
+    minWidth: ms(90),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payNowBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: fs(14),
+  },
+  // ── Post-delivery payment styles ──────────────────────────────────────────
+  postDeliverySection: {
+    marginTop: ms(4),
+  },
+  paymentDueCard: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: ms(16),
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    padding: ms(16),
+    alignItems: 'center',
+  },
+  paymentDueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: ms(10),
+    marginBottom: ms(12),
+  },
+  paymentDueIconBox: {
+    width: ms(44),
+    height: ms(44),
+    borderRadius: ms(22),
+    backgroundColor: '#DBEAFE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  paymentDueTextCol: { flex: 1 },
+  paymentDueTitle: {
+    fontSize: fs(15),
+    fontWeight: '700',
+    color: '#1E40AF',
+  },
+  paymentDueSub: {
+    fontSize: fs(12),
+    color: '#3B82F6',
+    marginTop: ms(2),
+  },
+  paymentDueAmount: {
+    fontSize: fs(32),
+    fontWeight: '800',
+    color: '#1E40AF',
+    marginBottom: ms(16),
+  },
+  payNowBtnLarge: {
+    backgroundColor: '#2563EB',
+    borderRadius: ms(14),
+    paddingVertical: ms(16),
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: ms(4) },
+    shadowOpacity: 0.35,
+    shadowRadius: ms(8),
+    elevation: 6,
+    marginBottom: ms(10),
+  },
+  payNowBtnLargeText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: fs(15),
+  },
+  homeGhostBtn: {
+    paddingVertical: ms(10),
+    alignItems: 'center',
+  },
+  homeGhostBtnText: {
+    color: '#6B7280',
+    fontSize: fs(13),
+    fontWeight: '600',
+  },
+  receiverPaysCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(12),
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(14),
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    padding: ms(14),
+  },
+  receiverPaysText: { flex: 1 },
+  receiverPaysTitle: {
+    fontSize: fs(15),
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  receiverPaysSub: {
+    fontSize: fs(12),
+    color: '#059669',
+    marginTop: ms(2),
+  },
+  paidCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(12),
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(14),
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    padding: ms(14),
+  },
+  paidCardText: { flex: 1 },
+  paidCardTitle: {
+    fontSize: fs(15),
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  paidCardSub: {
+    fontSize: fs(12),
+    color: '#059669',
+    marginTop: ms(2),
   },
   cancelBtnModern: {
     backgroundColor: '#FEF2F2',

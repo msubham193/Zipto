@@ -247,4 +247,21 @@ export const authApi = {
   },
 };
 
+export const paymentApi = {
+  createOrder: async (payload: { booking_id: string; amount: number; payment_method?: string }) => {
+    const response = await client.post('/payment/create-order', payload);
+    return response.data;
+  },
+
+  verifyPayment: async (payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    booking_id?: string;
+  }) => {
+    const response = await client.post('/payment/verify', payload);
+    return response.data;
+  },
+};
+
 export default client;

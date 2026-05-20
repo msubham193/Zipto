@@ -14,7 +14,7 @@ export interface ActiveBookingData {
   drop: string;
   pickupCoords?: { latitude: number; longitude: number };
   dropCoords?: { latitude: number; longitude: number };
-  paymentMethod: 'cash' | 'online';
+  paymentMethod?: 'cash' | 'online';
   paidBy?: 'sender' | 'receiver';
 }
 

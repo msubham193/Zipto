@@ -21,7 +21,9 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import BottomTabBar from './BottomTabBar';
 import { vehicleApi, BookingDetails } from '../api/vehicle';
+import { paymentApi } from '../api/client';
 import { Alert } from 'react-native';
+import RazorpayCheckout from 'react-native-razorpay';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -67,6 +69,9 @@ const MyOrders = () => {
   const [customReason,  setCustomReason]  = useState('');
   const [cancelling,    setCancelling]    = useState(false);
   const [successModal,  setSuccessModal]  = useState(false);
+
+  // Payment state
+  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
 
   // Rating state
   const [ratingModal, setRatingModal] = useState<BookingDetails | null>(null);
@@ -237,6 +242,48 @@ const MyOrders = () => {
       showSuccessAnimation();
     } catch (err) {
       setCancelling(false);
+    }
+  };
+
+  const handlePayNow = async (booking: BookingDetails) => {
+    if (payingBookingId) return;
+    const amount = Math.round(parseFloat((booking as any).final_fare || booking.estimated_fare || '0'));
+    if (!amount || amount <= 0) {
+      Alert.alert('Error', 'Cannot determine payment amount for this booking.');
+      return;
+    }
+    setPayingBookingId(booking.id);
+    try {
+      const orderRes = await paymentApi.createOrder({ booking_id: booking.id, amount });
+      const { order_id, key } = orderRes.data ?? orderRes;
+      if (!order_id || !key) throw new Error('Invalid order response from server');
+      const options = {
+        description: 'Zipto Delivery Payment',
+        currency: 'INR',
+        key,
+        amount: amount * 100,
+        order_id,
+        name: 'Zipto',
+        theme: { color: '#2563EB' },
+      };
+      const paymentData = await RazorpayCheckout.open(options);
+      await paymentApi.verifyPayment({
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_signature: paymentData.razorpay_signature,
+        booking_id: booking.id,
+      });
+      Alert.alert('Payment Successful', 'Your payment has been confirmed!');
+      fetchBookings(true);
+    } catch (err: any) {
+      if (err?.code === 0) {
+        Alert.alert('Payment Cancelled', 'You can pay again from the Orders screen.');
+      } else {
+        const msg = err?.description || err?.message || 'Payment could not be completed. Please try again.';
+        Alert.alert('Payment Failed', msg);
+      }
+    } finally {
+      setPayingBookingId(null);
     }
   };
 
@@ -447,6 +494,27 @@ const MyOrders = () => {
             </View>
             <Text style={styles.ratingDisplayText}>You rated this delivery</Text>
           </View>
+        )}
+
+        {/* Pay Now — for completed, unpaid, sender-pays bookings */}
+        {isCompleted && !isPaid(booking) && (booking as any).paid_by !== 'receiver' && (
+          <TouchableOpacity
+            style={styles.payNowButton}
+            activeOpacity={0.8}
+            disabled={payingBookingId === booking.id}
+            onPress={() => handlePayNow(booking)}
+          >
+            {payingBookingId === booking.id ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialIcons name="lock" size={ms(16)} color="#FFFFFF" />
+                <Text style={styles.payNowButtonText}>
+                  Pay ₹{parseFloat((booking as any).final_fare || booking.estimated_fare || '0').toFixed(0)}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
         )}
 
         {/* Rate button for completed orders without rating */}
@@ -1276,6 +1344,22 @@ const styles = StyleSheet.create({
   },
   ratingStarsRow: { flexDirection: 'row', gap: scaleW(2) },
   ratingDisplayText: { fontSize: fs(12), color: '#92400E', fontWeight: '500' },
+  payNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scaleW(6),
+    paddingVertical: scaleH(13),
+    backgroundColor: '#2563EB',
+    borderRadius: ms(10),
+    marginTop: scaleH(8),
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  payNowButtonText: { fontSize: fs(14), fontWeight: '700', color: '#FFFFFF' },
   rateButton: {
     flexDirection: 'row',
     alignItems: 'center',
