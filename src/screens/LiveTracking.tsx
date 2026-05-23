@@ -374,6 +374,27 @@ const LiveTracking = () => {
     return () => clearInterval(interval);
   }, [bookingStatus, fetchBookingDetails]);
 
+  // After booking completes, keep polling until payment is confirmed.
+  // The main poll stops on 'completed', but the receiver may pay via QR after delivery.
+  useEffect(() => {
+    if (bookingStatus !== 'completed') return;
+    if (paymentDone) return;
+    const activeBookingId = realBookingId || bookingId;
+    if (!activeBookingId) return;
+
+    const pollPayment = async () => {
+      try {
+        const response = await vehicleApi.getBookingDetails(activeBookingId);
+        if (response.success && response.data?.payments?.some((p: any) => p.payment_status === 'completed')) {
+          setPaymentDone(true);
+        }
+      } catch {}
+    };
+
+    const interval = setInterval(pollPayment, 5000);
+    return () => clearInterval(interval);
+  }, [bookingStatus, paymentDone, realBookingId, bookingId]);
+
   // 60-second countdown while searching
   useEffect(() => {
     if (bookingStatus !== 'searching') return;

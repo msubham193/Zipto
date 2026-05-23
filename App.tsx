@@ -1,11 +1,16 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {Provider} from 'react-redux';
 import {store} from './src/store';
-import './src/i18n'; // Init i18n
+import './src/i18n';
 import RootNavigator from './src/navigation';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {useAuthStore} from './src/store/useAuthStore';
 import {notificationApi} from './src/api/client';
+import {navigationRef} from './src/navigation/navigationRef';
+import {
+  InAppNotificationBanner,
+  NotificationPayload,
+} from './src/components/InAppNotificationBanner';
 import {
   requestPermissionAndGetToken,
   onForegroundMessage,
@@ -18,46 +23,89 @@ import {
 // Register background handler at module level (before app boots)
 registerBackgroundHandler();
 
-function FcmInitializer() {
+function navigateFromNotification(data?: Record<string, string>) {
+  if (!data || !navigationRef.isReady()) return;
+  const {type, bookingId} = data;
+
+  switch (type) {
+    case 'booking_accepted':
+    case 'trip_started':
+      if (bookingId) {
+        navigationRef.navigate('LiveTracking', {
+          bookingId,
+          isRealBooking: true,
+        });
+      }
+      break;
+    case 'trip_completed':
+      navigationRef.navigate('MyOrders', {filter: 'completed'});
+      break;
+    default:
+      navigationRef.navigate('Notifications');
+      break;
+  }
+}
+
+interface FcmInitializerProps {
+  onNotification: (n: NotificationPayload) => void;
+}
+
+function FcmInitializer({onNotification}: FcmInitializerProps) {
   const {isAuthenticated} = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated) {return;}
+    if (!isAuthenticated) return;
 
     let unsubForeground: () => void = () => {};
     let unsubTokenRefresh: () => void = () => {};
     let unsubOpenedApp: () => void = () => {};
 
     const init = async () => {
-      // 1. Request permission + register token
-      console.log('[FCM] Requesting permission and getting token...');
       const token = await requestPermissionAndGetToken();
-      console.log('[FCM] Token result:', token ? token.slice(0, 20) + '...' : 'NULL');
       if (token) {
-        notificationApi.registerFcmToken(token)
-          .then(() => console.log('[FCM] Token registered with backend ✅'))
-          .catch((e) => console.log('[FCM] Token registration failed ❌', e?.response?.data ?? e?.message));
+        notificationApi
+          .registerFcmToken(token)
+          .catch((e: any) =>
+            console.warn('[FCM] Token registration failed', e?.message),
+          );
       }
 
-      // 2. Foreground messages — show a local alert or update notification badge
-      unsubForeground = onForegroundMessage(_message => {
-        // Notification handled in-app via the Notifications inbox screen
+      // Foreground: show in-app banner
+      unsubForeground = onForegroundMessage(message => {
+        const title =
+          message?.notification?.title ||
+          (message?.data?.title as string | undefined) ||
+          'Zipto';
+        const body =
+          message?.notification?.body ||
+          (message?.data?.body as string | undefined) ||
+          '';
+        if (!title) return;
+        onNotification({
+          title,
+          body,
+          data: (message?.data as Record<string, string> | undefined) ?? {},
+        });
       });
 
-      // 3. Token refresh — re-register with backend
-      unsubTokenRefresh = onTokenRefresh(newToken => {
+      // Token refresh
+      unsubTokenRefresh = onTokenRefresh((newToken: string) => {
         notificationApi.registerFcmToken(newToken).catch(() => {});
       });
 
-      // 4. App opened from background notification
-      unsubOpenedApp = onNotificationOpenedApp(_message => {
-        // Navigation to specific screen can be added here if needed
+      // Background tap
+      unsubOpenedApp = onNotificationOpenedApp((message: any) => {
+        navigateFromNotification(
+          message?.data as Record<string, string> | undefined,
+        );
       });
 
-      // 5. App launched from quit-state notification
+      // Quit-state tap
       const initial = await getInitialNotification();
       if (initial) {
-        // Navigation to specific screen can be added here if needed
+        navigateFromNotification(
+          (initial as any)?.data as Record<string, string> | undefined,
+        );
       }
     };
 
@@ -68,17 +116,31 @@ function FcmInitializer() {
       unsubTokenRefresh();
       unsubOpenedApp();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, onNotification]);
 
   return null;
 }
 
 function App() {
+  const [notification, setNotification] =
+    useState<NotificationPayload | null>(null);
+
+  const handleDismiss = useCallback(() => setNotification(null), []);
+
+  const handleNotificationPress = useCallback((n: NotificationPayload) => {
+    navigateFromNotification(n.data);
+  }, []);
+
   return (
     <Provider store={store}>
       <SafeAreaProvider>
-        <FcmInitializer />
         <RootNavigator />
+        <FcmInitializer onNotification={setNotification} />
+        <InAppNotificationBanner
+          notification={notification}
+          onDismiss={handleDismiss}
+          onPress={handleNotificationPress}
+        />
       </SafeAreaProvider>
     </Provider>
   );

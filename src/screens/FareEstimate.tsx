@@ -12,6 +12,7 @@ import {
   Image,
   Dimensions,
   PixelRatio,
+  TextInput,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
@@ -60,6 +61,13 @@ const FareEstimate = () => {
   const [coinsBalance, setCoinsBalance] = useState(0);
   const [useCoins, setUseCoins] = useState(false);
 
+  // Coupon
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string; title: string; discount_amount: number;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
   const { user } = useAuthStore();
   const { setActiveBooking } = useBookingStore();
 
@@ -104,6 +112,34 @@ const FareEstimate = () => {
       .catch(() => {});
   }, [fetchFareEstimate]);
 
+  // ── Apply coupon ────────────────────────────────────────────────────────────
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (!estimateData) return;
+    try {
+      setCouponLoading(true);
+      const result = await vehicleApi.validateCoupon({
+        code,
+        order_value: estimateData.estimated_fare,
+        vehicle_type: selectedVehicleType,
+      });
+      setAppliedCoupon({
+        code:            result.code,
+        title:           result.title,
+        discount_amount: result.discount_amount,
+      });
+      setCouponInput('');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid coupon';
+      Alert.alert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => setAppliedCoupon(null);
+
   // ── Navigation helper ───────────────────────────────────────────────────────
   const navigateToTracking = (
     bookingId: string,
@@ -118,7 +154,7 @@ const FareEstimate = () => {
           params: {
             bookingId, pickup: pickup || '', drop: drop || '',
             pickupCoords, dropCoords, vehicleType: selectedVehicleType,
-            fare: (estimateData?.estimated_fare || 0) + (helperCost || 0),
+            fare: Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0)),
             showBookingSuccess, paidBy, helperCount, helperCost,
           },
         },
@@ -146,6 +182,7 @@ const FareEstimate = () => {
         alternative_phone: alternativePhone || undefined,
         paid_by: paidBy,
         coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
+        coupon_code: appliedCoupon?.code || undefined,
       };
 
       const bookingResponse = await vehicleApi.createBooking(bookingData);
@@ -211,7 +248,8 @@ const FareEstimate = () => {
   const COINS_PER_REDEMPTION = 100;
   const RUPEES_PER_REDEMPTION = 2;
   const coinDiscount = useCoins ? RUPEES_PER_REDEMPTION : 0;
-  const totalFare = Math.max(0, baseFare - coinDiscount);
+  const couponDiscount = appliedCoupon?.discount_amount ?? 0;
+  const totalFare = Math.max(0, baseFare - coinDiscount - couponDiscount);
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
   const surgeExtra = hasSurge && breakdown?.subtotal
@@ -416,6 +454,49 @@ const FareEstimate = () => {
           </>
         )}
 
+        {/* ── Coupon Code ── */}
+        <Text style={styles.sectionTitle}>Promo Code</Text>
+        {appliedCoupon ? (
+          <View style={styles.couponApplied}>
+            <View style={styles.couponAppliedLeft}>
+              <Icon name="local-offer" size={sp(18)} color="#16A34A" />
+              <View style={{ marginLeft: sp(10) }}>
+                <Text style={styles.couponAppliedCode}>{appliedCoupon.code}</Text>
+                <Text style={styles.couponAppliedTitle}>{appliedCoupon.title}</Text>
+              </View>
+            </View>
+            <View style={styles.couponAppliedRight}>
+              <Text style={styles.couponAppliedSaving}>−₹{appliedCoupon.discount_amount}</Text>
+              <TouchableOpacity onPress={removeCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Icon name="close" size={sp(18)} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.couponRow}>
+            <TextInput
+              style={styles.couponInput}
+              placeholder="Enter promo code"
+              placeholderTextColor="#9CA3AF"
+              value={couponInput}
+              onChangeText={t => setCouponInput(t.toUpperCase())}
+              autoCapitalize="characters"
+              returnKeyType="done"
+              onSubmitEditing={applyCoupon}
+            />
+            <TouchableOpacity
+              style={[styles.couponApplyBtn, couponLoading && { opacity: 0.6 }]}
+              onPress={applyCoupon}
+              activeOpacity={0.8}
+              disabled={couponLoading}
+            >
+              {couponLoading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.couponApplyText}>Apply</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
 
       </ScrollView>
 
@@ -423,12 +504,12 @@ const FareEstimate = () => {
       <View style={styles.footer}>
         <View style={styles.priceContainer}>
           <Text style={styles.finalPriceLabel}>
-            {useCoins && coinDiscount > 0 ? 'Payable (after coins)' : 'Total Fare'}
+            {(coinDiscount > 0 || couponDiscount > 0) ? 'Payable (after discounts)' : 'Total Fare'}
           </Text>
-          {useCoins && coinDiscount > 0 && (
+          {(coinDiscount > 0 || couponDiscount > 0) && (
             <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>
           )}
-          <Text style={[styles.finalPrice, useCoins && coinDiscount > 0 && { color: '#7C3AED' }]}
+          <Text style={[styles.finalPrice, (coinDiscount > 0 || couponDiscount > 0) && { color: '#16A34A' }]}
             adjustsFontSizeToFit numberOfLines={1}>
             ₹{totalFare}
           </Text>
@@ -1012,6 +1093,77 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textDecorationLine: 'line-through',
     marginTop: scaleH(1),
+  },
+
+  // ── Coupon ───────────────────────────────────────────────────────────────────
+  couponRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    marginBottom: scaleH(12),
+  },
+  couponInput: {
+    flex: 1,
+    height: scaleH(46),
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    borderRadius: ms(10),
+    paddingHorizontal: sp(14),
+    fontSize: nf(14),
+    color: '#111827',
+    backgroundColor: '#F9FAFB',
+    letterSpacing: 1,
+  },
+  couponApplyBtn: {
+    height: scaleH(46),
+    paddingHorizontal: sp(18),
+    backgroundColor: '#2563EB',
+    borderRadius: ms(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  couponApplyText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: nf(13),
+  },
+  couponApplied: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(12),
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(12),
+    marginBottom: scaleH(12),
+  },
+  couponAppliedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  couponAppliedRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(10),
+  },
+  couponAppliedCode: {
+    fontSize: nf(13),
+    fontWeight: '700',
+    color: '#15803D',
+    fontFamily: 'monospace',
+  },
+  couponAppliedTitle: {
+    fontSize: nf(11),
+    color: '#4B5563',
+    marginTop: scaleH(2),
+  },
+  couponAppliedSaving: {
+    fontSize: nf(14),
+    fontWeight: '700',
+    color: '#16A34A',
   },
 });
 

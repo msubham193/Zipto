@@ -90,6 +90,7 @@ export interface CreateBookingRequest {
   alternative_phone?: string;
   paid_by?: 'sender' | 'receiver';
   coins_to_redeem?: number;
+  coupon_code?: string;
 }
 
 export interface CreateBookingResponse {
@@ -452,6 +453,22 @@ export const vehicleApi = {
 
   getRatingByBooking: async (bookingId: string): Promise<GetRatingResponse> => {
     const response = await client.get(`/rating/booking/${bookingId}`);
+    return response.data?.data ?? response.data;
+  },
+
+  validateCoupon: async (payload: {
+    code: string;
+    order_value: number;
+    vehicle_type?: string;
+  }): Promise<{
+    coupon_id: string;
+    code: string;
+    title: string;
+    type: string;
+    discount_amount: number;
+    final_fare: number;
+  }> => {
+    const response = await client.post('/booking/coupon/validate', payload);
     return response.data?.data ?? response.data;
   },
 };
