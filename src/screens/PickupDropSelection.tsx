@@ -15,6 +15,7 @@ import {
   Dimensions,
   PixelRatio,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -105,7 +106,7 @@ const SectionLabel = ({ label, icon, iconColor = C.primary }: { label: string; i
 
 /** Styled text input with left icon */
 const FieldInput = ({
-  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode,
+  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode, onFocus: onFocusProp,
 }: {
   icon: string;
   placeholder: string;
@@ -114,6 +115,7 @@ const FieldInput = ({
   keyboardType?: any;
   maxLength?: number;
   rightNode?: React.ReactNode;
+  onFocus?: () => void;
 }) => {
   const [focused, setFocused] = useState(false);
   return (
@@ -127,7 +129,7 @@ const FieldInput = ({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         maxLength={maxLength}
-        onFocus={() => setFocused(true)}
+        onFocus={() => { setFocused(true); onFocusProp?.(); }}
         onBlur={() => setFocused(false)}
       />
       {rightNode}
@@ -211,6 +213,7 @@ const PickupDropSelection = () => {
   const watchIdRef       = useRef<number | null>(null);
   const fadeAnim         = useRef(new Animated.Value(1)).current;
   const slideAnim        = useRef(new Animated.Value(0)).current;
+  const scrollRef        = useRef<ScrollView>(null);
 
   useEffect(() => { setFilteredLocations([]); }, [selectedCity]);
   useEffect(() => {
@@ -437,6 +440,11 @@ const PickupDropSelection = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
     <SafeAreaView style={styles.container}>
 
       {/* ── Header ── */}
@@ -457,75 +465,13 @@ const PickupDropSelection = () => {
 
       <Animated.View style={[styles.body, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
 
-        {/* ══════════════ CITY SELECTION ══════════════ */}
-        {showCitySelection && !selectedCity && (
-          <View style={styles.cityScreen}>
-            <Text style={styles.screenHeading}>Where are you shipping?</Text>
-            <Text style={styles.screenSubHeading}>Select your city to get started</Text>
-
-            {/* Search bar */}
-            <View style={styles.citySearchBar}>
-              <MaterialIcons name="search" size={ms(18)} color={C.textMuted} />
-              <TextInput
-                style={styles.citySearchInput}
-                placeholder="Search city…"
-                placeholderTextColor={C.textMuted}
-                onChangeText={handleSearchCity}
-              />
-            </View>
-
-            <FlatList
-              data={filteredCities}
-              keyExtractor={item => item}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: scaleH(20) }}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.cityRow}
-                  onPress={() => handleCitySelect(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.cityRowIcon}>
-                    <MaterialIcons name="location-city" size={ms(20)} color={C.primary} />
-                  </View>
-                  <Text style={styles.cityRowName}>{item}</Text>
-                  <View style={styles.cityRowChevron}>
-                    <MaterialIcons name="chevron-right" size={ms(18)} color={C.textMuted} />
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        )}
-
         {/* ══════════════ MAIN FORM ══════════════ */}
-        {selectedCity && (
           <ScrollView
+            ref={scrollRef}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.formScroll}
           >
-            {/* City pill + change */}
-            <View style={styles.cityPillRow}>
-              <View style={styles.cityPill}>
-                <MaterialIcons name="location-city" size={ms(13)} color={C.primary} />
-                <Text style={styles.cityPillText}>{selectedCity}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.changeCityBtn}
-                onPress={() => {
-                  setSelectedCity('');
-                  setShowCitySelection(true);
-                  setPickup('');
-                  setDrop('');
-                  setFilteredLocations([]);
-                }}
-              >
-                <MaterialIcons name="edit" size={ms(12)} color={C.primary} />
-                <Text style={styles.changeCityText}>Change</Text>
-              </TouchableOpacity>
-            </View>
-
             {/* ── Route card ── */}
             <View style={styles.card}>
               <SectionLabel label="Pickup & Drop" icon="route" iconColor={C.primary} />
@@ -648,6 +594,7 @@ const PickupDropSelection = () => {
                 placeholder="Receiver name *"
                 value={receiverName}
                 onChangeText={setReceiverName}
+                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
               />
               <FieldInput
                 icon="phone"
@@ -656,14 +603,13 @@ const PickupDropSelection = () => {
                 onChangeText={text => setReceiverMobile(text.replace(/\D/g, '').slice(0, 10))}
                 keyboardType="phone-pad"
                 maxLength={10}
+                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
               />
             </View>
           </ScrollView>
-        )}
       </Animated.View>
 
       {/* ── Footer ── */}
-      {selectedCity && (
         <View style={styles.footer}>
           <TouchableOpacity
             style={[styles.continueBtn, !canProceed && styles.continueBtnDisabled]}
@@ -681,8 +627,8 @@ const PickupDropSelection = () => {
             />
           </TouchableOpacity>
         </View>
-      )}
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 

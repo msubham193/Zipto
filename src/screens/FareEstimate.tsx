@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,19 +9,18 @@ import {
   Alert,
   ActivityIndicator,
   StatusBar,
-  Modal,
   Image,
   Dimensions,
   PixelRatio,
-  Animated,
+  TextInput,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Switch } from 'react-native';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBookingStore } from '../store/useBookingStore';
-import { WebView } from 'react-native-webview';
 
 // ─── Responsive Utilities ────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -48,27 +47,26 @@ const VEHICLE_IMAGES: Record<string, any> = {
   tata_407: require('../assets/images/vehicle3.png'),
 };
 
-// ─── Payment Icon Map ─────────────────────────────────────────────────────────
-const PAYMENT_ICONS: Record<'cash' | 'online', any> = {
-  cash: require('../assets/images/cash.png'),
-  online: require('../assets/images/bhim.png'),
-};
-
 // ─── Component ───────────────────────────────────────────────────────────────
 const FareEstimate = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'online'>('cash');
-  const [paidBy, setPaidBy] = useState<'sender' | 'receiver'>('sender');
+  const paidBy = 'sender';
   const [estimateData, setEstimateData] = useState<FareEstimateResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentModal, setPaymentModal] = useState<{ html: string; bookingId: string } | null>(null);
 
-  // Animated value for the "Who Pays?" slider pill (0 = sender, 1 = receiver)
-  const sliderAnim = useRef(new Animated.Value(0)).current;
-  const [sliderWidth, setSliderWidth] = useState(0);
+  // Zipto Coins
+  const [coinsBalance, setCoinsBalance] = useState(0);
+  const [useCoins, setUseCoins] = useState(false);
+
+  // Coupon
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string; title: string; discount_amount: number;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const { user } = useAuthStore();
   const { setActiveBooking } = useBookingStore();
@@ -81,17 +79,6 @@ const FareEstimate = () => {
   } = route.params || {};
 
   const selectedVehicleType = vehicle?.vehicleType || 'bike';
-
-  // ── Who Pays slider handler ─────────────────────────────────────────────────
-  const handlePaidByChange = (value: 'sender' | 'receiver') => {
-    setPaidBy(value);
-    Animated.spring(sliderAnim, {
-      toValue: value === 'sender' ? 0 : 1,
-      useNativeDriver: false,
-      tension: 180,
-      friction: 18,
-    }).start();
-  };
 
   // ── Fetch fare estimate ─────────────────────────────────────────────────────
   const fetchFareEstimate = useCallback(async () => {
@@ -118,13 +105,45 @@ const FareEstimate = () => {
     }
   }, [pickupCoords, dropCoords, vehicle?.vehicleType, helperCount, pickup, drop, selectedVehicleType]);
 
-  useEffect(() => { fetchFareEstimate(); }, [fetchFareEstimate]);
+  useEffect(() => {
+    fetchFareEstimate();
+    vehicleApi.getCoinsBalance()
+      .then(res => setCoinsBalance(res?.coins ?? 0))
+      .catch(() => {});
+  }, [fetchFareEstimate]);
+
+  // ── Apply coupon ────────────────────────────────────────────────────────────
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (!estimateData) return;
+    try {
+      setCouponLoading(true);
+      const result = await vehicleApi.validateCoupon({
+        code,
+        order_value: estimateData.estimated_fare,
+        vehicle_type: selectedVehicleType,
+      });
+      setAppliedCoupon({
+        code:            result.code,
+        title:           result.title,
+        discount_amount: result.discount_amount,
+      });
+      setCouponInput('');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid coupon';
+      Alert.alert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => setAppliedCoupon(null);
 
   // ── Navigation helper ───────────────────────────────────────────────────────
   const navigateToTracking = (
     bookingId: string,
     showBookingSuccess = false,
-    paymentMethod: 'cash' | 'online' = selectedPayment,
   ) => {
     navigation.reset({
       index: 1,
@@ -135,88 +154,19 @@ const FareEstimate = () => {
           params: {
             bookingId, pickup: pickup || '', drop: drop || '',
             pickupCoords, dropCoords, vehicleType: selectedVehicleType,
-            fare: (estimateData?.estimated_fare || 0) + (helperCost || 0),
-            showBookingSuccess, paymentMethod, helperCount, helperCost,
+            fare: Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0)),
+            showBookingSuccess, paidBy, helperCount, helperCost,
           },
         },
       ],
     });
   };
 
-  // ── Razorpay HTML builder ───────────────────────────────────────────────────
-  const buildRazorpayHTML = (orderId: string, amount: number, currency: string, key: string) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { margin:0; background:#F9FAFB; display:flex; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; }
-    .loader { text-align:center; color:#6B7280; font-size:16px; }
-  </style>
-</head>
-<body>
-  <div class="loader">Opening payment gateway...</div>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script>
-    var options = {
-      key: "${key}", amount: ${Math.round(amount * 100)}, currency: "${currency}",
-      name: "Zipto", description: "Booking Payment", order_id: "${orderId}",
-      prefill: { contact: "${user?.phone || ''}", name: "${user?.name || ''}" },
-      theme: { color: "#2563EB" },
-      handler: function(response) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_SUCCESS", data: response }));
-      },
-      modal: {
-        ondismiss: function() {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_CANCELLED" }));
-        }
-      }
-    };
-    var rzp = new Razorpay(options);
-    rzp.on("payment.failed", function(response) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_FAILED", error: response.error }));
-    });
-    rzp.open();
-  </script>
-</body>
-</html>`;
-
-  // ── WebView message handler ─────────────────────────────────────────────────
-  const handleWebViewMessage = async (event: any) => {
-    try {
-      const message = JSON.parse(event.nativeEvent.data);
-      const bookingId = paymentModal?.bookingId || '';
-      setPaymentModal(null);
-      if (message.type === 'PAYMENT_SUCCESS') {
-        setBookingLoading(true);
-        const verifyResponse = await vehicleApi.verifyPayment({
-          razorpay_order_id: message.data.razorpay_order_id,
-          razorpay_payment_id: message.data.razorpay_payment_id,
-          razorpay_signature: message.data.razorpay_signature,
-          booking_id: bookingId,
-        });
-        setBookingLoading(false);
-        if (!verifyResponse.success) {
-          Alert.alert('Verification Failed', 'Payment collected but verification failed. Contact support.');
-          return;
-        }
-        navigateToTracking(bookingId, false, 'online');
-      } else if (message.type === 'PAYMENT_CANCELLED') {
-        Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-      } else if (message.type === 'PAYMENT_FAILED') {
-        Alert.alert('Payment Failed', message.error?.description || 'Payment could not be completed.');
-      }
-    } catch {
-      setPaymentModal(null);
-      setBookingLoading(false);
-      Alert.alert('Error', 'Something went wrong with the payment.');
-    }
-  };
-
   // ── Confirm booking ─────────────────────────────────────────────────────────
   const handleConfirmBooking = async () => {
     try {
       setBookingLoading(true);
+
       const bookingData = {
         name: senderName || user?.name || '',
         mobile_number: senderMobile || user?.phone || '',
@@ -231,43 +181,39 @@ const FareEstimate = () => {
         receiver_phone: receiverPhone || undefined,
         alternative_phone: alternativePhone || undefined,
         paid_by: paidBy,
+        coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
+        coupon_code: appliedCoupon?.code || undefined,
       };
+
       const bookingResponse = await vehicleApi.createBooking(bookingData);
       if (!bookingResponse.success) {
-        Alert.alert('Booking Failed', bookingResponse.message || 'Failed to create booking. Please try again.');
+        const raw = bookingResponse.message;
+        const msg = Array.isArray(raw) ? raw.join('\n') : (raw || 'Failed to create booking. Please try again.');
+        Alert.alert('Booking Failed', msg);
         return;
       }
+
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
-      const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
+
       setActiveBooking({
         id: bookingId,
         status: 'searching',
         pickupAddress: pickup || '',
         dropAddress: drop || '',
         vehicleType: selectedVehicleType,
-        estimatedFare: amount,
+        estimatedFare: totalFare,
         pickup: pickup || '',
         drop: drop || '',
         pickupCoords,
         dropCoords,
-        paymentMethod: selectedPayment,
         paidBy,
       });
-      if (selectedPayment === 'online') {
-        const orderResponse = await vehicleApi.createPaymentOrder({ booking_id: bookingId, amount });
-        if (!orderResponse.success || !orderResponse.data?.order_id) {
-          Alert.alert('Payment Error', 'Failed to create payment order. Please try again.');
-          return;
-        }
-        const { order_id, currency, key } = orderResponse.data;
-        const html = buildRazorpayHTML(order_id, amount, currency || 'INR', key);
-        setBookingLoading(false);
-        setPaymentModal({ html, bookingId });
-      } else {
-        navigateToTracking(bookingId, false, 'cash');
-      }
+
+      navigateToTracking(bookingId, false);
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || err.message || 'Something went wrong. Please try again.');
+      const raw = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
+      const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
+      Alert.alert('Error', msg);
     } finally {
       setBookingLoading(false);
     }
@@ -297,7 +243,13 @@ const FareEstimate = () => {
   }
 
   const breakdown = estimateData?.breakdown;
-  const totalFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  const baseFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  // 100 coins = ₹2 discount (fixed unit — always exactly 100 coins per redemption)
+  const COINS_PER_REDEMPTION = 100;
+  const RUPEES_PER_REDEMPTION = 2;
+  const coinDiscount = useCoins ? RUPEES_PER_REDEMPTION : 0;
+  const couponDiscount = appliedCoupon?.discount_amount ?? 0;
+  const totalFare = Math.max(0, baseFare - coinDiscount - couponDiscount);
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
   const surgeExtra = hasSurge && breakdown?.subtotal
@@ -318,13 +270,6 @@ const FareEstimate = () => {
     if (multiplier >= 1.4) return 'Very high booking demand';
     return 'Higher than usual demand';
   };
-
-  // Interpolate pill position using measured container width
-  const halfWidth = sliderWidth > 0 ? sliderWidth / 2 : 0;
-  const pillLeft = sliderAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [sp(6), sp(6) + halfWidth],
-  });
 
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
@@ -458,130 +403,114 @@ const FareEstimate = () => {
           )}
           <View style={styles.divider} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Estimate</Text>
-            <Text style={styles.totalValue}>₹{totalFare}</Text>
+            <Text style={styles.totalLabel}>Subtotal</Text>
+            <Text style={styles.totalValue}>₹{baseFare}</Text>
           </View>
-        </View>
-
-        {/* ── Who Pays? (Slider) ── */}
-        <Text style={styles.sectionTitle}>Who Pays?</Text>
-        <View
-          style={styles.whoPaysSlider}
-          onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
-        >
-          {sliderWidth > 0 && (
-            <Animated.View style={[styles.sliderPill, { left: pillLeft, width: halfWidth - sp(6) }]} />
+          {useCoins && coinDiscount > 0 && (
+            <View style={[styles.row, { marginTop: scaleH(4) }]}>
+              <View style={styles.coinDiscountLabel}>
+                <Icon name="toll" size={sp(14)} color="#7C3AED" />
+                <Text style={styles.coinDiscountText}>Coins Discount (100 coins)</Text>
+              </View>
+              <Text style={styles.coinDiscountValue}>−₹{coinDiscount.toFixed(2)}</Text>
+            </View>
           )}
-          <TouchableOpacity
-            style={styles.sliderOption}
-            onPress={() => handlePaidByChange('sender')}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.sliderIconBox, paidBy === 'sender' && styles.sliderIconBoxActive]}>
-              <Icon
-                name="person"
-                size={sp(18)}
-                color={paidBy === 'sender' ? '#FFFFFF' : '#6B7280'}
-              />
-            </View>
-            <View style={styles.sliderTextBlock}>
-              <Text style={[styles.sliderLabel, paidBy === 'sender' && styles.sliderLabelActive]}>
-                Sender pays
-              </Text>
-              <Text style={[styles.sliderSub, paidBy === 'sender' && styles.sliderSubActive]}>
-                Collect at pickup
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.sliderOption}
-            onPress={() => handlePaidByChange('receiver')}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.sliderIconBox, paidBy === 'receiver' && styles.sliderIconBoxActive]}>
-              <Icon
-                name="person-outline"
-                size={sp(18)}
-                color={paidBy === 'receiver' ? '#FFFFFF' : '#6B7280'}
-              />
-            </View>
-            <View style={styles.sliderTextBlock}>
-              <Text style={[styles.sliderLabel, paidBy === 'receiver' && styles.sliderLabelActive]}>
-                Receiver pays
-              </Text>
-              <Text style={[styles.sliderSub, paidBy === 'receiver' && styles.sliderSubActive]}>
-                Collect at delivery
-              </Text>
-            </View>
-          </TouchableOpacity>
+          {useCoins && coinDiscount > 0 && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total Payable</Text>
+                <Text style={[styles.totalValue, { color: '#7C3AED' }]}>₹{totalFare}</Text>
+              </View>
+            </>
+          )}
         </View>
 
-        {/* ── Payment Method ── */}
-        <Text style={styles.sectionTitle}>Payment Method</Text>
-        <View style={styles.paymentContainer}>
+        {/* ── Zipto Coins ── */}
+        {coinsBalance >= 100 && (
+          <>
+            <Text style={styles.sectionTitle}>Zipto Coins</Text>
+            <View style={styles.coinsCard}>
+              <View style={styles.coinsCardLeft}>
+                <View style={styles.coinsIconBox}>
+                  <Icon name="toll" size={sp(22)} color="#7C3AED" />
+                </View>
+                <View style={styles.coinsTextBlock}>
+                  <Text style={styles.coinsTitle}>
+                    You have <Text style={styles.coinsBold}>{coinsBalance} coins</Text>
+                  </Text>
+                  <Text style={styles.coinsSub}>
+                    Use 100 coins → get ₹2 off
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={useCoins}
+                onValueChange={setUseCoins}
+                trackColor={{ false: '#E5E7EB', true: '#DDD6FE' }}
+                thumbColor={useCoins ? '#7C3AED' : '#9CA3AF'}
+              />
+            </View>
+          </>
+        )}
 
-          {/* Cash */}
-          <TouchableOpacity
-            style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
-            onPress={() => setSelectedPayment('cash')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.paymentLeft}>
-              {/* ── Cash asset icon ── */}
-              <View style={[styles.iconBox, selectedPayment === 'cash' && styles.selectedIconBox]}>
-                <Image
-                  source={PAYMENT_ICONS.cash}
-                  style={styles.paymentIconImg}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, selectedPayment === 'cash' && styles.selectedPaymentText]}>
-                  Cash
-                </Text>
-                <Text style={styles.paymentSub}>Pay to Rider</Text>
+        {/* ── Coupon Code ── */}
+        <Text style={styles.sectionTitle}>Promo Code</Text>
+        {appliedCoupon ? (
+          <View style={styles.couponApplied}>
+            <View style={styles.couponAppliedLeft}>
+              <Icon name="local-offer" size={sp(18)} color="#16A34A" />
+              <View style={{ marginLeft: sp(10) }}>
+                <Text style={styles.couponAppliedCode}>{appliedCoupon.code}</Text>
+                <Text style={styles.couponAppliedTitle}>{appliedCoupon.title}</Text>
               </View>
             </View>
-            <View style={[styles.radio, selectedPayment === 'cash' && styles.radioSelected]}>
-              {selectedPayment === 'cash' && <View style={styles.radioInner} />}
+            <View style={styles.couponAppliedRight}>
+              <Text style={styles.couponAppliedSaving}>−₹{appliedCoupon.discount_amount}</Text>
+              <TouchableOpacity onPress={removeCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Icon name="close" size={sp(18)} color="#6B7280" />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.couponRow}>
+            <TextInput
+              style={styles.couponInput}
+              placeholder="Enter promo code"
+              placeholderTextColor="#9CA3AF"
+              value={couponInput}
+              onChangeText={t => setCouponInput(t.toUpperCase())}
+              autoCapitalize="characters"
+              returnKeyType="done"
+              onSubmitEditing={applyCoupon}
+            />
+            <TouchableOpacity
+              style={[styles.couponApplyBtn, couponLoading && { opacity: 0.6 }]}
+              onPress={applyCoupon}
+              activeOpacity={0.8}
+              disabled={couponLoading}
+            >
+              {couponLoading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.couponApplyText}>Apply</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
 
-          {/* Online */}
-          <TouchableOpacity
-            style={[styles.paymentOption, selectedPayment === 'online' && styles.selectedPayment]}
-            onPress={() => setSelectedPayment('online')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.paymentLeft}>
-              {/* ── Online / UPI asset icon ── */}
-              <View style={[styles.iconBox, selectedPayment === 'online' && styles.selectedIconBox]}>
-                <Image
-                  source={PAYMENT_ICONS.online}
-                  style={styles.paymentIconImg}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, selectedPayment === 'online' && styles.selectedPaymentText]}>
-                  Online
-                </Text>
-                <Text style={styles.paymentSub}>UPI, Card, Netbanking</Text>
-              </View>
-            </View>
-            <View style={[styles.radio, selectedPayment === 'online' && styles.radioSelected]}>
-              {selectedPayment === 'online' && <View style={styles.radioInner} />}
-            </View>
-          </TouchableOpacity>
-
-        </View>
       </ScrollView>
 
       {/* ── Footer ── */}
       <View style={styles.footer}>
         <View style={styles.priceContainer}>
-          <Text style={styles.finalPriceLabel}>Final Amount</Text>
-          <Text style={styles.finalPrice} adjustsFontSizeToFit numberOfLines={1}>
+          <Text style={styles.finalPriceLabel}>
+            {(coinDiscount > 0 || couponDiscount > 0) ? 'Payable (after discounts)' : 'Total Fare'}
+          </Text>
+          {(coinDiscount > 0 || couponDiscount > 0) && (
+            <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>
+          )}
+          <Text style={[styles.finalPrice, (coinDiscount > 0 || couponDiscount > 0) && { color: '#16A34A' }]}
+            adjustsFontSizeToFit numberOfLines={1}>
             ₹{totalFare}
           </Text>
         </View>
@@ -594,44 +523,6 @@ const FareEstimate = () => {
         />
       </View>
 
-      {/* ── Razorpay Payment Modal ── */}
-      <Modal
-        visible={!!paymentModal}
-        animationType="slide"
-        onRequestClose={() => {
-          setPaymentModal(null);
-          Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-        }}
-      >
-        <SafeAreaView style={styles.paymentModalContainer}>
-          <View style={styles.paymentModalHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                setPaymentModal(null);
-                Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-              }}
-            >
-              <Icon name="close" size={sp(24)} color="#1F2937" />
-            </TouchableOpacity>
-            <Text style={styles.paymentModalTitle}>Complete Payment</Text>
-            <View style={{ width: sp(24) }} />
-          </View>
-          {paymentModal?.html && (
-            <WebView
-              source={{ html: paymentModal.html }}
-              onMessage={handleWebViewMessage}
-              javaScriptEnabled
-              domStorageEnabled
-              startInLoadingState
-              renderLoading={() => (
-                <View style={styles.webviewLoader}>
-                  <ActivityIndicator size="large" color="#2563EB" />
-                </View>
-              )}
-            />
-          )}
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -1132,6 +1023,147 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
+  },
+
+  // ── Coin discount row ────────────────────────────────────────────────────────
+  coinDiscountLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(4),
+  },
+  coinDiscountText: {
+    fontSize: nf(13),
+    color: '#7C3AED',
+    fontWeight: '500',
+  },
+  coinDiscountValue: {
+    fontSize: nf(13),
+    color: '#7C3AED',
+    fontWeight: '600',
+  },
+
+  // ── Coins card ───────────────────────────────────────────────────────────────
+  coinsCard: {
+    backgroundColor: '#FAF5FF',
+    borderRadius: ms(14),
+    borderWidth: 1.5,
+    borderColor: '#DDD6FE',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: scaleH(8),
+  },
+  coinsCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: sp(10),
+  },
+  coinsIconBox: {
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(10),
+    backgroundColor: '#EDE9FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coinsTextBlock: {
+    flex: 1,
+  },
+  coinsTitle: {
+    fontSize: nf(13),
+    color: '#374151',
+    fontWeight: '500',
+  },
+  coinsBold: {
+    color: '#7C3AED',
+    fontWeight: '700',
+  },
+  coinsSub: {
+    fontSize: nf(11),
+    color: '#6B7280',
+    marginTop: scaleH(2),
+  },
+
+  // ── Footer strikethrough price ───────────────────────────────────────────────
+  finalPriceStrike: {
+    fontSize: nf(12),
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginTop: scaleH(1),
+  },
+
+  // ── Coupon ───────────────────────────────────────────────────────────────────
+  couponRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    marginBottom: scaleH(12),
+  },
+  couponInput: {
+    flex: 1,
+    height: scaleH(46),
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    borderRadius: ms(10),
+    paddingHorizontal: sp(14),
+    fontSize: nf(14),
+    color: '#111827',
+    backgroundColor: '#F9FAFB',
+    letterSpacing: 1,
+  },
+  couponApplyBtn: {
+    height: scaleH(46),
+    paddingHorizontal: sp(18),
+    backgroundColor: '#2563EB',
+    borderRadius: ms(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  couponApplyText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: nf(13),
+  },
+  couponApplied: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(12),
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(12),
+    marginBottom: scaleH(12),
+  },
+  couponAppliedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  couponAppliedRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(10),
+  },
+  couponAppliedCode: {
+    fontSize: nf(13),
+    fontWeight: '700',
+    color: '#15803D',
+    fontFamily: 'monospace',
+  },
+  couponAppliedTitle: {
+    fontSize: nf(11),
+    color: '#4B5563',
+    marginTop: scaleH(2),
+  },
+  couponAppliedSaving: {
+    fontSize: nf(14),
+    fontWeight: '700',
+    color: '#16A34A',
   },
 });
 

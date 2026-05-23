@@ -2,8 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-import { View, ActivityIndicator } from 'react-native';
+import { View, StatusBar } from 'react-native';
 import { useAuthStore } from '../store/useAuthStore';
+import { navigationRef } from './navigationRef';
+
+// Matches the JS splash + Android windowBackground — zero visible flash
+const SplashPlaceholder = () => (
+  <View style={{ flex: 1, backgroundColor: '#1E22AD' }}>
+    <StatusBar barStyle="light-content" backgroundColor="#1E22AD" translucent={false} />
+  </View>
+);
 
 const RootNavigator = () => {
     const [isHydrated, setIsHydrated] = useState(false);
@@ -51,17 +59,13 @@ const RootNavigator = () => {
         verifyAndFetchProfile();
     }, [fetchProfile, shouldVerifyToken]);
 
-    // Show loading only while hydrating or verifying token on app start
+    // Show seamless blue screen while hydrating/verifying — matches native windowBackground
     if (!isHydrated || isVerifying) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
-                <ActivityIndicator size="large" color="#2563EB" />
-            </View>
-        );
+        return <SplashPlaceholder />;
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
         </NavigationContainer>
     );
