@@ -107,7 +107,6 @@ const Settings = () => {
   const [sound,     setSound]     = useState(true);
   const [vibration, setVibration] = useState(true);
 
-
   // ── Communication Channels ──
   const [emailNotifications,    setEmailNotifications]    = useState(false);
   const [smsNotifications,      setSmsNotifications]      = useState(true);
@@ -117,9 +116,6 @@ const Settings = () => {
   const [locationServices, setLocationServices] = useState(true);
 
   // ── Handlers ──
-  const handleChangePassword = () =>
-    Alert.alert('Coming Soon', 'Password change will be available in a future update.');
-
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
@@ -263,7 +259,6 @@ const Settings = () => {
                 title="Vibration" desc="Vibrate on notifications"
                 value={vibration} onValueChange={setVibration}
               />
-
             </View>
           </View>
 
@@ -299,12 +294,6 @@ const Settings = () => {
                 icon="location-on" iconColor="#EF4444"
                 title="Location Services" desc="Required for accurate delivery"
                 value={locationServices} onValueChange={setLocationServices}
-              />
-              <View style={styles.settingDivider} />
-              <ChevronRow
-                icon="lock-outline" iconColor="#3B82F6"
-                title="Change Password" desc="Update your password"
-                onPress={handleChangePassword}
               />
               <View style={styles.settingDivider} />
               <ChevronRow

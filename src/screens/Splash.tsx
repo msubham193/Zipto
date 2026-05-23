@@ -95,10 +95,13 @@ const Splash = () => {
   const poweredOpacity = useRef(new Animated.Value(0)).current;
 
   // Last letter delay + a small buffer before tagline shows
-  const LETTER_STAGGER = 110;           // ms between each letter pop
+  const LETTER_STAGGER  = 110;
   const LAST_LETTER_DELAY = (ZIPTO_LETTERS.length - 1) * LETTER_STAGGER;
-  const TAGLINE_DELAY = LAST_LETTER_DELAY + 250;
-  const POWERED_DELAY = LAST_LETTER_DELAY + 520;
+  const TAGLINE_DELAY   = LAST_LETTER_DELAY + 250;
+  const POWERED_DELAY   = LAST_LETTER_DELAY + 520;
+
+  // Always wait the full splash duration so animations play completely
+  const SPLASH_DURATION = 2800;
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -129,9 +132,16 @@ const Splash = () => {
       useNativeDriver: true,
     }).start();
 
+    // Always wait the full duration before deciding where to navigate.
+    // This ensures the splash animation plays fully on every app open,
+    // whether the user is authenticated or not.
     const timer = setTimeout(() => {
-      navigation.replace('Login');
-    }, 2800);
+      if (isAuthenticated && token) {
+        navigation.replace('MainTabs');   // ← go straight to app if logged in
+      } else {
+        navigation.replace('Login');
+      }
+    }, SPLASH_DURATION);
 
     return () => clearTimeout(timer);
   }, [navigation, isAuthenticated, token]);
@@ -176,7 +186,7 @@ const Splash = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1E22AD',   // matches Zipto logo background exactly
+    backgroundColor: '#1E22AD',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -186,29 +196,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Row of animated letters
   lettersRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-ziptoLetter: {
-  fontSize: fs(92),   // ← increased to match Zomato-scale hero text
-  fontWeight: 'normal',
-  color: '#FFFFFF',
-  fontFamily: 'Cocon-Regular',
-  letterSpacing: ms(0.5),  // ← slightly tighter — large text needs less spacing
-},
+  ziptoLetter: {
+    fontSize: fs(92),
+    fontWeight: 'normal',
+    color: '#FFFFFF',
+    fontFamily: 'Cocon-Regular',
+    letterSpacing: ms(0.5),
+  },
 
-tagline: {
-  fontSize: fs(12),
-  color: 'rgba(255,255,255,0.72)',
-  fontFamily: 'Cocon-Regular',
-  letterSpacing: ms(4),       // ← wider tracking like "AN ETERNAL COMPANY"
-  textTransform: 'uppercase',
-  marginTop: 0,               // ← divider handles spacing now
-  textAlign: 'center',
-},
+  tagline: {
+    fontSize: fs(12),
+    color: 'rgba(255,255,255,0.72)',
+    fontFamily: 'Cocon-Regular',
+    letterSpacing: ms(4),
+    textTransform: 'uppercase',
+    marginTop: 0,
+    textAlign: 'center',
+  },
 
   poweredBy: {
     fontSize: fs(12),
