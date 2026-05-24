@@ -85,14 +85,8 @@ type Location = {
   center?: [number, number];
   metadata?: { place_id?: string; feature_type?: string };
 };
-type CityName = string;
 type LocationType = 'Home' | 'Shop' | 'Office' | 'Other';
 
-const CITIES: CityName[] = [
-  'Bhubaneswar', 'Cuttack', 'Puri', 'Berhampur',
-  'Sambalpur', 'Rourkela', 'Balasore', 'Baripada',
-  'Bhadrak', 'Jharsuguda',
-];
 const LOCATION_TYPES: LocationType[] = ['Home', 'Shop', 'Office', 'Other'];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -196,10 +190,7 @@ const PickupDropSelection = () => {
   const [pickup, setPickup] = useState('');
   const [drop, setDrop] = useState('');
   const [activeInput, setActiveInput] = useState<'pickup' | 'drop'>('pickup');
-  const [selectedCity, setSelectedCity] = useState<CityName | ''>('');
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
-  const [filteredCities, setFilteredCities] = useState<CityName[]>(CITIES);
-  const [showCitySelection, setShowCitySelection] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [senderName, setSenderName] = useState('');
   const [senderMobile, setSenderMobile] = useState('');
@@ -219,7 +210,6 @@ const PickupDropSelection = () => {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
 
-  useEffect(() => { setFilteredLocations([]); }, [selectedCity]);
   useEffect(() => {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, []);
@@ -228,7 +218,7 @@ const PickupDropSelection = () => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(PICKUP_CACHE_KEY);
-        if (!raw) return;
+        if (!raw) { detectCurrentLocation(); return; }
         const cached = JSON.parse(raw) as {
           address: string;
           coords: { latitude: number; longitude: number };
@@ -238,9 +228,12 @@ const PickupDropSelection = () => {
           setPickup(cached.address);
           setPickupCoords(cached.coords);
           setActiveInput('drop');
+        } else {
+          detectCurrentLocation();
         }
-      } catch { }
+      } catch { detectCurrentLocation(); }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -297,20 +290,9 @@ const PickupDropSelection = () => {
   };
 
   useEffect(() => {
-    if (!selectedCity) return;
-    if (pickup) return;
-    detectCurrentLocation();
-  }, [selectedCity]);
-
-  useEffect(() => {
     if (user?.name && !senderName.trim()) setSenderName(user.name);
     if (user?.phone && !senderMobile.trim()) setSenderMobile(user.phone.replace(/\D/g, '').slice(-10));
   }, [user, senderName, senderMobile]);
-
-  const handleCitySelect = (city: CityName) => {
-    setSelectedCity(city);
-    setShowCitySelection(false);
-  };
 
   const handleLocationSelect = async (location: Location) => {
     try {
@@ -335,12 +317,6 @@ const PickupDropSelection = () => {
     }
   };
 
-  const handleSearchCity = (text: string) => {
-    setFilteredCities(
-      text.trim() === '' ? CITIES : CITIES.filter(c => c.toLowerCase().includes(text.toLowerCase())),
-    );
-  };
-
   const handleSearchLocation = async (text: string) => {
     if (activeInput === 'pickup') setPickup(text);
     else setDrop(text);
@@ -349,8 +325,7 @@ const PickupDropSelection = () => {
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const query = selectedCity ? `${text}, ${selectedCity}` : text;
-        const results = await mapboxApi.searchPlaces(query, undefined, sessionTokenRef.current);
+        const results = await mapboxApi.searchPlaces(text, undefined, sessionTokenRef.current);
         setFilteredLocations(results);
       } catch { setFilteredLocations([]); }
       finally { setIsSearching(false); }
@@ -374,7 +349,6 @@ const PickupDropSelection = () => {
         currentLocationCoords: null,
         senderName, senderMobile,
         receiverName, receiverMobile,
-        city: selectedCity,
         serviceCategory,
         locationType: selectedLocationType === 'Other' ? customLocationName : selectedLocationType,
       });
@@ -439,64 +413,6 @@ const PickupDropSelection = () => {
       )}
     </View>
   );
-
-  // ── City Selection Screen ─────────────────────────────────────────────────
-  if (showCitySelection) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="dark-content" backgroundColor={C.surface} translucent />
-
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Home')}
-            style={styles.backBtnRound}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            activeOpacity={0.6}
-          >
-            <MaterialIcons name="arrow-back" size={ms(20)} color={C.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitleLarge}>Select City</Text>
-        </View>
-
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.cityScrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.cityHeading}>Where are you sending from?</Text>
-          <Text style={styles.citySubHeading}>We'll find the best delivery options near you</Text>
-
-          <View style={styles.citySearchBar}>
-            <MaterialIcons name="search" size={ms(18)} color={C.textMuted} />
-            <TextInput
-              style={styles.citySearchInput}
-              placeholder="Search city…"
-              placeholderTextColor={C.textMuted}
-              onChangeText={handleSearchCity}
-            />
-          </View>
-
-          {filteredCities.map(city => (
-            <TouchableOpacity
-              key={city}
-              style={styles.cityRow}
-              onPress={() => handleCitySelect(city)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cityRowIcon}>
-                <MaterialIcons name="location-city" size={ms(18)} color={C.accent} />
-              </View>
-              <Text style={styles.cityRowName}>{city}</Text>
-              <View style={styles.cityRowChevron}>
-                <MaterialIcons name="chevron-right" size={ms(18)} color={C.textMuted} />
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  }
 
   // ─── Main Drop/Pickup Screen ──────────────────────────────────────────────
   return (
@@ -974,89 +890,6 @@ const styles = StyleSheet.create({
     color: C.pillText,
   },
   chipTextActive: { color: '#FFFFFF' },
-
-  // ── City screen ───────────────────────────────────────────────────────────
-  cityScrollContent: {
-    paddingHorizontal: GUTTER,
-    paddingTop: scaleH(20),
-    paddingBottom: scaleH(32),
-    backgroundColor: C.bg,
-  },
-  cityHeading: {
-    fontSize: fs(20),
-    fontWeight: '800',
-    color: C.text,
-    letterSpacing: -0.3,
-    marginBottom: scaleH(4),
-  },
-  citySubHeading: {
-    fontSize: fs(13),
-    color: C.textMuted,
-    marginBottom: scaleH(18),
-    fontWeight: '400',
-  },
-  citySearchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.surface,
-    borderRadius: ms(12),
-    paddingHorizontal: scaleW(14),
-    marginBottom: scaleH(12),
-    borderWidth: 1,
-    borderColor: C.border,
-    gap: scaleW(8),
-    elevation: 1,
-    shadowColor: C.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-  },
-  citySearchInput: {
-    flex: 1,
-    fontSize: fs(14),
-    color: C.text,
-    paddingVertical: scaleH(12),
-  },
-  cityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.surface,
-    borderRadius: ms(12),
-    paddingVertical: scaleH(13),
-    paddingHorizontal: scaleW(14),
-    marginBottom: scaleH(8),
-    borderWidth: 1,
-    borderColor: C.border,
-    elevation: 1,
-    shadowColor: C.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-  },
-  cityRowIcon: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: ms(9),
-    backgroundColor: C.accentLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(12),
-    flexShrink: 0,
-  },
-  cityRowName: {
-    flex: 1,
-    fontSize: fs(14),
-    fontWeight: '600',
-    color: C.text,
-  },
-  cityRowChevron: {
-    width: ms(26),
-    height: ms(26),
-    borderRadius: ms(7),
-    backgroundColor: C.bg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
   // ── Footer ────────────────────────────────────────────────────────────────
   footer: {
