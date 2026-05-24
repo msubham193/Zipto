@@ -14,7 +14,6 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import { useBookingStore } from '../store/useBookingStore';
 import { vehicleApi } from '../api/vehicle';
 
-// ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<
   string,
   { color: string; bg: string; label: string; icon: string; pulse: boolean }

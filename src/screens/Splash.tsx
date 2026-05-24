@@ -7,8 +7,6 @@ import {
   Dimensions,
   PixelRatio,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -87,9 +85,6 @@ const LetterPop = ({
 };
 
 const Splash = () => {
-  const navigation = useNavigation<any>();
-  const { isAuthenticated, token } = useAuthStore();
-
   const taglineOpacity = useRef(new Animated.Value(0)).current;
   const taglineSlideY  = useRef(new Animated.Value(10)).current;
   const poweredOpacity = useRef(new Animated.Value(0)).current;
@@ -100,14 +95,7 @@ const Splash = () => {
   const TAGLINE_DELAY   = LAST_LETTER_DELAY + 250;
   const POWERED_DELAY   = LAST_LETTER_DELAY + 520;
 
-  // Always wait the full splash duration so animations play completely
-  const SPLASH_DURATION = 2800;
-
   useEffect(() => {
-    if (isAuthenticated && token) {
-      console.log('👤 Already authenticated! Bearer Token:', token);
-    }
-
     // Tagline slides up after letters finish
     Animated.parallel([
       Animated.timing(taglineOpacity, {
@@ -131,20 +119,7 @@ const Splash = () => {
       delay: POWERED_DELAY,
       useNativeDriver: true,
     }).start();
-
-    // Always wait the full duration before deciding where to navigate.
-    // This ensures the splash animation plays fully on every app open,
-    // whether the user is authenticated or not.
-    const timer = setTimeout(() => {
-      if (isAuthenticated && token) {
-        navigation.replace('MainTabs');   // ← go straight to app if logged in
-      } else {
-        navigation.replace('Login');
-      }
-    }, SPLASH_DURATION);
-
-    return () => clearTimeout(timer);
-  }, [navigation, isAuthenticated, token]);
+  }, []);
 
   return (
     <View style={styles.container}>
