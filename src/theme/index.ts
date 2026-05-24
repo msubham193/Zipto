@@ -1,6 +1,25 @@
-import { Dimensions } from 'react-native';
+import { Platform } from 'react-native';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, scaleW, scaleH, ms, fs } from '../utils/responsive';
 
-const { width, height } = Dimensions.get('window');
+const FONT_FAMILY = Platform.select({
+  ios: 'Poppins',
+  android: 'Poppins-Regular',
+}) as string;
+
+const FONT_FAMILY_MEDIUM = Platform.select({
+  ios: 'Poppins',
+  android: 'Poppins-Medium',
+}) as string;
+
+const FONT_FAMILY_BOLD = Platform.select({
+  ios: 'Poppins',
+  android: 'Poppins-Bold',
+}) as string;
+
+const FONT_FAMILY_SEMIBOLD = Platform.select({
+  ios: 'Poppins',
+  android: 'Poppins-SemiBold',
+}) as string;
 
 export const COLORS = {
   primary: '#FF6D00', // Vibrant Orange
@@ -19,29 +38,30 @@ export const COLORS = {
 };
 
 export const SPACING = {
-  xs: 4,
-  s: 8,
-  m: 16,
-  l: 24,
-  xl: 32,
-  xxl: 48,
+  xs: ms(4),
+  s: ms(8),
+  m: ms(16),
+  l: ms(24),
+  xl: ms(32),
+  xxl: ms(48),
 };
 
 export const FONTS = {
-  regular: 'System', // Replace with custom font logic if needed
-  medium: 'System',
-  bold: 'System',
+  regular: FONT_FAMILY,
+  medium: FONT_FAMILY_MEDIUM,
+  bold: FONT_FAMILY_BOLD,
+  semibold: FONT_FAMILY_SEMIBOLD,
 };
 
 export const SIZES = {
-  width,
-  height,
-  h1: 30,
-  h2: 24,
-  h3: 20,
-  body1: 16,
-  body2: 14,
-  caption: 12,
+  width: SCREEN_WIDTH,
+  height: SCREEN_HEIGHT,
+  h1: fs(30),
+  h2: fs(24),
+  h3: fs(20),
+  body1: fs(16),
+  body2: fs(14),
+  caption: fs(12),
 };
 
 export const THEME = {
@@ -49,4 +69,12 @@ export const THEME = {
   spacing: SPACING,
   fonts: FONTS,
   sizes: SIZES,
+  responsive: {
+    scaleW,
+    scaleH,
+    ms,
+    fs,
+    screenWidth: SCREEN_WIDTH,
+    screenHeight: SCREEN_HEIGHT,
+  },
 };

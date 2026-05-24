@@ -128,11 +128,14 @@ const Support = () => {
     },
   ];
 
+  // Self-service items — kept for easy re-enable
+  /*
   const quickHelp = [
-    { id: 1, icon: 'help-outline',  title: 'Help Center',  desc: 'FAQs & guides',  accent: COLORS.purple, light: COLORS.purpleLight },
+    { id: 1, icon: 'help-outline',  title: 'Help Center',      desc: 'FAQs & guides',  accent: COLORS.purple, light: COLORS.purpleLight },
     { id: 2, icon: 'flag',          title: 'Report a Problem', desc: 'Flag a problem', accent: COLORS.rose,   light: COLORS.roseLight  },
-    { id: 3, icon: 'rate-review',   title: 'Feedback',     desc: 'Share thoughts', accent: COLORS.pink,   light: COLORS.pinkLight  },
+    { id: 3, icon: 'rate-review',   title: 'Feedback',         desc: 'Share thoughts', accent: COLORS.pink,   light: COLORS.pinkLight  },
   ];
+  */
 
   const hours = [
     { label: 'Monday – Sunday',   value: '10:00 AM – 7:00 PM' },
@@ -201,7 +204,8 @@ const Support = () => {
             </FadeInView>
           ))}
 
-          {/* ── Quick Help ── */}
+          {/* ── Self-Service section — commented out, re-enable when Help Center,
+              Report a Problem & Feedback screens are ready ──
           <FadeInView delay={380}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>SELF-SERVICE</Text>
@@ -218,6 +222,7 @@ const Support = () => {
               ))}
             </View>
           </FadeInView>
+          */}
 
           {/* ── Hours ── */}
           <FadeInView delay={440}>
@@ -253,9 +258,7 @@ const Support = () => {
               </View>
               <View style={styles.addressBlock}>
                 <Text style={styles.addressLine}>Zipto Headquarters</Text>
-                <Text style={styles.addressSub}>Bhubaneswar,Odisha – 751007, India</Text>
-               
-               
+                <Text style={styles.addressSub}>Bhubaneswar, Odisha – 751007, India</Text>
               </View>
               {/* <TouchableOpacity style={styles.directionsBtn} activeOpacity={0.75}>
                 <MaterialIcons name="directions" size={ms(16)} color={COLORS.accent} />
@@ -406,7 +409,7 @@ const styles = StyleSheet.create({
     marginLeft: scaleW(8),
   },
 
-  // ── Quick help ───────────────────────────────────────────────────────────────
+  // ── Quick help styles — kept for easy re-enable ───────────────────────────────
   quickRow: {
     flexDirection: 'row',
     gap: scaleW(10),

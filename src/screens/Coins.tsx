@@ -112,6 +112,8 @@ const Coins = () => {
     return '#6366F1';
   };
 
+  // Use Coins options — commented out, re-enable when TransferToWallet screen is ready
+  /*
   const useCoinsOptions = [
     {
       id: 1,
@@ -123,13 +125,13 @@ const Coins = () => {
       onPress: () => navigation.navigate('TransferToWallet'),
     },
   ];
+  */
 
   const earnCoinsWays = [
     {
       icon: 'local-shipping',
       text: 'Complete deliveries',
       coins: 'Per order',
-      // ✅ Navigate to completed orders tab in MyOrders
       onPress: () => navigation.navigate('MyOrders', { filter: 'completed' }),
     },
     {
@@ -148,15 +150,17 @@ const Coins = () => {
       icon: 'star',
       text: 'Write reviews',
       coins: '+5',
-      // ✅ Navigate to the new WriteReview screen
       onPress: () => navigation.navigate('WriteReview'),
     },
+    // Transaction history row — commented out, re-enable when TransactionHistory screen is ready
+    /*
     {
       icon: 'receipt-long',
       text: 'View transaction history',
       coins: 'All',
       onPress: () => navigation.navigate('TransactionHistory'),
     },
+    */
   ];
 
   if (loading) {
@@ -168,6 +172,14 @@ const Coins = () => {
               <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>My Coins</Text>
+            {/* History button — commented out, re-enable when TransactionHistory screen is ready
+            <TouchableOpacity
+              onPress={() => navigation.navigate('TransactionHistory')}
+              style={styles.historyButton}
+            >
+              <MaterialIcons name="history" size={ms(24)} color="#3B82F6" />
+            </TouchableOpacity>
+            */}
             <View style={styles.historyButton} />
           </View>
           <View style={styles.loadingContainer}>
@@ -189,12 +201,15 @@ const Coins = () => {
             <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Coins</Text>
+          {/* History icon button — commented out, re-enable when TransactionHistory screen is ready
           <TouchableOpacity
             onPress={() => navigation.navigate('TransactionHistory')}
             style={styles.historyButton}
           >
             <MaterialIcons name="history" size={ms(24)} color="#3B82F6" />
           </TouchableOpacity>
+          */}
+          <View style={styles.historyButton} />
         </View>
 
         <ScrollView
@@ -242,6 +257,7 @@ const Coins = () => {
               <View style={[styles.decorCircle, styles.decorCircle3]} />
             </LinearGradient>
 
+            {/* Transaction History button — commented out, re-enable when TransactionHistory screen is ready
             <TouchableOpacity
               style={styles.transactionHistoryButton}
               onPress={() => navigation.navigate('TransactionHistory')}
@@ -250,9 +266,11 @@ const Coins = () => {
               <Text style={styles.transactionHistoryText}>Transaction History</Text>
               <MaterialIcons name="chevron-right" size={ms(20)} color="#94A3B8" />
             </TouchableOpacity>
+            */}
           </View>
 
-          {/* Recent Transactions */}
+          {/* Recent Transactions — commented out, re-enable when TransactionHistory screen is ready */}
+          {/*
           {transactions.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -295,8 +313,10 @@ const Coins = () => {
               </View>
             </View>
           )}
+          */}
 
-          {/* Use Coins Section */}
+          {/* Use Coins Section — commented out, re-enable when TransferToWallet screen is ready */}
+          {/*
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Use Coins</Text>
             <View style={styles.optionsGrid}>
@@ -324,6 +344,7 @@ const Coins = () => {
               ))}
             </View>
           </View>
+          */}
 
           {/* Earn More Coins Section */}
           <View style={styles.section}>
@@ -456,7 +477,7 @@ const styles = StyleSheet.create({
   decorCircle2: { width: decorCircle2Sz, height: decorCircle2Sz, right: scaleW(100), top: -scaleH(20) },
   decorCircle3: { width: decorCircle3Sz, height: decorCircle3Sz, left: -scaleW(20), bottom: scaleH(40) },
 
-  // ── Transaction History Button ──
+  // ── Transaction History Button style kept for easy re-enable ──
   transactionHistoryButton: {
     flexDirection:  'row',
     alignItems:     'center',
@@ -471,11 +492,11 @@ const styles = StyleSheet.create({
     shadowRadius:   2,
   },
   transactionHistoryText: {
-    flex:         1,
-    fontSize:     fs(15),
-    fontWeight:   '600',
-    color:        '#0F172A',
-    marginLeft:   scaleW(12),
+    flex:       1,
+    fontSize:   fs(15),
+    fontWeight: '600',
+    color:      '#0F172A',
+    marginLeft: scaleW(12),
   },
 
   // ── Section ──
@@ -489,7 +510,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: fs(18), fontWeight: 'bold', color: '#0F172A', marginBottom: scaleH(16) },
   seeAllText:   { fontSize: fs(14), fontWeight: '600', color: '#6366F1', marginBottom: scaleH(16) },
 
-  // ── Transactions Card ──
+  // ── Transactions Card styles kept for easy re-enable ──
   transactionsCard: {
     backgroundColor: '#FFFFFF',
     borderRadius:    ms(12),
@@ -527,7 +548,7 @@ const styles = StyleSheet.create({
   txCoins:        { fontSize: fs(16), fontWeight: 'bold', marginLeft: scaleW(8) },
   txDivider:      { height: 1, backgroundColor: '#F1F5F9', marginLeft: txIconSize + scaleW(12) },
 
-  // ── Options Grid ──
+  // ── Options Grid styles kept for easy re-enable ──
   optionsGrid: { gap: scaleH(12) },
   optionCard: {
     backgroundColor: '#FFFFFF',
@@ -575,9 +596,9 @@ const styles = StyleSheet.create({
     shadowRadius:    2,
   },
   earnItem: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    paddingVertical:scaleH(12),
+    flexDirection:   'row',
+    alignItems:      'center',
+    paddingVertical: scaleH(12),
   },
   earnIconContainer: {
     width:           earnIconSize,

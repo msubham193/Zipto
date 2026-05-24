@@ -2,7 +2,10 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+        <!-- Match the JS splash background so there's zero flash on startup -->
+        <item name="android:windowBackground">@color/zipto_splash_bg</item>
+        <item name="android:statusBarColor">@color/zipto_splash_bg</item>
+        <item name="android:windowIsTranslucent">false</item>
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 

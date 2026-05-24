@@ -1,27 +1,28 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
   StatusBar,
-  Modal,
   Image,
   Dimensions,
   PixelRatio,
-  Animated,
+  TextInput,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Switch } from 'react-native';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBookingStore } from '../store/useBookingStore';
-import { WebView } from 'react-native-webview';
 
 // ─── Responsive Utilities ────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -48,27 +49,44 @@ const VEHICLE_IMAGES: Record<string, any> = {
   tata_407: require('../assets/images/vehicle3.png'),
 };
 
-// ─── Payment Icon Map ─────────────────────────────────────────────────────────
-const PAYMENT_ICONS: Record<'cash' | 'online', any> = {
-  cash: require('../assets/images/cash.png'),
-  online: require('../assets/images/bhim.png'),
-};
+// ─── Restricted Items List ────────────────────────────────────────────────────
+const RESTRICTED_ITEMS = [
+  'Pornographic Materials', 'Dry Ice',
+  'Human Body Parts', 'Explosives',
+  'Fire Arms', 'Flammables',
+  'Livestock', 'Pets & Animals',
+  'Dangerous Goods', 'Hazardous Goods',
+  'Illegal Goods', 'Radioactive Materials',
+  'Precious Jewelleries', 'Currencies & Coins',
+  'Stones and Gems', 'Gambling Devices',
+  'Lottery Tickets', 'Fire Extinguishers',
+  'Cigarettes & Alcohols', 'Narcotics and Illegal Drugs',
+];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 const FareEstimate = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'online'>('cash');
-  const [paidBy, setPaidBy] = useState<'sender' | 'receiver'>('sender');
+  const insets = useSafeAreaInsets();
+  const paidBy = 'sender';
   const [estimateData, setEstimateData] = useState<FareEstimateResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentModal, setPaymentModal] = useState<{ html: string; bookingId: string } | null>(null);
 
-  // Animated value for the "Who Pays?" slider pill (0 = sender, 1 = receiver)
-  const sliderAnim = useRef(new Animated.Value(0)).current;
-  const [sliderWidth, setSliderWidth] = useState(0);
+  // Zipto Coins
+  const [coinsBalance, setCoinsBalance] = useState(0);
+  const [useCoins, setUseCoins] = useState(false);
+
+  // Coupon
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string; title: string; discount_amount: number;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  // ── NEW: Restricted items modal ────────────────────────────────────────────
+  const [showRestrictedModal, setShowRestrictedModal] = useState(false);
 
   const { user } = useAuthStore();
   const { setActiveBooking } = useBookingStore();
@@ -81,17 +99,6 @@ const FareEstimate = () => {
   } = route.params || {};
 
   const selectedVehicleType = vehicle?.vehicleType || 'bike';
-
-  // ── Who Pays slider handler ─────────────────────────────────────────────────
-  const handlePaidByChange = (value: 'sender' | 'receiver') => {
-    setPaidBy(value);
-    Animated.spring(sliderAnim, {
-      toValue: value === 'sender' ? 0 : 1,
-      useNativeDriver: false,
-      tension: 180,
-      friction: 18,
-    }).start();
-  };
 
   // ── Fetch fare estimate ─────────────────────────────────────────────────────
   const fetchFareEstimate = useCallback(async () => {
@@ -118,14 +125,43 @@ const FareEstimate = () => {
     }
   }, [pickupCoords, dropCoords, vehicle?.vehicleType, helperCount, pickup, drop, selectedVehicleType]);
 
-  useEffect(() => { fetchFareEstimate(); }, [fetchFareEstimate]);
+  useEffect(() => {
+    fetchFareEstimate();
+    vehicleApi.getCoinsBalance()
+      .then(res => setCoinsBalance(res?.coins ?? 0))
+      .catch(() => { });
+  }, [fetchFareEstimate]);
+
+  // ── Apply coupon ────────────────────────────────────────────────────────────
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (!estimateData) return;
+    try {
+      setCouponLoading(true);
+      const result = await vehicleApi.validateCoupon({
+        code,
+        order_value: estimateData.estimated_fare,
+        vehicle_type: selectedVehicleType,
+      });
+      setAppliedCoupon({
+        code: result.code,
+        title: result.title,
+        discount_amount: result.discount_amount,
+      });
+      setCouponInput('');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid coupon';
+      Alert.alert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => setAppliedCoupon(null);
 
   // ── Navigation helper ───────────────────────────────────────────────────────
-  const navigateToTracking = (
-    bookingId: string,
-    showBookingSuccess = false,
-    paymentMethod: 'cash' | 'online' = selectedPayment,
-  ) => {
+  const navigateToTracking = (bookingId: string, showBookingSuccess = false) => {
     navigation.reset({
       index: 1,
       routes: [
@@ -135,82 +171,17 @@ const FareEstimate = () => {
           params: {
             bookingId, pickup: pickup || '', drop: drop || '',
             pickupCoords, dropCoords, vehicleType: selectedVehicleType,
-            fare: (estimateData?.estimated_fare || 0) + (helperCost || 0),
-            showBookingSuccess, paymentMethod, helperCount, helperCost,
+            fare: Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0)),
+            showBookingSuccess, paidBy, helperCount, helperCost,
           },
         },
       ],
     });
   };
 
-  // ── Razorpay HTML builder ───────────────────────────────────────────────────
-  const buildRazorpayHTML = (orderId: string, amount: number, currency: string, key: string) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { margin:0; background:#F9FAFB; display:flex; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; }
-    .loader { text-align:center; color:#6B7280; font-size:16px; }
-  </style>
-</head>
-<body>
-  <div class="loader">Opening payment gateway...</div>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script>
-    var options = {
-      key: "${key}", amount: ${Math.round(amount * 100)}, currency: "${currency}",
-      name: "Zipto", description: "Booking Payment", order_id: "${orderId}",
-      prefill: { contact: "${user?.phone || ''}", name: "${user?.name || ''}" },
-      theme: { color: "#2563EB" },
-      handler: function(response) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_SUCCESS", data: response }));
-      },
-      modal: {
-        ondismiss: function() {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_CANCELLED" }));
-        }
-      }
-    };
-    var rzp = new Razorpay(options);
-    rzp.on("payment.failed", function(response) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "PAYMENT_FAILED", error: response.error }));
-    });
-    rzp.open();
-  </script>
-</body>
-</html>`;
-
-  // ── WebView message handler ─────────────────────────────────────────────────
-  const handleWebViewMessage = async (event: any) => {
-    try {
-      const message = JSON.parse(event.nativeEvent.data);
-      const bookingId = paymentModal?.bookingId || '';
-      setPaymentModal(null);
-      if (message.type === 'PAYMENT_SUCCESS') {
-        setBookingLoading(true);
-        const verifyResponse = await vehicleApi.verifyPayment({
-          razorpay_order_id: message.data.razorpay_order_id,
-          razorpay_payment_id: message.data.razorpay_payment_id,
-          razorpay_signature: message.data.razorpay_signature,
-          booking_id: bookingId,
-        });
-        setBookingLoading(false);
-        if (!verifyResponse.success) {
-          Alert.alert('Verification Failed', 'Payment collected but verification failed. Contact support.');
-          return;
-        }
-        navigateToTracking(bookingId, false, 'online');
-      } else if (message.type === 'PAYMENT_CANCELLED') {
-        Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-      } else if (message.type === 'PAYMENT_FAILED') {
-        Alert.alert('Payment Failed', message.error?.description || 'Payment could not be completed.');
-      }
-    } catch {
-      setPaymentModal(null);
-      setBookingLoading(false);
-      Alert.alert('Error', 'Something went wrong with the payment.');
-    }
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate('Home');
   };
 
   // ── Confirm booking ─────────────────────────────────────────────────────────
@@ -230,44 +201,36 @@ const FareEstimate = () => {
         receiver_name: receiverName || undefined,
         receiver_phone: receiverPhone || undefined,
         alternative_phone: alternativePhone || undefined,
-        paid_by: paidBy,
+        paid_by: paidBy as 'sender' | 'receiver',
+        coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
+        coupon_code: appliedCoupon?.code || undefined,
       };
-      const bookingResponse = await vehicleApi.createBooking(bookingData);
+      const bookingResponse = await vehicleApi.createBooking(bookingData as any);
       if (!bookingResponse.success) {
-        Alert.alert('Booking Failed', bookingResponse.message || 'Failed to create booking. Please try again.');
+        const raw = bookingResponse.message;
+        const msg = Array.isArray(raw) ? raw.join('\n') : (raw || 'Failed to create booking. Please try again.');
+        Alert.alert('Booking Failed', msg);
         return;
       }
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
-      const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
       setActiveBooking({
         id: bookingId,
         status: 'searching',
         pickupAddress: pickup || '',
         dropAddress: drop || '',
         vehicleType: selectedVehicleType,
-        estimatedFare: amount,
+        estimatedFare: totalFare,
         pickup: pickup || '',
         drop: drop || '',
         pickupCoords,
         dropCoords,
-        paymentMethod: selectedPayment,
         paidBy,
       });
-      if (selectedPayment === 'online') {
-        const orderResponse = await vehicleApi.createPaymentOrder({ booking_id: bookingId, amount });
-        if (!orderResponse.success || !orderResponse.data?.order_id) {
-          Alert.alert('Payment Error', 'Failed to create payment order. Please try again.');
-          return;
-        }
-        const { order_id, currency, key } = orderResponse.data;
-        const html = buildRazorpayHTML(order_id, amount, currency || 'INR', key);
-        setBookingLoading(false);
-        setPaymentModal({ html, bookingId });
-      } else {
-        navigateToTracking(bookingId, false, 'cash');
-      }
+      navigateToTracking(bookingId, false);
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || err.message || 'Something went wrong. Please try again.');
+      const raw = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
+      const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
+      Alert.alert('Error', msg);
     } finally {
       setBookingLoading(false);
     }
@@ -276,7 +239,8 @@ const FareEstimate = () => {
   // ── Loading state ───────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
         <ActivityIndicator size="large" color="#2563EB" />
         <Text style={styles.loadingText}>Calculating best fare...</Text>
       </View>
@@ -286,7 +250,8 @@ const FareEstimate = () => {
   // ── Error state ─────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
         <Icon name="error-outline" size={sp(48)} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchFareEstimate} activeOpacity={0.8}>
@@ -297,7 +262,12 @@ const FareEstimate = () => {
   }
 
   const breakdown = estimateData?.breakdown;
-  const totalFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  const baseFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  const COINS_PER_REDEMPTION = 100;
+  const RUPEES_PER_REDEMPTION = 2;
+  const coinDiscount = useCoins ? RUPEES_PER_REDEMPTION : 0;
+  const couponDiscount = appliedCoupon?.discount_amount ?? 0;
+  const totalFare = Math.max(0, baseFare - coinDiscount - couponDiscount);
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
   const surgeExtra = hasSurge && breakdown?.subtotal
@@ -319,29 +289,29 @@ const FareEstimate = () => {
     return 'Higher than usual demand';
   };
 
-  // Interpolate pill position using measured container width
-  const halfWidth = sliderWidth > 0 ? sliderWidth / 2 : 0;
-  const pillLeft = sliderAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [sp(6), sp(6) + halfWidth],
-  });
-
-  // ── Main render ─────────────────────────────────────────────────────────────
+  // ─── Main render ──────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={sp(24)} color="#1F2937" />
+        <TouchableOpacity
+          onPress={handleGoBack}
+          style={styles.backBtnRound}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.6}
+        >
+          <Icon name="arrow-back" size={sp(20)} color="#111111" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Fare Estimate</Text>
-        <View style={styles.headerButton} />
+        <Text style={styles.headerTitleLarge}>Fare Estimate</Text>
+        <View style={styles.headerRightSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ── Route Card ── */}
         <View style={styles.card}>
           <View style={styles.vehicleInfoRow}>
@@ -458,130 +428,199 @@ const FareEstimate = () => {
           )}
           <View style={styles.divider} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Estimate</Text>
-            <Text style={styles.totalValue}>₹{totalFare}</Text>
+            <Text style={styles.totalLabel}>Subtotal</Text>
+            <Text style={styles.totalValue}>₹{baseFare}</Text>
           </View>
-        </View>
-
-        {/* ── Who Pays? (Slider) ── */}
-        <Text style={styles.sectionTitle}>Who Pays?</Text>
-        <View
-          style={styles.whoPaysSlider}
-          onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
-        >
-          {sliderWidth > 0 && (
-            <Animated.View style={[styles.sliderPill, { left: pillLeft, width: halfWidth - sp(6) }]} />
+          {useCoins && coinDiscount > 0 && (
+            <View style={[styles.row, { marginTop: scaleH(4) }]}>
+              <View style={styles.coinDiscountLabel}>
+                <Icon name="toll" size={sp(14)} color="#7C3AED" />
+                <Text style={styles.coinDiscountText}>Coins Discount (100 coins)</Text>
+              </View>
+              <Text style={styles.coinDiscountValue}>−₹{coinDiscount.toFixed(2)}</Text>
+            </View>
           )}
-          <TouchableOpacity
-            style={styles.sliderOption}
-            onPress={() => handlePaidByChange('sender')}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.sliderIconBox, paidBy === 'sender' && styles.sliderIconBoxActive]}>
-              <Icon
-                name="person"
-                size={sp(18)}
-                color={paidBy === 'sender' ? '#FFFFFF' : '#6B7280'}
+          {appliedCoupon && couponDiscount > 0 && (
+            <View style={[styles.row, { marginTop: scaleH(4) }]}>
+              <View style={styles.coinDiscountLabel}>
+                <Icon name="local-offer" size={sp(14)} color="#16A34A" />
+                <Text style={[styles.coinDiscountText, { color: '#16A34A' }]}>
+                  Coupon ({appliedCoupon.code})
+                </Text>
+              </View>
+              <Text style={[styles.coinDiscountValue, { color: '#16A34A' }]}>
+                −₹{couponDiscount}
+              </Text>
+            </View>
+          )}
+          {((useCoins && coinDiscount > 0) || (appliedCoupon && couponDiscount > 0)) && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total Payable</Text>
+                <Text style={[styles.totalValue, { color: '#16A34A' }]}>₹{totalFare}</Text>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* ── Zipto Coins ── */}
+        {coinsBalance >= 100 && (
+          <>
+            <Text style={styles.sectionTitle}>Zipto Coins</Text>
+            <View style={styles.coinsCard}>
+              <View style={styles.coinsCardLeft}>
+                <View style={styles.coinsIconBox}>
+                  <Icon name="toll" size={sp(22)} color="#7C3AED" />
+                </View>
+                <View style={styles.coinsTextBlock}>
+                  <Text style={styles.coinsTitle}>
+                    You have <Text style={styles.coinsBold}>{coinsBalance} coins</Text>
+                  </Text>
+                  <Text style={styles.coinsSub}>Use 100 coins → get ₹2 off</Text>
+                </View>
+              </View>
+              <Switch
+                value={useCoins}
+                onValueChange={setUseCoins}
+                trackColor={{ false: '#E5E7EB', true: '#DDD6FE' }}
+                thumbColor={useCoins ? '#7C3AED' : '#9CA3AF'}
               />
             </View>
-            <View style={styles.sliderTextBlock}>
-              <Text style={[styles.sliderLabel, paidBy === 'sender' && styles.sliderLabelActive]}>
-                Sender pays
-              </Text>
-              <Text style={[styles.sliderSub, paidBy === 'sender' && styles.sliderSubActive]}>
-                Collect at pickup
+          </>
+        )}
+
+        {/* ── Promo Code ── */}
+        <Text style={styles.sectionTitle}>Promo Code</Text>
+        {appliedCoupon ? (
+          <View style={styles.couponApplied}>
+            <View style={styles.couponAppliedLeft}>
+              <Icon name="local-offer" size={sp(18)} color="#16A34A" />
+              <View style={{ marginLeft: sp(10) }}>
+                <Text style={styles.couponAppliedCode}>{appliedCoupon.code}</Text>
+                <Text style={styles.couponAppliedTitle}>{appliedCoupon.title}</Text>
+              </View>
+            </View>
+            <View style={styles.couponAppliedRight}>
+              <Text style={styles.couponAppliedSaving}>−₹{appliedCoupon.discount_amount}</Text>
+              <TouchableOpacity
+                onPress={removeCoupon}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Icon name="close" size={sp(18)} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.couponRow}>
+            <TextInput
+              style={styles.couponInput}
+              placeholder="Enter promo code"
+              placeholderTextColor="#9CA3AF"
+              value={couponInput}
+              onChangeText={t => setCouponInput(t.toUpperCase())}
+              autoCapitalize="characters"
+              returnKeyType="done"
+              onSubmitEditing={applyCoupon}
+            />
+            <TouchableOpacity
+              style={[styles.couponApplyBtn, couponLoading && { opacity: 0.6 }]}
+              onPress={applyCoupon}
+              activeOpacity={0.8}
+              disabled={couponLoading}
+            >
+              {couponLoading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.couponApplyText}>Apply</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            NEW ── Goods Description Section
+        ══════════════════════════════════════════════════════════════════════ */}
+        <Text style={styles.sectionTitle}>Goods Description</Text>
+        <View style={styles.goodsCard}>
+          {/* Main goods info row */}
+          <View style={styles.goodsInfoRow}>
+            <View style={styles.goodsTextBlock}>
+              <Text style={styles.goodsCategory}>Hardwares</Text>
+              <Text style={styles.goodsMeta}>
+                {vehicle?.capacity || '20.0 Kg'} {'•'} 01 Package {'•'} COD (Default)
               </Text>
             </View>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.goodsChangeBtn}
+              activeOpacity={0.75}
+              onPress={() =>
+                Alert.alert('Change Goods', 'You can update goods details before booking.')
+              }
+            >
+              <Text style={styles.goodsChangeBtnText}>Change</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Restricted items warning strip */}
           <TouchableOpacity
-            style={styles.sliderOption}
-            onPress={() => handlePaidByChange('receiver')}
-            activeOpacity={0.85}
+            style={styles.restrictedBanner}
+            onPress={() => setShowRestrictedModal(true)}
+            activeOpacity={0.8}
           >
-            <View style={[styles.sliderIconBox, paidBy === 'receiver' && styles.sliderIconBoxActive]}>
-              <Icon
-                name="person-outline"
-                size={sp(18)}
-                color={paidBy === 'receiver' ? '#FFFFFF' : '#6B7280'}
-              />
+            <View style={styles.restrictedBannerLeft}>
+              <View style={styles.restrictedIconWrap}>
+                <Icon name="do-not-disturb" size={sp(16)} color="#B45309" />
+              </View>
+              <Text style={styles.restrictedBannerText}>Do not send restricted items</Text>
             </View>
-            <View style={styles.sliderTextBlock}>
-              <Text style={[styles.sliderLabel, paidBy === 'receiver' && styles.sliderLabelActive]}>
-                Receiver pays
-              </Text>
-              <Text style={[styles.sliderSub, paidBy === 'receiver' && styles.sliderSubActive]}>
-                Collect at delivery
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={styles.restrictedViewBtn}
+              onPress={() => setShowRestrictedModal(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.restrictedViewBtnText}>View List</Text>
+              <Icon name="chevron-right" size={sp(14)} color="#B45309" />
+            </TouchableOpacity>
           </TouchableOpacity>
         </View>
 
-        {/* ── Payment Method ── */}
-        <Text style={styles.sectionTitle}>Payment Method</Text>
-        <View style={styles.paymentContainer}>
-
-          {/* Cash */}
-          <TouchableOpacity
-            style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
-            onPress={() => setSelectedPayment('cash')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.paymentLeft}>
-              {/* ── Cash asset icon ── */}
-              <View style={[styles.iconBox, selectedPayment === 'cash' && styles.selectedIconBox]}>
-                <Image
-                  source={PAYMENT_ICONS.cash}
-                  style={styles.paymentIconImg}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, selectedPayment === 'cash' && styles.selectedPaymentText]}>
-                  Cash
-                </Text>
-                <Text style={styles.paymentSub}>Pay to Rider</Text>
-              </View>
+        {/* ── Read before Booking ── */}
+        <Text style={styles.sectionTitle}>Read before Booking</Text>
+        <View style={styles.notesCard}>
+          {[
+            'Fare includes 15 mins free loading/unloading time.',
+            '₹ 1.5/min for additional loading/unloading time.',
+            'Fare may change if route or location changes.',
+            'Parking charges to be paid by customer.',
+            'Fare includes toll and permit charges, if any.',
+            "We don't allow overloading.",
+          ].map((note, idx) => (
+            <View key={idx} style={styles.noteRow}>
+              <View style={styles.noteBullet} />
+              <Text style={styles.noteText}>{note}</Text>
             </View>
-            <View style={[styles.radio, selectedPayment === 'cash' && styles.radioSelected]}>
-              {selectedPayment === 'cash' && <View style={styles.radioInner} />}
-            </View>
-          </TouchableOpacity>
-
-          {/* Online */}
-          <TouchableOpacity
-            style={[styles.paymentOption, selectedPayment === 'online' && styles.selectedPayment]}
-            onPress={() => setSelectedPayment('online')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.paymentLeft}>
-              {/* ── Online / UPI asset icon ── */}
-              <View style={[styles.iconBox, selectedPayment === 'online' && styles.selectedIconBox]}>
-                <Image
-                  source={PAYMENT_ICONS.online}
-                  style={styles.paymentIconImg}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={[styles.paymentTitle, selectedPayment === 'online' && styles.selectedPaymentText]}>
-                  Online
-                </Text>
-                <Text style={styles.paymentSub}>UPI, Card, Netbanking</Text>
-              </View>
-            </View>
-            <View style={[styles.radio, selectedPayment === 'online' && styles.radioSelected]}>
-              {selectedPayment === 'online' && <View style={styles.radioInner} />}
-            </View>
-          </TouchableOpacity>
-
+          ))}
         </View>
+
       </ScrollView>
 
       {/* ── Footer ── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, scaleH(14)) }]}>
         <View style={styles.priceContainer}>
-          <Text style={styles.finalPriceLabel}>Final Amount</Text>
-          <Text style={styles.finalPrice} adjustsFontSizeToFit numberOfLines={1}>
+          <Text style={styles.finalPriceLabel}>
+            {(coinDiscount > 0 || couponDiscount > 0) ? 'Payable (after discounts)' : 'Total Fare'}
+          </Text>
+          {(coinDiscount > 0 || couponDiscount > 0) && (
+            <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>
+          )}
+          <Text
+            style={[
+              styles.finalPrice,
+              (coinDiscount > 0 || couponDiscount > 0) && { color: '#16A34A' },
+            ]}
+            adjustsFontSizeToFit
+            numberOfLines={1}
+          >
             ₹{totalFare}
           </Text>
         </View>
@@ -594,82 +633,159 @@ const FareEstimate = () => {
         />
       </View>
 
-      {/* ── Razorpay Payment Modal ── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          NEW ── Restricted Items Bottom Sheet Modal
+      ══════════════════════════════════════════════════════════════════════ */}
       <Modal
-        visible={!!paymentModal}
+        visible={showRestrictedModal}
+        transparent
         animationType="slide"
-        onRequestClose={() => {
-          setPaymentModal(null);
-          Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-        }}
+        onRequestClose={() => setShowRestrictedModal(false)}
+        statusBarTranslucent
       >
-        <SafeAreaView style={styles.paymentModalContainer}>
-          <View style={styles.paymentModalHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                setPaymentModal(null);
-                Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
-              }}
-            >
-              <Icon name="close" size={sp(24)} color="#1F2937" />
-            </TouchableOpacity>
-            <Text style={styles.paymentModalTitle}>Complete Payment</Text>
-            <View style={{ width: sp(24) }} />
-          </View>
-          {paymentModal?.html && (
-            <WebView
-              source={{ html: paymentModal.html }}
-              onMessage={handleWebViewMessage}
-              javaScriptEnabled
-              domStorageEnabled
-              startInLoadingState
-              renderLoading={() => (
-                <View style={styles.webviewLoader}>
-                  <ActivityIndicator size="large" color="#2563EB" />
+        {/* Dim overlay — tap to close */}
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowRestrictedModal(false)}
+        >
+          {/* Sheet — stops tap from bubbling */}
+          <TouchableOpacity
+            style={[
+              styles.modalSheet,
+              { paddingBottom: Math.max(insets.bottom, scaleH(20)) },
+            ]}
+            activeOpacity={1}
+            onPress={() => { }}
+          >
+            {/* Drag handle */}
+            <View style={styles.modalHandle} />
+
+            {/* Header row */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Restricted Items</Text>
+              <TouchableOpacity
+                onPress={() => setShowRestrictedModal(false)}
+                style={styles.modalCloseBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="close" size={sp(20)} color="#374151" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Warning banner */}
+            <View style={styles.modalWarningBanner}>
+              <View style={styles.modalWarningTextWrap}>
+                <Text style={styles.modalWarningText}>
+                  Your order should not contain any of these restricted items
+                </Text>
+              </View>
+              {/* Decorative box icon placeholder */}
+              <View style={styles.modalWarningIcon}>
+                <Icon name="inventory-2" size={sp(40)} color="#D97706" />
+                <View style={styles.modalWarningBadge}>
+                  <Icon name="do-not-disturb" size={sp(18)} color="#DC2626" />
                 </View>
-              )}
-            />
-          )}
-        </SafeAreaView>
+              </View>
+            </View>
+
+            {/* Items grid — two columns */}
+            <ScrollView
+              style={styles.modalScroll}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              <View style={styles.restrictedGrid}>
+                {Array.from({ length: Math.ceil(RESTRICTED_ITEMS.length / 2) }, (_, i) => (
+                  <View key={i} style={styles.restrictedGridRow}>
+                    <View style={styles.restrictedGridCol}>
+                      <View style={styles.restrictedBullet} />
+                      <Text style={styles.restrictedItem}>{RESTRICTED_ITEMS[i * 2]}</Text>
+                    </View>
+                    {RESTRICTED_ITEMS[i * 2 + 1] && (
+                      <View style={styles.restrictedGridCol}>
+                        <View style={styles.restrictedBullet} />
+                        <Text style={styles.restrictedItem}>{RESTRICTED_ITEMS[i * 2 + 1]}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* CTA */}
+            <TouchableOpacity
+              style={styles.modalOkBtn}
+              onPress={() => setShowRestrictedModal(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalOkBtnText}>Okay, Understood</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+
+    </View>
   );
 };
 
-// ─── Responsive Styles ────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const GUTTER = scaleW(16);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
-  // ── Header ──────────────────────────────────────────────────────────────────
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: sp(16),
-    paddingVertical: sp(isSmallScreen ? 10 : 12),
+    paddingHorizontal: GUTTER,
+    paddingTop: scaleH(14),
+    paddingBottom: scaleH(14),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#E8E8E8',
+    gap: scaleW(10),
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  headerTitle: {
-    fontSize: nf(isSmallScreen ? 16 : 18),
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  headerButton: {
-    padding: sp(8),
-    borderRadius: sp(8),
-    minWidth: sp(40),
+  backBtnRound: {
+    width: sp(36),
+    height: sp(36),
+    borderRadius: sp(18),
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    flexShrink: 0,
   },
-  // ── Scroll content ───────────────────────────────────────────────────────────
+  headerTitleLarge: {
+    flex: 1,
+    fontSize: nf(isSmallScreen ? 18 : 20),
+    fontWeight: '800',
+    color: '#111111',
+    letterSpacing: -0.3,
+  },
+  headerRightSpacer: {
+    width: sp(36),
+    flexShrink: 0,
+  },
+
+  // ── Scroll content ──
   content: {
-    padding: sp(16),
+    padding: GUTTER,
     paddingBottom: sp(100),
+    backgroundColor: '#F9FAFB',
   },
-  // ── Card ─────────────────────────────────────────────────────────────────────
+
+  // ── Card ──
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: sp(16),
@@ -683,14 +799,15 @@ const styles = StyleSheet.create({
     borderColor: '#F3F4F6',
   },
   sectionTitle: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: nf(isSmallScreen ? 14 : 15),
     fontWeight: '600',
     color: '#374151',
-    marginTop: sp(24),
-    marginBottom: sp(12),
-    marginLeft: sp(4),
+    marginTop: sp(20),
+    marginBottom: sp(10),
+    marginLeft: sp(2),
   },
-  // ── Vehicle row ──────────────────────────────────────────────────────────────
+
+  // ── Vehicle row ──
   vehicleInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -705,9 +822,7 @@ const styles = StyleSheet.create({
     marginRight: sp(12),
     flexShrink: 0,
   },
-  vehicleTextWrapper: {
-    flex: 1,
-  },
+  vehicleTextWrapper: { flex: 1 },
   vehicleName: {
     fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '600',
@@ -718,7 +833,8 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: sp(2),
   },
-  // ── Route timeline ───────────────────────────────────────────────────────────
+
+  // ── Route timeline ──
   routeContainer: {
     flexDirection: 'row',
     marginBottom: sp(14),
@@ -735,14 +851,8 @@ const styles = StyleSheet.create({
     borderRadius: sp(6),
     borderWidth: 2,
   },
-  pickupDot: {
-    borderColor: '#2563EB',
-    backgroundColor: '#FFFFFF',
-  },
-  dropDot: {
-    borderColor: '#059669',
-    backgroundColor: '#059669',
-  },
+  pickupDot: { borderColor: '#2563EB', backgroundColor: '#FFFFFF' },
+  dropDot: { borderColor: '#059669', backgroundColor: '#059669' },
   line: {
     width: 2,
     flex: 1,
@@ -771,7 +881,8 @@ const styles = StyleSheet.create({
     color: '#111827',
     lineHeight: nf(isSmallScreen ? 18 : 20),
   },
-  // ── Stats row ────────────────────────────────────────────────────────────────
+
+  // ── Stats row ──
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -797,7 +908,8 @@ const styles = StyleSheet.create({
     height: sp(20),
     backgroundColor: '#D1D5DB',
   },
-  // ── Breakdown rows ───────────────────────────────────────────────────────────
+
+  // ── Breakdown rows ──
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -841,18 +953,20 @@ const styles = StyleSheet.create({
     color: '#2563EB',
     flexShrink: 0,
   },
-  // ── Surge banner ─────────────────────────────────────────────────────────────
+
+  // ── Surge banner ──
   surgeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF5F5',
     borderWidth: 1.5,
     borderColor: '#B91C1C',
     borderRadius: sp(12),
     paddingVertical: sp(10),
     paddingHorizontal: sp(14),
-    marginBottom: sp(12),
+    marginTop: sp(12),
+    marginBottom: sp(4),
     gap: sp(10),
   },
   surgeBannerLeft: {
@@ -861,10 +975,7 @@ const styles = StyleSheet.create({
     gap: sp(8),
     flex: 1,
   },
-  surgeBannerText: {
-    flex: 1,
-    gap: sp(2),
-  },
+  surgeBannerText: { flex: 1, gap: sp(2) },
   surgeBannerTitle: {
     fontSize: nf(isSmallScreen ? 12 : 13),
     fontWeight: '700',
@@ -887,153 +998,268 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
-  surgeRowLabel: {
-    color: '#B91C1C',
-    fontWeight: '500',
-  },
-  surgeRowValue: {
-    color: '#B91C1C',
-    fontWeight: '700',
-  },
-  // ── Who Pays Slider ──────────────────────────────────────────────────────────
-  whoPaysSlider: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: sp(14),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: sp(6),
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  sliderPill: {
-    position: 'absolute',
-    top: sp(6),
-    bottom: sp(6),
-    backgroundColor: '#2563EB',
-    borderRadius: sp(10),
-  },
-  sliderOption: {
-    flex: 1,
+  surgeRowLabel: { color: '#B91C1C', fontWeight: '500' },
+  surgeRowValue: { color: '#B91C1C', fontWeight: '700' },
+
+  // ── Coin discount ──
+  coinDiscountLabel: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: sp(10),
-    paddingVertical: sp(isSmallScreen ? 10 : 13),
-    paddingHorizontal: sp(isSmallScreen ? 10 : 14),
-    zIndex: 1,
+    gap: sp(4),
   },
-  sliderIconBox: {
-    width: sp(isSmallScreen ? 32 : 36),
-    height: sp(isSmallScreen ? 32 : 36),
-    borderRadius: sp(isSmallScreen ? 16 : 18),
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  sliderIconBoxActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-  },
-  sliderTextBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  sliderLabel: {
-    fontSize: nf(isSmallScreen ? 13 : 14),
+  coinDiscountText: {
+    fontSize: nf(13),
+    color: '#7C3AED',
     fontWeight: '500',
-    color: '#374151',
   },
-  sliderLabelActive: {
-    color: '#FFFFFF',
+  coinDiscountValue: {
+    fontSize: nf(13),
+    color: '#7C3AED',
     fontWeight: '600',
   },
-  sliderSub: {
-    fontSize: nf(isSmallScreen ? 10 : 11),
-    color: '#9CA3AF',
-    marginTop: sp(1),
-  },
-  sliderSubActive: {
-    color: 'rgba(255, 255, 255, 0.75)',
-  },
-  // ── Payment method options ───────────────────────────────────────────────────
-  paymentContainer: {
-    gap: sp(12),
-  },
-  paymentOption: {
+
+  // ── Coins card ──
+  coinsCard: {
+    backgroundColor: '#FAF5FF',
+    borderRadius: ms(14),
+    borderWidth: 1.5,
+    borderColor: '#DDD6FE',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(14),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    padding: sp(isSmallScreen ? 12 : 16),
-    borderRadius: sp(12),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    marginBottom: scaleH(8),
   },
-  selectedPayment: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-  },
-  paymentLeft: {
+  coinsCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: sp(12),
+    flex: 1,
+    gap: sp(10),
+  },
+  coinsIconBox: {
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(10),
+    backgroundColor: '#EDE9FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coinsTextBlock: { flex: 1 },
+  coinsTitle: {
+    fontSize: nf(13),
+    color: '#374151',
+    fontWeight: '500',
+  },
+  coinsBold: { color: '#7C3AED', fontWeight: '700' },
+  coinsSub: {
+    fontSize: nf(11),
+    color: '#6B7280',
+    marginTop: scaleH(2),
+  },
+
+  // ── Coupon ──
+  couponRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    marginBottom: scaleH(12),
+  },
+  couponInput: {
+    flex: 1,
+    height: scaleH(46),
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    borderRadius: ms(10),
+    paddingHorizontal: sp(14),
+    fontSize: nf(14),
+    color: '#111827',
+    backgroundColor: '#F9FAFB',
+    letterSpacing: 1,
+  },
+  couponApplyBtn: {
+    height: scaleH(46),
+    paddingHorizontal: sp(18),
+    backgroundColor: '#2563EB',
+    borderRadius: ms(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  couponApplyText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: nf(13),
+  },
+  couponApplied: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(12),
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(12),
+    marginBottom: scaleH(12),
+  },
+  couponAppliedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
-  iconBox: {
-    width: sp(isSmallScreen ? 36 : 40),
-    height: sp(isSmallScreen ? 36 : 40),
-    borderRadius: sp(isSmallScreen ? 10 : 12),
-    backgroundColor: '#F3F4F6',
+  couponAppliedRight: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+    gap: sp(10),
   },
-  selectedIconBox: {
-    backgroundColor: '#DBEAFE',
+  couponAppliedCode: {
+    fontSize: nf(13),
+    fontWeight: '700',
+    color: '#15803D',
   },
-  // ── Asset icon inside payment iconBox ────────────────────────────────────────
-  paymentIconImg: {
-    width: sp(isSmallScreen ? 22 : 26),
-    height: sp(isSmallScreen ? 22 : 26),
+  couponAppliedTitle: {
+    fontSize: nf(11),
+    color: '#4B5563',
+    marginTop: scaleH(2),
   },
-  paymentTitle: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
-    fontWeight: '500',
-    color: '#374151',
+  couponAppliedSaving: {
+    fontSize: nf(14),
+    fontWeight: '700',
+    color: '#16A34A',
   },
-  selectedPaymentText: {
-    color: '#2563EB',
-    fontWeight: '600',
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // NEW ── Goods Description Card
+  // ══════════════════════════════════════════════════════════════════════════
+  goodsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(16),
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  paymentSub: {
+  goodsInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: sp(16),
+    paddingVertical: scaleH(14),
+    gap: sp(12),
+  },
+  goodsTextBlock: { flex: 1 },
+  goodsCategory: {
+    fontSize: nf(isSmallScreen ? 14 : 15),
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: scaleH(3),
+  },
+  goodsMeta: {
     fontSize: nf(isSmallScreen ? 11 : 12),
-    color: '#9CA3AF',
-    marginTop: sp(1),
+    color: '#6B7280',
+    lineHeight: nf(17),
   },
-  radio: {
-    width: sp(20),
-    height: sp(20),
-    borderRadius: sp(10),
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
+  goodsChangeBtn: {
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(7),
+    borderRadius: sp(8),
+    borderWidth: 1.5,
+    borderColor: '#2563EB',
     flexShrink: 0,
   },
-  radioSelected: {
-    borderColor: '#2563EB',
+  goodsChangeBtnText: {
+    fontSize: nf(13),
+    fontWeight: '700',
+    color: '#2563EB',
   },
-  radioInner: {
-    width: sp(10),
-    height: sp(10),
-    borderRadius: sp(5),
-    backgroundColor: '#2563EB',
+
+  // Restricted items warning strip (inside goods card)
+  restrictedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFBEB',
+    borderTopWidth: 1,
+    borderTopColor: '#FDE68A',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(10),
   },
-  // ── Footer ───────────────────────────────────────────────────────────────────
+  restrictedBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    flex: 1,
+  },
+  restrictedIconWrap: {
+    width: sp(26),
+    height: sp(26),
+    borderRadius: sp(13),
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  restrictedBannerText: {
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontWeight: '600',
+    color: '#92400E',
+    flex: 1,
+  },
+  restrictedViewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(2),
+    flexShrink: 0,
+  },
+  restrictedViewBtnText: {
+    fontSize: nf(12),
+    fontWeight: '700',
+    color: '#B45309',
+  },
+
+  // ── Read before Booking notes ──
+  notesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(14),
+    padding: sp(14),
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    gap: scaleH(8),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    marginBottom: scaleH(8),
+  },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: sp(8),
+  },
+  noteBullet: {
+    width: sp(5),
+    height: sp(5),
+    borderRadius: sp(3),
+    backgroundColor: '#9CA3AF',
+    marginTop: scaleH(7),
+    flexShrink: 0,
+  },
+  noteText: {
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    color: '#4B5563',
+    lineHeight: nf(isSmallScreen ? 17 : 19),
+    flex: 1,
+  },
+
+  // ── Footer ──
   footer: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: sp(16),
-    paddingVertical: sp(isSmallScreen ? 10 : 14),
+    paddingHorizontal: GUTTER,
+    paddingTop: sp(isSmallScreen ? 10 : 14),
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
     flexDirection: 'row',
@@ -1041,18 +1267,20 @@ const styles = StyleSheet.create({
     gap: sp(14),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 10,
-    paddingBottom: sp(isSmallScreen ? 10 : 14),
   },
-  priceContainer: {
-    flex: 1,
-    minWidth: 0,
-  },
+  priceContainer: { flex: 1, minWidth: 0 },
   finalPriceLabel: {
     fontSize: nf(isSmallScreen ? 11 : 12),
     color: '#6B7280',
+  },
+  finalPriceStrike: {
+    fontSize: nf(12),
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginTop: scaleH(1),
   },
   finalPrice: {
     fontSize: nf(isSmallScreen ? 20 : 24),
@@ -1069,7 +1297,8 @@ const styles = StyleSheet.create({
     fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '600',
   },
-  // ── Loading / Error ──────────────────────────────────────────────────────────
+
+  // ── Loading / Error ──
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1108,30 +1337,140 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: nf(15),
   },
-  // ── Payment modal ────────────────────────────────────────────────────────────
-  paymentModalContainer: {
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // NEW ── Restricted Items Bottom Sheet Modal
+  // ══════════════════════════════════════════════════════════════════════════
+  modalOverlay: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
-  paymentModalHeader: {
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: sp(24),
+    borderTopRightRadius: sp(24),
+    paddingTop: scaleH(12),
+    paddingHorizontal: GUTTER,
+    maxHeight: SCREEN_HEIGHT * 0.82,
+    // shadow on iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  modalHandle: {
+    width: sp(40),
+    height: scaleH(4),
+    borderRadius: sp(2),
+    backgroundColor: '#D1D5DB',
+    alignSelf: 'center',
+    marginBottom: scaleH(16),
+  },
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: sp(16),
-    paddingVertical: sp(12),
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    marginBottom: scaleH(14),
   },
-  paymentModalTitle: {
-    fontSize: nf(isSmallScreen ? 16 : 18),
-    fontWeight: '600',
-    color: '#111827',
+  modalTitle: {
+    fontSize: nf(isSmallScreen ? 17 : 19),
+    fontWeight: '800',
+    color: '#111111',
+    letterSpacing: -0.3,
   },
-  webviewLoader: {
-    ...StyleSheet.absoluteFillObject,
+  modalCloseBtn: {
+    width: sp(34),
+    height: sp(34),
+    borderRadius: sp(17),
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+  },
+
+  // Warning banner inside modal
+  modalWarningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: sp(12),
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(14),
+    marginBottom: scaleH(16),
+    gap: sp(12),
+  },
+  modalWarningTextWrap: { flex: 1 },
+  modalWarningText: {
+    fontSize: nf(isSmallScreen ? 13 : 14),
+    fontWeight: '600',
+    color: '#78350F',
+    lineHeight: nf(20),
+  },
+  modalWarningIcon: {
+    width: sp(56),
+    height: sp(56),
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  modalWarningBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+  },
+
+  // Two-column grid
+  modalScroll: {
+    flexGrow: 0,
+    marginBottom: scaleH(16),
+  },
+  restrictedGrid: {
+    gap: scaleH(4),
+  },
+  restrictedGridRow: {
+    flexDirection: 'row',
+    gap: scaleW(8),
+  },
+  restrictedGridCol: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: sp(6),
+    paddingVertical: scaleH(5),
+  },
+  restrictedBullet: {
+    width: sp(5),
+    height: sp(5),
+    borderRadius: sp(3),
+    backgroundColor: '#6B7280',
+    marginTop: scaleH(6),
+    flexShrink: 0,
+  },
+  restrictedItem: {
+    flex: 1,
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    color: '#374151',
+    lineHeight: nf(18),
+    fontWeight: '400',
+  },
+
+  // "Okay, Understood" CTA
+  modalOkBtn: {
+    backgroundColor: '#2563EB',
+    borderRadius: sp(14),
+    paddingVertical: scaleH(15),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: scaleH(4),
+  },
+  modalOkBtnText: {
+    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 });
 

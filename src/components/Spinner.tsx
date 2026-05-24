@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet, ViewStyle, Modal } from 'react-native';
+import { THEME } from '../theme';
 
 interface SpinnerProps {
   visible?: boolean;
@@ -53,9 +54,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   spinnerWrapper: {
-    padding: 20,
+    padding: THEME.responsive.ms(20),
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: THEME.responsive.ms(12),
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

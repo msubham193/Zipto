@@ -6,12 +6,13 @@ import {
   Animated,
   Dimensions,
   PixelRatio,
+  StatusBar,
 } from 'react-native';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BASE_WIDTH  = 390;
+const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
 
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
@@ -34,8 +35,8 @@ const LetterPop = ({
   letter: string;
   delay: number;
 }) => {
-  const scale   = useRef(new Animated.Value(0.1)).current;
-  const rotate  = useRef(new Animated.Value(-20)).current;
+  const scale = useRef(new Animated.Value(0.1)).current;
+  const rotate = useRef(new Animated.Value(-20)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -86,11 +87,11 @@ const LetterPop = ({
 
 const Splash = () => {
   const taglineOpacity = useRef(new Animated.Value(0)).current;
-  const taglineSlideY  = useRef(new Animated.Value(10)).current;
+  const taglineSlideY = useRef(new Animated.Value(10)).current;
   const poweredOpacity = useRef(new Animated.Value(0)).current;
 
   // Last letter delay + a small buffer before tagline shows
-  const LETTER_STAGGER  = 110;
+  const LETTER_STAGGER = 110;
   const LAST_LETTER_DELAY = (ZIPTO_LETTERS.length - 1) * LETTER_STAGGER;
   const TAGLINE_DELAY   = LAST_LETTER_DELAY + 250;
   const POWERED_DELAY   = LAST_LETTER_DELAY + 520;
@@ -123,6 +124,7 @@ const Splash = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1E22AD" />
       {/* ── Letter row ── */}
       <View style={styles.content}>
         <View style={styles.lettersRow}>

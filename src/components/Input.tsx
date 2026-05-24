@@ -50,13 +50,13 @@ const styles = StyleSheet.create({
         fontFamily: THEME.fonts.medium,
     },
     input: {
-        height: 48,
+        height: THEME.responsive.ms(48),
         borderWidth: 1,
         borderColor: THEME.colors.border,
-        borderRadius: 8,
+        borderRadius: THEME.responsive.ms(8),
         paddingHorizontal: THEME.spacing.m,
         color: THEME.colors.text,
-        fontSize: THEME.sizes.body1,
+        fontSize: THEME.responsive.fs(THEME.sizes.body1),
         backgroundColor: THEME.colors.surface,
     },
     errorText: {
