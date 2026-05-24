@@ -17,6 +17,7 @@ import Coins from '../screens/Coins';
 import TransactionHistory from '../screens/TransactionHistory';
 import TransferToWallet from '../screens/TransferWallet';
 import WriteReview from '../screens/WriteReview';
+import MapLocationPicker from '../screens/MapLocationPicker';
 
 // Import all Profile-related screens
 import EditProfile from '../screens/EditProfile';
@@ -42,7 +43,8 @@ const PlaceholderScreen = ({ name }: { name: string }) => (
 export type AppStackParamList = {
   ProfileSetup: undefined;
   Home: undefined;
-  PickupDropSelection: { serviceCategory?: string } | undefined;
+  PickupDropSelection: { serviceCategory?: string; pickedLocation?: { field: 'pickup' | 'drop'; address: string; lat: number; lon: number } } | undefined;
+  MapLocationPicker: { field: 'pickup' | 'drop'; initialLat?: number; initialLon?: number };
   VehicleSelection: undefined;
   FareEstimate: { vehicle: string } | undefined;
   LiveTracking: {
@@ -102,6 +104,11 @@ const AppNavigator = () => {
         component={PickupDropSelection}
       />
       <Stack.Screen name="VehicleSelection" component={VehicleSelection} />
+      <Stack.Screen
+        name="MapLocationPicker"
+        component={MapLocationPicker}
+        options={{ animation: 'slide_from_bottom' }}
+      />
       <Stack.Screen name="FareEstimate" component={FareEstimate} />
       <Stack.Screen name="LiveTracking" component={LiveTracking} />
       <Stack.Screen name="Payment" component={Payment} />
