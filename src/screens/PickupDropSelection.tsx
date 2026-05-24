@@ -606,7 +606,10 @@ const PickupDropSelection = () => {
                   placeholder="Drop location"
                   placeholderTextColor={C.textMuted}
                   value={drop}
-                  onChangeText={handleSearchLocation}
+                  onChangeText={text => {
+                    if (dropCoords) setDropCoords(null);
+                    handleSearchLocation(text);
+                  }}
                   onFocus={() => setActiveInput('drop')}
                 />
               </View>
@@ -642,12 +645,12 @@ const PickupDropSelection = () => {
             </View>
 
             {/* Suggestion lists */}
-            {activeInput === 'pickup' && pickup.trim().length > 1 && (
+            {activeInput === 'pickup' && pickup.trim().length > 1 && !pickupCoords && (
               <View style={styles.suggestionContainer}>
                 <SuggestionList query={pickup} />
               </View>
             )}
-            {activeInput === 'drop' && drop.trim().length > 1 && (
+            {activeInput === 'drop' && drop.trim().length > 1 && !dropCoords && (
               <View style={styles.suggestionContainer}>
                 <SuggestionList query={drop} />
               </View>
@@ -899,7 +902,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
   },
   routeRowActive: {
-    backgroundColor: '#F0F7FF',   // very faint blue tint when focused
+    backgroundColor: C.surface,
   },
   routeIconCol: {
     width: ms(24),

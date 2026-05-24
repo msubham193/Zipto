@@ -84,7 +84,13 @@
       "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/Notifications.tsx)",
       "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/NotificationSettings.tsx)",
       "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/OTPVerification.tsx)",
-      "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/Payment.tsx)"
+      "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/Payment.tsx)",
+      "Bash(find /Users/sandeepnayak -maxdepth 3 -type d -name \"zipto_rider\" 2>/dev/null)",
+      "Read(//Users/sandeepnayak/**)",
+      "Bash(xcrun simctl *)",
+      "Bash(open -a Simulator)",
+      "Bash(pod install *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

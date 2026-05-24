@@ -51,6 +51,22 @@ const RESTRICTED_ITEMS = [
   'Cigarettes & Alcohols', 'Narcotics and Illegal Drugs',
 ];
 
+// ─── Read Before Booking notes ────────────────────────────────────────────────
+const BOOKING_NOTES = [
+  'We deliver trust, not just packages.',
+  'Please hand over properly packed items only.',
+  'Delivery fare may update if route or stop changes during trip.',
+  '15 mins loading/unloading time included for smooth delivery.',
+  'Extra waiting time may attract additional charges.',
+  'Parking, toll, or entry charges (if any) are customer payable.',
+  'Fragile & valuable items should be informed before booking.',
+  'Restricted or illegal items are strictly prohibited on Zipto.',
+  'COD amount and parcel details must be accurate.',
+  'Rider safety & respectful communication are mandatory.',
+  'Once rider is assigned, cancellation charges may apply.',
+  'Zipto moves your parcel with speed, safety & responsibility.',
+];
+
 // ─── Component ───────────────────────────────────────────────────────────────
 const FareEstimate = () => {
   const route = useRoute<any>();
@@ -73,7 +89,7 @@ const FareEstimate = () => {
   } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
-  // ── NEW: Restricted items modal ────────────────────────────────────────────
+  // Restricted items modal
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
 
   const { user } = useAuthStore();
@@ -329,13 +345,19 @@ const FareEstimate = () => {
             </View>
             <View style={styles.addressContainer}>
               <View style={styles.addressItem}>
-                <Text style={styles.label}>Pickup</Text>
+                <View style={styles.addressLabelRow}>
+                  <Icon name="trip-origin" size={sp(10)} color="#2563EB" />
+                  <Text style={styles.label}>Pickup</Text>
+                </View>
                 <Text style={styles.addressText} numberOfLines={2}>
                   {pickup || 'Current Location'}
                 </Text>
               </View>
               <View style={styles.addressItem}>
-                <Text style={styles.label}>Drop-off</Text>
+                <View style={styles.addressLabelRow}>
+                  <Icon name="place" size={sp(10)} color="#059669" />
+                  <Text style={styles.label}>Drop-off</Text>
+                </View>
                 <Text style={styles.addressText} numberOfLines={2}>
                   {drop || 'Select Destination'}
                 </Text>
@@ -376,19 +398,39 @@ const FareEstimate = () => {
         )}
 
         {/* ── Fare Breakdown Card ── */}
-        <Text style={styles.sectionTitle}>Fare Breakdown</Text>
+        <View style={styles.sectionTitleRow}>
+          <View style={[styles.sectionIconBadge, { backgroundColor: '#2563EB' }]}>
+            <Icon name="receipt-long" size={sp(13)} color="#FFFFFF" />
+          </View>
+          <Text style={styles.sectionTitle}>Fare Breakdown</Text>
+        </View>
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>Base Fare</Text>
+            <View style={styles.rowLabelWrap}>
+              <View style={[styles.rowIconBox, { backgroundColor: '#EFF6FF' }]}>
+                <Icon name="home" size={sp(13)} color="#2563EB" />
+              </View>
+              <Text style={styles.rowLabel}>Base Fare</Text>
+            </View>
             <Text style={styles.rowValue}>₹{breakdown?.base_fare || 0}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>Distance Charge</Text>
+            <View style={styles.rowLabelWrap}>
+              <View style={[styles.rowIconBox, { backgroundColor: '#F0FDF4' }]}>
+                <Icon name="route" size={sp(13)} color="#059669" />
+              </View>
+              <Text style={styles.rowLabel}>Distance Charge</Text>
+            </View>
             <Text style={styles.rowValue}>₹{breakdown?.distance_charge || 0}</Text>
           </View>
           {(breakdown?.platform_fee || 0) > 0 && (
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Platform Fee (incl. GST)</Text>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#F5F3FF' }]}>
+                  <Icon name="verified-user" size={sp(13)} color="#7C3AED" />
+                </View>
+                <Text style={styles.rowLabel}>Platform Fee (incl. GST)</Text>
+              </View>
               <Text style={styles.rowValue}>
                 ₹{((breakdown?.platform_fee || 0) + (breakdown?.platform_fee_gst || 0)).toFixed(0)}
               </Text>
@@ -397,26 +439,46 @@ const FareEstimate = () => {
           {hasSurge && (
             <>
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Subtotal (before surge)</Text>
+                <View style={styles.rowLabelWrap}>
+                  <View style={[styles.rowIconBox, { backgroundColor: '#F9FAFB' }]}>
+                    <Icon name="calculate" size={sp(13)} color="#6B7280" />
+                  </View>
+                  <Text style={styles.rowLabel}>Subtotal (before surge)</Text>
+                </View>
                 <Text style={styles.rowValue}>₹{breakdown?.subtotal || 0}</Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.rowLabel, styles.surgeRowLabel]}>
-                  Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
-                </Text>
+                <View style={styles.rowLabelWrap}>
+                  <View style={[styles.rowIconBox, { backgroundColor: '#FFF1F2' }]}>
+                    <Icon name="bolt" size={sp(13)} color="#DC2626" />
+                  </View>
+                  <Text style={[styles.rowLabel, styles.surgeRowLabel]}>
+                    Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
+                  </Text>
+                </View>
                 <Text style={[styles.rowValue, styles.surgeRowValue]}>+₹{surgeExtra}</Text>
               </View>
             </>
           )}
           {(helperCount || 0) > 0 && (
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Labour Charge ({helperCount}x)</Text>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FFF7ED' }]}>
+                  <Icon name="people" size={sp(13)} color="#EA580C" />
+                </View>
+                <Text style={styles.rowLabel}>Labour Charge ({helperCount}x)</Text>
+              </View>
               <Text style={styles.rowValue}>₹{helperCost || 0}</Text>
             </View>
           )}
           <View style={styles.divider} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal</Text>
+            <View style={styles.rowLabelWrap}>
+              <View style={[styles.rowIconBox, { backgroundColor: '#ECFDF5' }]}>
+                <Icon name="payments" size={sp(13)} color="#16A34A" />
+              </View>
+              <Text style={styles.totalLabel}>Subtotal</Text>
+            </View>
             <Text style={styles.totalValue}>₹{baseFare}</Text>
           </View>
           {useCoins && coinDiscount > 0 && (
@@ -445,7 +507,12 @@ const FareEstimate = () => {
             <>
               <View style={styles.divider} />
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total Payable</Text>
+                <View style={styles.rowLabelWrap}>
+                  <View style={[styles.rowIconBox, { backgroundColor: '#ECFDF5' }]}>
+                    <Icon name="account-balance-wallet" size={sp(13)} color="#16A34A" />
+                  </View>
+                  <Text style={styles.totalLabel}>Total Payable</Text>
+                </View>
                 <Text style={[styles.totalValue, { color: '#16A34A' }]}>₹{totalFare}</Text>
               </View>
             </>
@@ -455,7 +522,12 @@ const FareEstimate = () => {
         {/* ── Zipto Coins ── */}
         {coinsBalance >= 100 && (
           <>
-            <Text style={styles.sectionTitle}>Zipto Coins</Text>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIconBadge, { backgroundColor: '#7C3AED' }]}>
+                <Icon name="toll" size={sp(13)} color="#FFFFFF" />
+              </View>
+              <Text style={styles.sectionTitle}>Zipto Coins</Text>
+            </View>
             <View style={styles.coinsCard}>
               <View style={styles.coinsCardLeft}>
                 <View style={styles.coinsIconBox}>
@@ -479,7 +551,12 @@ const FareEstimate = () => {
         )}
 
         {/* ── Promo Code ── */}
-        <Text style={styles.sectionTitle}>Promo Code</Text>
+        <View style={styles.sectionTitleRow}>
+          <View style={[styles.sectionIconBadge, { backgroundColor: '#16A34A' }]}>
+            <Icon name="local-offer" size={sp(13)} color="#FFFFFF" />
+          </View>
+          <Text style={styles.sectionTitle}>Promo Code</Text>
+        </View>
         {appliedCoupon ? (
           <View style={styles.couponApplied}>
             <View style={styles.couponAppliedLeft}>
@@ -525,19 +602,35 @@ const FareEstimate = () => {
           </View>
         )}
 
-        {/* ── Read before Booking ── */}
-        <Text style={styles.sectionTitle}>Read before Booking</Text>
+        {/* ── NEW: Do Not Send Restricted Items highlight card ── */}
+        <TouchableOpacity
+          style={styles.restrictedHighlight}
+          onPress={() => setShowRestrictedModal(true)}
+          activeOpacity={0.82}
+        >
+          <View style={styles.restrictedHighlightLeft}>
+            <View style={styles.restrictedHighlightIconBox}>
+              <Icon name="do-not-disturb" size={sp(22)} color="#DC2626" />
+            </View>
+            <View style={styles.restrictedHighlightTextBlock}>
+              <Text style={styles.restrictedHighlightTitle}>Do Not Send Restricted Items</Text>
+              <Text style={styles.restrictedHighlightSub}>Tap to view prohibited items list</Text>
+            </View>
+          </View>
+          <Icon name="chevron-right" size={sp(20)} color="#DC2626" />
+        </TouchableOpacity>
+
+        {/* ── Read Before Booking ── */}
+        <View style={styles.sectionTitleRow}>
+          <View style={[styles.sectionIconBadge, { backgroundColor: '#EA580C' }]}>
+            <Icon name="menu-book" size={sp(13)} color="#FFFFFF" />
+          </View>
+          <Text style={styles.sectionTitle}>Read Before Booking</Text>
+        </View>
         <View style={styles.notesCard}>
-          {[
-            'Fare includes 15 mins free loading/unloading time.',
-            '₹ 1.5/min for additional loading/unloading time.',
-            'Fare may change if route or location changes.',
-            'Parking charges to be paid by customer.',
-            'Fare includes toll and permit charges, if any.',
-            "We don't allow overloading.",
-          ].map((note, idx) => (
+          {BOOKING_NOTES.map((note, idx) => (
             <View key={idx} style={styles.noteRow}>
-              <View style={styles.noteBullet} />
+              <Icon name="check-circle" size={sp(14)} color="#10B981" style={styles.noteIcon} />
               <Text style={styles.noteText}>{note}</Text>
             </View>
           ))}
@@ -574,9 +667,7 @@ const FareEstimate = () => {
         />
       </View>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          NEW ── Restricted Items Bottom Sheet Modal
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/* ── Restricted Items Bottom Sheet Modal ── */}
       <Modal
         visible={showRestrictedModal}
         transparent
@@ -584,13 +675,11 @@ const FareEstimate = () => {
         onRequestClose={() => setShowRestrictedModal(false)}
         statusBarTranslucent
       >
-        {/* Dim overlay — tap to close */}
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setShowRestrictedModal(false)}
         >
-          {/* Sheet — stops tap from bubbling */}
           <TouchableOpacity
             style={[
               styles.modalSheet,
@@ -621,7 +710,6 @@ const FareEstimate = () => {
                   Your order should not contain any of these restricted items
                 </Text>
               </View>
-              {/* Decorative box icon placeholder */}
               <View style={styles.modalWarningIcon}>
                 <Icon name="inventory-2" size={sp(40)} color="#D97706" />
                 <View style={styles.modalWarningBadge}>
@@ -741,11 +829,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: fs(isSmallScreen ? 14 : 15),
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: sp(20),
-    marginBottom: sp(10),
-    marginLeft: sp(2),
+    fontWeight: '700',
+    color: '#111827',
   },
 
   // ── Vehicle row ──
@@ -814,13 +899,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: fs(isSmallScreen ? 10 : 12),
     color: '#6B7280',
-    marginBottom: sp(2),
   },
   addressText: {
-    fontSize: fs(isSmallScreen ? 13 : 15),
-    fontWeight: '500',
-    color: '#111827',
-    lineHeight: fs(isSmallScreen ? 18 : 20),
+    fontSize: fs(isSmallScreen ? 11 : 12),
+    fontWeight: '400',
+    color: '#374151',
+    lineHeight: fs(isSmallScreen ? 15 : 17),
   },
 
   // ── Stats row ──
@@ -863,6 +947,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     flex: 1,
     flexShrink: 1,
+    flexWrap: 'wrap',
   },
   rowValue: {
     fontSize: fs(isSmallScreen ? 12 : 14),
@@ -886,7 +971,6 @@ const styles = StyleSheet.create({
     fontSize: fs(isSmallScreen ? 14 : 16),
     fontWeight: '600',
     color: '#111827',
-    flex: 1,
   },
   totalValue: {
     fontSize: fs(isSmallScreen ? 18 : 20),
@@ -1069,6 +1153,48 @@ const styles = StyleSheet.create({
     color: '#16A34A',
   },
 
+  // ── NEW: Restricted items highlight card ──────────────────────────────────
+  restrictedHighlight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF1F2',
+    borderRadius: sp(12),
+    borderWidth: 1.5,
+    borderColor: '#FECDD3',
+    paddingHorizontal: sp(14),
+    paddingVertical: vs(13),
+    marginTop: sp(20),
+    gap: sp(10),
+  },
+  restrictedHighlightLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: sp(12),
+  },
+  restrictedHighlightIconBox: {
+    width: sp(38),
+    height: sp(38),
+    borderRadius: sp(10),
+    backgroundColor: '#FFE4E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  restrictedHighlightTextBlock: { flex: 1 },
+  restrictedHighlightTitle: {
+    fontSize: fs(isSmallScreen ? 13 : 14),
+    fontWeight: '700',
+    color: '#991B1B',
+  },
+  restrictedHighlightSub: {
+    fontSize: fs(isSmallScreen ? 11 : 12),
+    color: '#DC2626',
+    marginTop: vs(2),
+    fontWeight: '400',
+  },
+
   // ── Read before Booking notes ──
   notesCard: {
     backgroundColor: '#FFFFFF',
@@ -1088,14 +1214,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: sp(8),
-  },
-  noteBullet: {
-    width: sp(5),
-    height: sp(5),
-    borderRadius: sp(3),
-    backgroundColor: '#9CA3AF',
-    marginTop: vs(7),
-    flexShrink: 0,
   },
   noteText: {
     fontSize: fs(isSmallScreen ? 12 : 13),
@@ -1147,6 +1265,55 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // ── Icon-enhanced section titles ──
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    marginTop: sp(20),
+    marginBottom: sp(10),
+    marginLeft: sp(2),
+  },
+  sectionIconBadge: {
+    width: sp(24),
+    height: sp(24),
+    borderRadius: sp(7),
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+
+  // ── Icon-enhanced fare rows ──
+  rowLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    flex: 1,
+    flexShrink: 1,
+  },
+  rowIconBox: {
+    width: sp(24),
+    height: sp(24),
+    borderRadius: sp(6),
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+
+  // ── Address label row ──
+  addressLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(4),
+    marginBottom: sp(2),
+  },
+
+  // ── Note check icon ──
+  noteIcon: {
+    marginTop: vs(1),
+    flexShrink: 0,
+  },
+
   // ── Loading / Error ──
   loadingContainer: {
     flex: 1,
@@ -1187,9 +1354,7 @@ const styles = StyleSheet.create({
     fontSize: fs(15),
   },
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // NEW ── Restricted Items Bottom Sheet Modal
-  // ══════════════════════════════════════════════════════════════════════════
+  // ── Restricted Items Bottom Sheet Modal ──
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1202,7 +1367,6 @@ const styles = StyleSheet.create({
     paddingTop: vs(12),
     paddingHorizontal: GUTTER,
     maxHeight: SCREEN_HEIGHT * 0.82,
-    // shadow on iOS
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.12,
@@ -1237,8 +1401,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Warning banner inside modal
   modalWarningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1270,8 +1432,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
   },
-
-  // Two-column grid
   modalScroll: {
     flexGrow: 0,
     marginBottom: vs(16),
@@ -1305,8 +1465,6 @@ const styles = StyleSheet.create({
     lineHeight: fs(18),
     fontWeight: '400',
   },
-
-  // "Okay, Understood" CTA
   modalOkBtn: {
     backgroundColor: '#2563EB',
     borderRadius: sp(14),

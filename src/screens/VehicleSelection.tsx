@@ -8,6 +8,8 @@ import {
   Animated,
   ActivityIndicator,
   Image,
+  Dimensions,
+  PixelRatio,
   Platform,
   StatusBar,
 } from 'react-native';
@@ -16,7 +18,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, VehiclePricing } from '../api/vehicle';
-import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
+
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
+const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
+const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
+const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -326,7 +336,7 @@ const VehicleSelection = () => {
       </Animated.View>
 
       {/* ── Sticky Footer — insets.bottom for home indicator clearance ── */}
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, vs(16)) }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, scaleH(16)) }]}>
         {/* Delivery info row */}
         <View style={styles.footerInfoRow}>
           <View style={styles.deliveryInfoBlock}>
@@ -372,7 +382,7 @@ const VehicleSelection = () => {
           <Icon
             name="arrow-forward"
             size={ms(18)}
-            color={hasSelection ? C.primary : C.textMuted}
+            color={hasSelection ? C.white : C.textMuted}
           />
         </TouchableOpacity>
       </View>
@@ -381,7 +391,7 @@ const VehicleSelection = () => {
 };
 
 // ─── Sizes ────────────────────────────────────────────────────────────────────
-const GUTTER   = hs(16);
+const GUTTER   = scaleW(16);
 const IMG_SIZE = ms(60);
 
 const styles = StyleSheet.create({
@@ -398,12 +408,12 @@ const styles = StyleSheet.create({
     flexDirection:     'row',
     alignItems:        'center',
     paddingHorizontal: GUTTER,
-    paddingTop:        vs(14),
-    paddingBottom:     vs(14),
+    paddingTop:        scaleH(14),
+    paddingBottom:     scaleH(14),
     backgroundColor:   C.surface,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
-    gap:               hs(12),
+    gap:               scaleW(12),
     // subtle shadow for depth
     shadowColor:       C.shadow,
     shadowOffset:      { width: 0, height: 1 },
@@ -432,7 +442,7 @@ const styles = StyleSheet.create({
   headerSub: {
     fontSize:   fs(12),
     color:      C.textMuted,
-    marginTop:  vs(1),
+    marginTop:  scaleH(1),
     fontWeight: '400',
   },
 
@@ -440,9 +450,9 @@ const styles = StyleSheet.create({
   listWrap:    { flex: 1, backgroundColor: C.bg },
   listContent: {
     paddingHorizontal: GUTTER,
-    paddingTop:        vs(10),
-    paddingBottom:     vs(10),
-    gap:               vs(8),
+    paddingTop:        scaleH(10),
+    paddingBottom:     scaleH(10),
+    gap:               scaleH(8),
   },
 
   // ── Card ─────────────────────────────────────────────────────────────────────
@@ -471,8 +481,8 @@ const styles = StyleSheet.create({
     zIndex:            10,
     backgroundColor:   C.blue,
     borderRadius:      ms(20),
-    paddingHorizontal: hs(8),
-    paddingVertical:   vs(2),
+    paddingHorizontal: scaleW(8),
+    paddingVertical:   scaleH(2),
   },
   fastestText: {
     fontSize:      fs(9),
@@ -484,11 +494,11 @@ const styles = StyleSheet.create({
   cardInner: {
     flexDirection:     'row',
     alignItems:        'center',
-    paddingHorizontal: hs(12),
-    paddingVertical:   vs(10),
-    gap:               hs(10),
+    paddingHorizontal: scaleW(12),
+    paddingVertical:   scaleH(10),
+    gap:               scaleW(10),
     // extra top padding on first card to clear the Fastest badge
-    paddingTop:        vs(26),
+    paddingTop:        scaleH(26),
   },
 
   // Vehicle image — large, prominent
@@ -508,19 +518,19 @@ const styles = StyleSheet.create({
   // Name + meta — centre column
   infoCol: {
     flex: 1,
-    gap:  vs(3),
+    gap:  scaleH(3),
   },
   vehicleName: {
     fontSize:      fs(15),
     fontWeight:    '800',
     color:         C.text,
     letterSpacing: -0.2,
-    marginBottom:  vs(1),
+    marginBottom:  scaleH(1),
   },
   infoRow: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           hs(4),
+    gap:           scaleW(4),
   },
   infoText: {
     fontSize:   fs(11),
@@ -532,18 +542,18 @@ const styles = StyleSheet.create({
   chooseBtn: {
     flexDirection:     'row',
     alignItems:        'center',
-    gap:               hs(5),
+    gap:               scaleW(5),
     borderRadius:      ms(24),
     borderWidth:       1.5,
     borderColor:       C.chooseBorder,
     backgroundColor:   C.chooseBtn,
-    paddingHorizontal: hs(10),
-    paddingVertical:   vs(6),
+    paddingHorizontal: scaleW(10),
+    paddingVertical:   scaleH(6),
     flexShrink:        0,
   },
   chooseBtnActive: {
-    backgroundColor: C.primary,
-    borderColor:     C.primary,
+    backgroundColor: C.blue,
+    borderColor:     C.blue,
   },
   chooseRadio: {
     width:          ms(16),
@@ -575,7 +585,7 @@ const styles = StyleSheet.create({
   footer: {
     backgroundColor:   C.surface,
     paddingHorizontal: GUTTER,
-    paddingTop:        vs(12),
+    paddingTop:        scaleH(12),
     borderTopWidth:    1,
     borderTopColor:    C.border,
     elevation:         10,
@@ -587,13 +597,13 @@ const styles = StyleSheet.create({
   footerInfoRow: {
     flexDirection: 'row',
     alignItems:    'center',
-    marginBottom:  vs(12),
-    gap:           hs(12),
+    marginBottom:  scaleH(12),
+    gap:           scaleW(12),
   },
   deliveryInfoBlock: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           hs(10),
+    gap:           scaleW(10),
     flex:          1,
   },
   clockBox: {
@@ -612,7 +622,7 @@ const styles = StyleSheet.create({
     fontSize:     fs(13),
     fontWeight:   '700',
     color:        C.text,
-    marginBottom: vs(1),
+    marginBottom: scaleH(1),
   },
   deliveryEta: {
     fontSize:   fs(11),
@@ -627,7 +637,7 @@ const styles = StyleSheet.create({
     fontWeight:    '600',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    marginBottom:  vs(1),
+    marginBottom:  scaleH(1),
   },
   etaValue: {
     fontSize:      fs(22),
@@ -643,14 +653,14 @@ const styles = StyleSheet.create({
 
   // CTA — yellow pill when active
   confirmBtn: {
-    backgroundColor:   C.yellow,
-    borderRadius:      ms(50),
-    paddingVertical:   vs(15),
-    paddingHorizontal: hs(20),
+    backgroundColor:   C.blue,
+    borderRadius:      ms(14),
+    paddingVertical:   scaleH(15),
+    paddingHorizontal: scaleW(20),
     flexDirection:     'row',
     justifyContent:    'center',
     alignItems:        'center',
-    gap:               hs(8),
+    gap:               scaleW(8),
   },
   confirmBtnDisabled: {
     backgroundColor: C.surfaceAlt,
@@ -658,12 +668,12 @@ const styles = StyleSheet.create({
     borderColor:     C.border,
   },
   confirmIconBox: {
-    marginRight: hs(2),
+    marginRight: scaleW(2),
   },
   confirmText: {
     fontSize:      fs(15),
     fontWeight:    '800',
-    color:         C.primary,
+    color:         C.white,
     letterSpacing: 0.1,
   },
   confirmTextDisabled: { color: C.textMuted },
@@ -673,24 +683,24 @@ const styles = StyleSheet.create({
     flex:            1,
     justifyContent:  'center',
     alignItems:      'center',
-    paddingVertical: vs(60),
+    paddingVertical: scaleH(60),
   },
-  loadingText: { marginTop: vs(10), fontSize: fs(13), color: C.textMuted },
+  loadingText: { marginTop: scaleH(10), fontSize: fs(13), color: C.textMuted },
   errorText: {
-    marginTop:    vs(10),
+    marginTop:    scaleH(10),
     fontSize:     fs(13),
     color:        C.textSub,
     textAlign:    'center',
-    marginBottom: vs(16),
+    marginBottom: scaleH(16),
   },
   retryBtn: {
     flexDirection:     'row',
     alignItems:        'center',
     backgroundColor:   C.blue,
-    paddingHorizontal: hs(20),
-    paddingVertical:   vs(10),
+    paddingHorizontal: scaleW(20),
+    paddingVertical:   scaleH(10),
     borderRadius:      ms(10),
-    gap:               hs(6),
+    gap:               scaleW(6),
   },
   retryText: { color: C.white, fontSize: fs(13), fontWeight: '700' },
 });
