@@ -58,16 +58,16 @@ const Home = () => {
           return;
         }
       }
-      
+
       Geolocation.getCurrentPosition(
         async position => {
           try {
             const { latitude, longitude } = position.coords;
             const address = await mapboxApi.reverseGeocode(latitude, longitude);
-            
+
             // Check if address is the lat/lng fallback from googleMapsApi
             const isFallbackCoords = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(address?.trim());
-            
+
             if (address && !isFallbackCoords) {
               const shortAddress = address.split(',').slice(0, 2).join(', ');
               setCurrentLocation(shortAddress);
@@ -102,7 +102,7 @@ const Home = () => {
         const list = Array.isArray(res?.data) ? res.data : [];
         setUnreadCount(list.filter((n: any) => !n.read).length);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [isAuthenticated, isFocused]);
 
   const services = useMemo(
@@ -152,9 +152,12 @@ const Home = () => {
             <View style={styles.headerTop}>
               <Text style={styles.ziptoText}>zipto</Text>
               <View style={styles.headerActions}>
+
+                {/* Wallet button — commented out, re-enable when Wallet screen is ready
                 <TouchableOpacity onPress={() => navigation.navigate('Wallet')} style={styles.headerIconBtn} activeOpacity={0.7}>
                   <MaterialIcons name="account-balance-wallet" size={sp(isSmallScreen ? 20 : 22)} color="#1E3A8A" />
                 </TouchableOpacity>
+                */}
 
                 <TouchableOpacity
                   onPress={() => {
@@ -175,8 +178,8 @@ const Home = () => {
                 </TouchableOpacity>
               </View>
             </View>
-            <TouchableOpacity 
-              style={styles.headerLocation} 
+            <TouchableOpacity
+              style={styles.headerLocation}
               onPress={fetchLocation}
               activeOpacity={0.6}
             >
@@ -192,10 +195,10 @@ const Home = () => {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Hero Banner */}
           <View style={styles.heroBanner}>
-            <Image 
-              source={require('../assets/images/banner.png')} 
-              style={styles.heroBannerImage} 
-              resizeMode="contain" 
+            <Image
+              source={require('../assets/images/banner.png')}
+              style={styles.heroBannerImage}
+              resizeMode="contain"
             />
           </View>
 
@@ -260,7 +263,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: sp(16),
     paddingBottom: sp(100), // padding for bottom tab bar
   },
-  
+
   // Header
   header: {
     marginTop: sp(10),
@@ -285,7 +288,7 @@ const styles = StyleSheet.create({
   ziptoText: {
     fontSize: nf(32),
     fontFamily: 'Cocon-Regular',
-    color: '#0047C3', 
+    color: '#0047C3',
   },
   headerActions: {
     flexDirection: 'row',

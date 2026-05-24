@@ -28,7 +28,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BASE_WIDTH  = 390;
+const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
 
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
@@ -41,7 +41,7 @@ const fs = (size: number) =>
   Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ACTIVE_STATUSES    = ['pending', 'searching', 'accepted', 'assigned', 'driver_assigned', 'driver_arriving', 'arriving', 'in_progress', 'ongoing', 'picked_up'];
+const ACTIVE_STATUSES = ['pending', 'searching', 'accepted', 'assigned', 'driver_assigned', 'driver_arriving', 'arriving', 'in_progress', 'ongoing', 'picked_up'];
 const COMPLETED_STATUSES = ['completed', 'delivered'];
 const CANCELLED_STATUSES = ['cancelled'];
 
@@ -57,18 +57,18 @@ const CANCEL_REASONS = [
 
 const MyOrders = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const [activeTab,      setActiveTab]      = useState('active');
-  const [paymentFilter,  setPaymentFilter]  = useState<PaymentFilter>('all');
-  const [bookings,       setBookings]       = useState<BookingDetails[]>([]);
-  const [loading,        setLoading]        = useState(true);
-  const [refreshing,     setRefreshing]     = useState(false);
-  const [error,          setError]          = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('active');
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
+  const [bookings, setBookings] = useState<BookingDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [cancelModal,   setCancelModal]   = useState<{ bookingId: string; orderId: string } | null>(null);
-  const [cancelReason,  setCancelReason]  = useState('');
-  const [customReason,  setCustomReason]  = useState('');
-  const [cancelling,    setCancelling]    = useState(false);
-  const [successModal,  setSuccessModal]  = useState(false);
+  const [cancelModal, setCancelModal] = useState<{ bookingId: string; orderId: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
 
   // Payment state
   const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
@@ -80,16 +80,16 @@ const MyOrders = () => {
   const [submittingRating, setSubmittingRating] = useState(false);
   const [ratedBookings, setRatedBookings] = useState<Record<string, number>>({});
 
-  const successScale   = useRef(new Animated.Value(0)).current;
+  const successScale = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
-  const checkScale     = useRef(new Animated.Value(0)).current;
-  const checkRotate    = useRef(new Animated.Value(0)).current;
-  const confettiAnims  = useRef(
+  const checkScale = useRef(new Animated.Value(0)).current;
+  const checkRotate = useRef(new Animated.Value(0)).current;
+  const confettiAnims = useRef(
     Array.from({ length: 8 }, () => ({
       translateY: new Animated.Value(0),
       translateX: new Animated.Value(0),
-      opacity:    new Animated.Value(0),
-      scale:      new Animated.Value(0),
+      opacity: new Animated.Value(0),
+      scale: new Animated.Value(0),
     })),
   ).current;
 
@@ -120,74 +120,74 @@ const MyOrders = () => {
     b.payments?.some(p => p.payment_status === 'completed') || false;
 
   const filterByPayment = (list: BookingDetails[]) => {
-    if (paymentFilter === 'all')   return list;
-    if (paymentFilter === 'paid')  return list.filter(isPaid);
+    if (paymentFilter === 'all') return list;
+    if (paymentFilter === 'paid') return list.filter(isPaid);
     return list.filter(b => !isPaid(b));
   };
 
-  const activeOrders    = filterByPayment(bookings.filter(b => ACTIVE_STATUSES.includes(b.status?.toLowerCase())));
+  const activeOrders = filterByPayment(bookings.filter(b => ACTIVE_STATUSES.includes(b.status?.toLowerCase())));
   const completedOrders = filterByPayment(bookings.filter(b => COMPLETED_STATUSES.includes(b.status?.toLowerCase())));
   const cancelledOrders = filterByPayment(bookings.filter(b => CANCELLED_STATUSES.includes(b.status?.toLowerCase())));
 
   const getTabCount = (tab: string) => {
-    if (tab === 'active')    return activeOrders.length;
+    if (tab === 'active') return activeOrders.length;
     if (tab === 'completed') return completedOrders.length;
     return cancelledOrders.length;
   };
 
   const getStatusColor = (status: string) => {
     const s = status?.toLowerCase();
-    if (s === 'completed' || s === 'delivered')                                                                           return '#10B981';
-    if (s === 'cancelled')                                                                                                 return '#EF4444';
-    if (s === 'in_progress' || s === 'ongoing' || s === 'picked_up')                                                      return '#7C3AED';
-    if (s === 'assigned' || s === 'driver_assigned' || s === 'driver_arriving' || s === 'arriving' || s === 'accepted')   return '#3B82F6';
-    if (s === 'pending' || s === 'searching')                                                                              return '#F59E0B';
+    if (s === 'completed' || s === 'delivered') return '#10B981';
+    if (s === 'cancelled') return '#EF4444';
+    if (s === 'in_progress' || s === 'ongoing' || s === 'picked_up') return '#7C3AED';
+    if (s === 'assigned' || s === 'driver_assigned' || s === 'driver_arriving' || s === 'arriving' || s === 'accepted') return '#3B82F6';
+    if (s === 'pending' || s === 'searching') return '#F59E0B';
     return '#64748B';
   };
 
   const getStatusIcon = (status: string) => {
     const s = status?.toLowerCase();
-    if (s === 'completed' || s === 'delivered')                                                                           return 'check-circle';
-    if (s === 'cancelled')                                                                                                 return 'cancel';
-    if (s === 'in_progress' || s === 'ongoing' || s === 'picked_up')                                                      return 'local-shipping';
-    if (s === 'assigned' || s === 'driver_assigned' || s === 'driver_arriving' || s === 'arriving' || s === 'accepted')   return 'person-pin';
-    if (s === 'pending' || s === 'searching')                                                                              return 'hourglass-top';
+    if (s === 'completed' || s === 'delivered') return 'check-circle';
+    if (s === 'cancelled') return 'cancel';
+    if (s === 'in_progress' || s === 'ongoing' || s === 'picked_up') return 'local-shipping';
+    if (s === 'assigned' || s === 'driver_assigned' || s === 'driver_arriving' || s === 'arriving' || s === 'accepted') return 'person-pin';
+    if (s === 'pending' || s === 'searching') return 'hourglass-top';
     return 'info';
   };
 
   const getStatusLabel = (status: string) => {
     const s = status?.toLowerCase();
-    if (s === 'completed' || s === 'delivered')                                   return 'Completed';
-    if (s === 'cancelled')                                                         return 'Cancelled';
-    if (s === 'in_progress' || s === 'ongoing' || s === 'picked_up')              return 'In Transit';
-    if (s === 'driver_arriving' || s === 'arriving')                               return 'Driver Arriving';
-    if (s === 'assigned' || s === 'driver_assigned' || s === 'accepted')           return 'Driver Assigned';
-    if (s === 'searching')                                                         return 'Finding Driver';
-    if (s === 'pending')                                                           return 'Pending';
+    if (s === 'completed' || s === 'delivered') return 'Completed';
+    if (s === 'cancelled') return 'Cancelled';
+    if (s === 'in_progress' || s === 'ongoing' || s === 'picked_up') return 'In Transit';
+    if (s === 'driver_arriving' || s === 'arriving') return 'Driver Arriving';
+    if (s === 'assigned' || s === 'driver_assigned' || s === 'accepted') return 'Driver Assigned';
+    if (s === 'searching') return 'Finding Driver';
+    if (s === 'pending') return 'Pending';
     return status;
   };
 
   const formatDate = (dateStr: string) => {
     try {
-      const date   = new Date(dateStr);
-      const day    = date.getDate().toString().padStart(2, '0');
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const month  = months[date.getMonth()];
-      const year   = date.getFullYear();
-      let hours    = date.getHours();
-      const mins   = date.getMinutes().toString().padStart(2, '0');
-      const ampm   = hours >= 12 ? 'PM' : 'AM';
-      hours        = hours % 12 || 12;
+      const date = new Date(dateStr);
+      const day = date.getDate().toString().padStart(2, '0');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      let hours = date.getHours();
+      const mins = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
       return `${day} ${month} ${year} • ${hours}:${mins} ${ampm}`;
     } catch { return dateStr; }
   };
 
-  const getPickupAddress       = (b: BookingDetails) => b.pickup_address || 'Pickup location';
-  const getDropAddress         = (b: BookingDetails) => b.drop_address   || 'Drop location';
+  const getPickupAddress = (b: BookingDetails) => b.pickup_address || 'Pickup location';
+  const getDropAddress = (b: BookingDetails) => b.drop_address || 'Drop location';
   const getServiceCategoryLabel = (b: BookingDetails) => {
     const raw = (b.service_category || '').toString().trim();
     if (!raw) return b.vehicle_type || b.booking_type || 'Delivery';
-    return raw.split('_').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return raw.split('_').filter(Boolean).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
   const isActiveBooking = (b: BookingDetails) => ACTIVE_STATUSES.includes(b.status?.toLowerCase());
@@ -291,29 +291,29 @@ const MyOrders = () => {
     setCancelling(false);
     setSuccessModal(true);
     successScale.setValue(0); successOpacity.setValue(0);
-    checkScale.setValue(0);   checkRotate.setValue(0);
+    checkScale.setValue(0); checkRotate.setValue(0);
     confettiAnims.forEach(a => { a.translateY.setValue(0); a.translateX.setValue(0); a.opacity.setValue(0); a.scale.setValue(0); });
 
     Animated.sequence([
       Animated.parallel([
-        Animated.spring(successScale,   { toValue: 1, friction: 6, tension: 40, useNativeDriver: true }),
+        Animated.spring(successScale, { toValue: 1, friction: 6, tension: 40, useNativeDriver: true }),
         Animated.timing(successOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
       ]),
       Animated.sequence([
         Animated.spring(checkScale, { toValue: 1.2, friction: 3, tension: 80, useNativeDriver: true }),
-        Animated.spring(checkScale, { toValue: 1,   friction: 5,              useNativeDriver: true }),
+        Animated.spring(checkScale, { toValue: 1, friction: 5, useNativeDriver: true }),
       ]),
       Animated.parallel(
         confettiAnims.map((anim, i) => {
-          const angle  = (i / 8) * 2 * Math.PI;
+          const angle = (i / 8) * 2 * Math.PI;
           const radius = 80 + Math.random() * 40;
           return Animated.parallel([
-            Animated.timing(anim.opacity,     { toValue: 1, duration: 200, useNativeDriver: true }),
-            Animated.timing(anim.scale,       { toValue: 1, duration: 200, useNativeDriver: true }),
-            Animated.timing(anim.translateX,  { toValue: Math.cos(angle) * radius, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+            Animated.timing(anim.opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+            Animated.timing(anim.scale, { toValue: 1, duration: 200, useNativeDriver: true }),
+            Animated.timing(anim.translateX, { toValue: Math.cos(angle) * radius, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
             Animated.sequence([
               Animated.timing(anim.translateY, { toValue: Math.sin(angle) * radius - 30, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-              Animated.timing(anim.translateY, { toValue: Math.sin(angle) * radius + 60, duration: 400, easing: Easing.in(Easing.quad),  useNativeDriver: true }),
+              Animated.timing(anim.translateY, { toValue: Math.sin(angle) * radius + 60, duration: 400, easing: Easing.in(Easing.quad), useNativeDriver: true }),
             ]),
           ]);
         }),
@@ -323,12 +323,12 @@ const MyOrders = () => {
     setTimeout(() => {
       Animated.parallel([
         Animated.timing(successOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-        Animated.timing(successScale,   { toValue: 0.8, duration: 300, useNativeDriver: true }),
+        Animated.timing(successScale, { toValue: 0.8, duration: 300, useNativeDriver: true }),
       ]).start(() => { setSuccessModal(false); fetchBookings(true); });
     }, 2500);
   };
 
-  const confettiColors = ['#EF4444','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899','#F97316','#06B6D4'];
+  const confettiColors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#F97316', '#06B6D4'];
 
   // Fetch existing ratings for completed bookings
   useEffect(() => {
@@ -337,10 +337,11 @@ const MyOrders = () => {
       for (const b of completed) {
         try {
           const res = await vehicleApi.getRatingByBooking(b.id);
-          if (res && res.rating) {
-            setRatedBookings(prev => ({ ...prev, [b.id]: res.rating }));
+          const ratingValue = res?.data?.rating;
+          if (ratingValue != null) {
+            setRatedBookings(prev => ({ ...prev, [b.id]: ratingValue }));
           }
-        } catch {}
+        } catch { }
       }
     };
     if (bookings.length > 0) fetchRatings();
@@ -376,11 +377,11 @@ const MyOrders = () => {
 
   // ── Order Card ───────────────────────────────────────────────────────────────
   const OrderCard = ({ booking }: { booking: BookingDetails }) => {
-    const statusColor   = getStatusColor(booking.status);
-    const active        = isActiveBooking(booking);
+    const statusColor = getStatusColor(booking.status);
+    const active = isActiveBooking(booking);
     const paymentStatus = getPaymentStatus(booking);
-    const isCancelled   = booking.status?.toLowerCase() === 'cancelled';
-    const isCompleted   = COMPLETED_STATUSES.includes(booking.status?.toLowerCase());
+    const isCancelled = booking.status?.toLowerCase() === 'cancelled';
+    const isCompleted = COMPLETED_STATUSES.includes(booking.status?.toLowerCase());
     const existingRating = ratedBookings[booking.id];
 
     return (
@@ -559,25 +560,25 @@ const MyOrders = () => {
   };
 
   const getOrdersForTab = () => {
-    if (activeTab === 'active')    return activeOrders;
+    if (activeTab === 'active') return activeOrders;
     if (activeTab === 'completed') return completedOrders;
     return cancelledOrders;
   };
 
   const getEmptyMessage = () => {
-    if (activeTab === 'active')    return { title: 'No Active Orders',    text: "You don't have any active orders at the moment" };
+    if (activeTab === 'active') return { title: 'No Active Orders', text: "You don't have any active orders at the moment" };
     if (activeTab === 'completed') return { title: 'No Completed Orders', text: 'Your completed orders will appear here' };
-    return                                { title: 'No Cancelled Orders', text: 'Your cancelled orders will appear here' };
+    return { title: 'No Cancelled Orders', text: 'Your cancelled orders will appear here' };
   };
 
   const tabsData = [
-    { key: 'active',    label: 'Active',    color: '#3B82F6' },
+    { key: 'active', label: 'Active', color: '#3B82F6' },
     { key: 'completed', label: 'Completed', color: '#10B981' },
     { key: 'cancelled', label: 'Cancelled', color: '#EF4444' },
   ];
 
   const orders = getOrdersForTab();
-  const empty  = getEmptyMessage();
+  const empty = getEmptyMessage();
 
   return (
     <View style={styles.container}>
@@ -596,7 +597,7 @@ const MyOrders = () => {
         <View style={styles.tabContainer}>
           {tabsData.map(tab => {
             const isActive = activeTab === tab.key;
-            const count    = getTabCount(tab.key);
+            const count = getTabCount(tab.key);
             return (
               <TouchableOpacity
                 key={tab.key}
@@ -782,110 +783,110 @@ const MyOrders = () => {
               keyboardShouldPersistTaps="handled"
             >
               {ratingModal && (<>
-              {/* Header */}
-              <View style={styles.ratingModalHeader}>
-                <View style={styles.ratingModalIconWrap}>
-                  <MaterialIcons name="star" size={ms(32)} color="#F59E0B" />
-                </View>
-                <Text style={styles.ratingModalTitle}>Rate Your Delivery</Text>
-                <Text style={styles.ratingModalSubtitle}>Order #{ratingModal.id?.slice(0, 8)}</Text>
-              </View>
-
-              {/* Driver info */}
-              {ratingModal.driver && (
-                <View style={styles.ratingDriverInfo}>
-                  <View style={styles.ratingDriverAvatar}>
-                    <MaterialIcons name="person" size={ms(24)} color="#FFFFFF" />
+                {/* Header */}
+                <View style={styles.ratingModalHeader}>
+                  <View style={styles.ratingModalIconWrap}>
+                    <MaterialIcons name="star" size={ms(32)} color="#F59E0B" />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.ratingDriverName}>{ratingModal.driver.name || 'Driver'}</Text>
-                    <Text style={styles.ratingDriverVehicle}>{ratingModal.vehicle_type || 'Delivery Partner'}</Text>
+                  <Text style={styles.ratingModalTitle}>Rate Your Delivery</Text>
+                  <Text style={styles.ratingModalSubtitle}>Order #{ratingModal.id?.slice(0, 8)}</Text>
+                </View>
+
+                {/* Driver info */}
+                {ratingModal.driver && (
+                  <View style={styles.ratingDriverInfo}>
+                    <View style={styles.ratingDriverAvatar}>
+                      <MaterialIcons name="person" size={ms(24)} color="#FFFFFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.ratingDriverName}>{ratingModal.driver.name || 'Driver'}</Text>
+                      <Text style={styles.ratingDriverVehicle}>{ratingModal.vehicle_type || 'Delivery Partner'}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Order summary */}
+                <View style={styles.ratingOrderSummary}>
+                  <View style={styles.ratingOrderRow}>
+                    <MaterialIcons name="circle" size={ms(8)} color="#3B82F6" />
+                    <Text style={styles.ratingOrderText} numberOfLines={1}>{getPickupAddress(ratingModal)}</Text>
+                  </View>
+                  <View style={styles.ratingOrderRow}>
+                    <MaterialIcons name="circle" size={ms(8)} color="#10B981" />
+                    <Text style={styles.ratingOrderText} numberOfLines={1}>{getDropAddress(ratingModal)}</Text>
+                  </View>
+                  <View style={styles.ratingOrderRow}>
+                    <MaterialIcons name="payments" size={ms(14)} color="#64748B" />
+                    <Text style={styles.ratingOrderText}>
+                      ₹{parseFloat(ratingModal.final_fare || ratingModal.estimated_fare || '0').toFixed(0)}
+                    </Text>
                   </View>
                 </View>
-              )}
 
-              {/* Order summary */}
-              <View style={styles.ratingOrderSummary}>
-                <View style={styles.ratingOrderRow}>
-                  <MaterialIcons name="circle" size={ms(8)} color="#3B82F6" />
-                  <Text style={styles.ratingOrderText} numberOfLines={1}>{getPickupAddress(ratingModal)}</Text>
+                {/* Star rating */}
+                <Text style={styles.ratingLabel}>How was your experience?</Text>
+                <View style={styles.starContainer}>
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <TouchableOpacity
+                      key={star}
+                      onPress={() => setRatingValue(star)}
+                      activeOpacity={0.7}
+                      style={styles.starButton}
+                    >
+                      <MaterialIcons
+                        name={star <= ratingValue ? 'star' : 'star-border'}
+                        size={ms(44)}
+                        color={star <= ratingValue ? '#F59E0B' : '#CBD5E1'}
+                      />
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                <View style={styles.ratingOrderRow}>
-                  <MaterialIcons name="circle" size={ms(8)} color="#10B981" />
-                  <Text style={styles.ratingOrderText} numberOfLines={1}>{getDropAddress(ratingModal)}</Text>
-                </View>
-                <View style={styles.ratingOrderRow}>
-                  <MaterialIcons name="payments" size={ms(14)} color="#64748B" />
-                  <Text style={styles.ratingOrderText}>
-                    ₹{parseFloat(ratingModal.final_fare || ratingModal.estimated_fare || '0').toFixed(0)}
-                  </Text>
-                </View>
-              </View>
+                <Text style={styles.ratingHint}>
+                  {ratingValue === 0 ? 'Tap to rate' :
+                    ratingValue === 1 ? 'Poor' :
+                      ratingValue === 2 ? 'Below Average' :
+                        ratingValue === 3 ? 'Average' :
+                          ratingValue === 4 ? 'Good' : 'Excellent'}
+                </Text>
 
-              {/* Star rating */}
-              <Text style={styles.ratingLabel}>How was your experience?</Text>
-              <View style={styles.starContainer}>
-                {[1, 2, 3, 4, 5].map(star => (
+                {/* Comment */}
+                <TextInput
+                  style={styles.ratingCommentInput}
+                  placeholder="Add a comment (optional)"
+                  placeholderTextColor="#94A3B8"
+                  value={ratingComment}
+                  onChangeText={setRatingComment}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+
+                {/* Actions */}
+                <View style={styles.ratingModalActions}>
                   <TouchableOpacity
-                    key={star}
-                    onPress={() => setRatingValue(star)}
+                    style={styles.ratingSkipBtn}
+                    onPress={() => setRatingModal(null)}
+                    disabled={submittingRating}
                     activeOpacity={0.7}
-                    style={styles.starButton}
                   >
-                    <MaterialIcons
-                      name={star <= ratingValue ? 'star' : 'star-border'}
-                      size={ms(44)}
-                      color={star <= ratingValue ? '#F59E0B' : '#CBD5E1'}
-                    />
+                    <Text style={styles.ratingSkipText}>Skip</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.ratingHint}>
-                {ratingValue === 0 ? 'Tap to rate' :
-                 ratingValue === 1 ? 'Poor' :
-                 ratingValue === 2 ? 'Below Average' :
-                 ratingValue === 3 ? 'Average' :
-                 ratingValue === 4 ? 'Good' : 'Excellent'}
-              </Text>
-
-              {/* Comment */}
-              <TextInput
-                style={styles.ratingCommentInput}
-                placeholder="Add a comment (optional)"
-                placeholderTextColor="#94A3B8"
-                value={ratingComment}
-                onChangeText={setRatingComment}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-
-              {/* Actions */}
-              <View style={styles.ratingModalActions}>
-                <TouchableOpacity
-                  style={styles.ratingSkipBtn}
-                  onPress={() => setRatingModal(null)}
-                  disabled={submittingRating}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.ratingSkipText}>Skip</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.ratingSubmitBtn, ratingValue === 0 && styles.ratingSubmitDisabled]}
-                  onPress={handleSubmitRating}
-                  disabled={submittingRating || ratingValue === 0}
-                  activeOpacity={0.7}
-                >
-                  {submittingRating ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <MaterialIcons name="send" size={ms(18)} color="#FFFFFF" />
-                      <Text style={styles.ratingSubmitText}>Submit</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
+                  <TouchableOpacity
+                    style={[styles.ratingSubmitBtn, ratingValue === 0 && styles.ratingSubmitDisabled]}
+                    onPress={handleSubmitRating}
+                    disabled={submittingRating || ratingValue === 0}
+                    activeOpacity={0.7}
+                  >
+                    {submittingRating ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <MaterialIcons name="send" size={ms(18)} color="#FFFFFF" />
+                        <Text style={styles.ratingSubmitText}>Submit</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </>)}
             </ScrollView>
           </View>
@@ -926,17 +927,17 @@ const MyOrders = () => {
 };
 
 // ─── Derived responsive values ────────────────────────────────────────────────
-const backBtnSize       = ms(40);
+const backBtnSize = ms(40);
 const orderIconContSize = ms(48);
-const cancelIconWrapSz  = ms(56);
-const radioSize         = ms(20);
-const radioDotSize      = ms(10);
-const successCircleSz   = ms(88);
-const confettiDotSz     = ms(10);
+const cancelIconWrapSz = ms(56);
+const radioSize = ms(20);
+const radioDotSize = ms(10);
+const successCircleSz = ms(88);
+const confettiDotSz = ms(10);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  safeArea:  { flex: 1 },
+  safeArea: { flex: 1 },
 
   // ── Header ──
   header: {
@@ -987,8 +988,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     gap: scaleW(5),
   },
-  tabText:      { fontSize: fs(13), fontWeight: '600', color: '#64748B' },
-  activeTabText:{ color: '#FFFFFF' },
+  tabText: { fontSize: fs(13), fontWeight: '600', color: '#64748B' },
+  activeTabText: { color: '#FFFFFF' },
   tabBadge: {
     backgroundColor: '#E2E8F0',
     borderRadius: ms(10),
@@ -1021,11 +1022,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  filterChipActive:     { backgroundColor: '#1E293B', borderColor: '#1E293B' },
-  filterChipText:       { fontSize: fs(12), fontWeight: '600', color: '#64748B' },
+  filterChipActive: { backgroundColor: '#1E293B', borderColor: '#1E293B' },
+  filterChipText: { fontSize: fs(12), fontWeight: '600', color: '#64748B' },
   filterChipTextActive: { color: '#FFFFFF' },
 
-  scrollView:    { flex: 1 },
+  scrollView: { flex: 1 },
   scrollContent: { padding: scaleW(16), paddingBottom: scaleH(100) },
 
   // ── Order card ──
@@ -1102,9 +1103,9 @@ const styles = StyleSheet.create({
     marginLeft: scaleW(5),
     marginVertical: scaleH(4),
   },
-  locationInfo:  { flex: 1 },
+  locationInfo: { flex: 1 },
   locationLabel: { fontSize: fs(12), color: '#64748B', marginBottom: scaleH(2) },
-  locationText:  { fontSize: fs(14), color: '#1E293B', fontWeight: '500' },
+  locationText: { fontSize: fs(14), color: '#1E293B', fontWeight: '500' },
 
   // Payment badge
   paymentBadge: {
@@ -1142,8 +1143,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#E2E8F0',
   },
   orderFooterLeft: { flexDirection: 'row', alignItems: 'center', gap: scaleW(6), flex: 1 },
-  footerText:      { fontSize: fs(12), color: '#64748B' },
-  amountText:      { fontSize: fs(18), fontWeight: 'bold', color: '#3B82F6' },
+  footerText: { fontSize: fs(12), color: '#64748B' },
+  amountText: { fontSize: fs(18), fontWeight: 'bold', color: '#3B82F6' },
 
   // Action buttons
   actionRow: { flexDirection: 'row', gap: scaleW(10), marginTop: scaleH(12) },
@@ -1174,10 +1175,10 @@ const styles = StyleSheet.create({
 
   // Loading / empty
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText:      { marginTop: scaleH(12), fontSize: fs(15), color: '#64748B' },
+  loadingText: { marginTop: scaleH(12), fontSize: fs(15), color: '#64748B' },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: scaleH(80) },
   emptyStateTitle: { fontSize: fs(20), fontWeight: 'bold', color: '#1E293B', marginTop: scaleH(16), marginBottom: scaleH(8) },
-  emptyStateText:  { fontSize: fs(14), color: '#64748B', textAlign: 'center', paddingHorizontal: scaleW(32) },
+  emptyStateText: { fontSize: fs(14), color: '#64748B', textAlign: 'center', paddingHorizontal: scaleW(32) },
   retryButton: {
     marginTop: scaleH(16),
     backgroundColor: '#3B82F6',
@@ -1196,7 +1197,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     overflow: 'hidden',
   },
-  cancelModalScroll:        { paddingHorizontal: scaleW(20), paddingTop: scaleH(20) },
+  cancelModalScroll: { paddingHorizontal: scaleW(20), paddingTop: scaleH(20) },
   cancelModalScrollContent: { paddingBottom: scaleH(34) },
   cancelModalHeader: { alignItems: 'center', marginBottom: scaleH(20) },
   cancelModalIconWrap: {
@@ -1208,10 +1209,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: scaleH(12),
   },
-  cancelModalTitle:    { fontSize: fs(20), fontWeight: 'bold', color: '#1E293B', marginBottom: scaleH(4) },
+  cancelModalTitle: { fontSize: fs(20), fontWeight: 'bold', color: '#1E293B', marginBottom: scaleH(4) },
   cancelModalSubtitle: { fontSize: fs(14), color: '#64748B' },
-  cancelReasonLabel:   { fontSize: fs(14), fontWeight: '600', color: '#475569', marginBottom: scaleH(12) },
-  reasonList:          { marginBottom: scaleH(8) },
+  cancelReasonLabel: { fontSize: fs(14), fontWeight: '600', color: '#475569', marginBottom: scaleH(12) },
+  reasonList: { marginBottom: scaleH(8) },
   reasonOption: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1242,7 +1243,7 @@ const styles = StyleSheet.create({
     borderRadius: radioDotSize / 2,
     backgroundColor: '#3B82F6',
   },
-  reasonOptionText:         { fontSize: fs(14), color: '#475569', flex: 1 },
+  reasonOptionText: { fontSize: fs(14), color: '#475569', flex: 1 },
   reasonOptionTextSelected: { color: '#1E293B', fontWeight: '500' },
   customReasonInput: {
     borderWidth: 1.5,
@@ -1268,7 +1269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelModalKeepText:    { fontSize: fs(15), fontWeight: '600', color: '#475569' },
+  cancelModalKeepText: { fontSize: fs(15), fontWeight: '600', color: '#475569' },
   cancelModalConfirm: {
     flex: 1.5,
     flexDirection: 'row',
@@ -1280,7 +1281,7 @@ const styles = StyleSheet.create({
     gap: scaleW(6),
   },
   cancelModalConfirmDisabled: { opacity: 0.5 },
-  cancelModalConfirmText:     { fontSize: fs(15), fontWeight: '600', color: '#FFFFFF' },
+  cancelModalConfirmText: { fontSize: fs(15), fontWeight: '600', color: '#FFFFFF' },
 
   // ── Success Modal ──
   successOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
@@ -1305,7 +1306,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: scaleH(20),
   },
-  successTitle:    { fontSize: fs(22), fontWeight: 'bold', color: '#1E293B', marginBottom: scaleH(8) },
+  successTitle: { fontSize: fs(22), fontWeight: 'bold', color: '#1E293B', marginBottom: scaleH(8) },
   successSubtitle: { fontSize: fs(14), color: '#64748B', textAlign: 'center', lineHeight: fs(14) * 1.5 },
   confettiDot: {
     position: 'absolute',
@@ -1483,9 +1484,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   otpTextWrap: { flex: 1 },
-  otpLabel:   { fontSize: fs(11), color: '#7C3AED', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: scaleH(2) },
-  otpValue:   { fontSize: fs(24), fontWeight: 'bold', color: '#4C1D95', letterSpacing: 4 },
-  otpHint:    { fontSize: fs(11), color: '#8B5CF6', marginTop: scaleH(2) },
+  otpLabel: { fontSize: fs(11), color: '#7C3AED', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: scaleH(2) },
+  otpValue: { fontSize: fs(24), fontWeight: 'bold', color: '#4C1D95', letterSpacing: 4 },
+  otpHint: { fontSize: fs(11), color: '#8B5CF6', marginTop: scaleH(2) },
 });
 
 export default MyOrders;

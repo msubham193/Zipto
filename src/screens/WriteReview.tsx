@@ -19,7 +19,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH  = 390;
+const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
@@ -83,10 +83,10 @@ const WriteReview = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
-  const [rating, setRating]             = useState(0);
-  const [reviewText, setReviewText]     = useState('');
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [submitting, setSubmitting]     = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
@@ -103,7 +103,7 @@ const WriteReview = () => {
       setSubmitting(true);
       // TODO: call your review API here
       // await vehicleApi.submitReview({ rating, review: reviewText, tags: selectedTags });
-      await new Promise(resolve => setTimeout(resolve, 1000)); // mock delay
+      await new Promise<void>(resolve => setTimeout(resolve, 1000)); // mock delay
       Alert.alert(
         'Review Submitted! 🎉',
         `You earned +5 coins for writing a review. Thank you for your feedback!`,
@@ -240,176 +240,176 @@ const WriteReview = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  safeArea:  { flex: 1 },
+  safeArea: { flex: 1 },
 
   // ── Header ──
   header: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    justifyContent:    'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: scaleW(16),
-    paddingVertical:   scaleH(16),
-    backgroundColor:   '#FFFFFF',
+    paddingVertical: scaleH(16),
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width:           backBtnSize,
-    height:          backBtnSize,
-    borderRadius:    backBtnSize / 2,
+    width: backBtnSize,
+    height: backBtnSize,
+    borderRadius: backBtnSize / 2,
     backgroundColor: '#F1F5F9',
-    justifyContent:  'center',
-    alignItems:      'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize:   fs(20),
+    fontSize: fs(20),
     fontWeight: 'bold',
-    color:      '#0F172A',
+    color: '#0F172A',
   },
 
   // ── Scroll ──
-  scrollView:    { flex: 1 },
+  scrollView: { flex: 1 },
   scrollContent: {
-    padding:       scaleW(16),
+    padding: scaleW(16),
     paddingBottom: scaleH(24),
-    gap:           scaleH(16),
+    gap: scaleH(16),
   },
 
   // ── Reward Banner ──
   rewardBanner: {
-    flexDirection:   'row',
-    alignItems:      'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFBEB',
-    borderWidth:     1,
-    borderColor:     '#FDE68A',
-    borderRadius:    ms(12),
-    padding:         ms(14),
-    gap:             scaleW(10),
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: ms(12),
+    padding: ms(14),
+    gap: scaleW(10),
   },
   rewardText: {
-    fontSize:   fs(14),
-    color:      '#92400E',
+    fontSize: fs(14),
+    color: '#92400E',
     fontWeight: '500',
-    flex:       1,
+    flex: 1,
   },
   rewardHighlight: {
     fontWeight: '800',
-    color:      '#D97706',
+    color: '#D97706',
   },
 
   // ── Card ──
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius:    ms(16),
-    padding:         ms(20),
-    elevation:       2,
-    shadowColor:     '#000',
-    shadowOffset:    { width: 0, height: 1 },
-    shadowOpacity:   0.08,
-    shadowRadius:    3,
+    borderRadius: ms(16),
+    padding: ms(20),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   cardTitle: {
-    fontSize:     fs(16),
-    fontWeight:   '700',
-    color:        '#0F172A',
+    fontSize: fs(16),
+    fontWeight: '700',
+    color: '#0F172A',
     marginBottom: scaleH(4),
   },
   cardSubtitle: {
-    fontSize:     fs(13),
-    color:        '#64748B',
+    fontSize: fs(13),
+    color: '#64748B',
     marginBottom: scaleH(16),
   },
 
   // ── Stars ──
   starsContainer: {
-    alignItems:    'center',
-    marginBottom:  scaleH(12),
+    alignItems: 'center',
+    marginBottom: scaleH(12),
   },
   ratingLabelContainer: {
     alignItems: 'center',
   },
   ratingLabel: {
-    fontSize:   fs(16),
+    fontSize: fs(16),
     fontWeight: '700',
-    color:      '#F59E0B',
+    color: '#F59E0B',
   },
 
   // ── Tags ──
   tagsWrap: {
-    flexDirection:  'row',
-    flexWrap:       'wrap',
-    gap:            scaleW(8),
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: scaleW(8),
   },
   tag: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               scaleW(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleW(4),
     paddingHorizontal: scaleW(14),
-    paddingVertical:   scaleH(8),
-    borderRadius:      ms(20),
-    borderWidth:       1.5,
-    borderColor:       '#E2E8F0',
-    backgroundColor:   '#F8FAFC',
+    paddingVertical: scaleH(8),
+    borderRadius: ms(20),
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
   },
   tagActive: {
-    borderColor:     '#3B82F6',
+    borderColor: '#3B82F6',
     backgroundColor: '#EFF6FF',
   },
   tagText: {
-    fontSize:   fs(13),
-    color:      '#64748B',
+    fontSize: fs(13),
+    color: '#64748B',
     fontWeight: '500',
   },
   tagTextActive: {
-    color:      '#3B82F6',
+    color: '#3B82F6',
     fontWeight: '700',
   },
 
   // ── Text Input ──
   textInput: {
-    borderWidth:       1.5,
-    borderColor:       '#E2E8F0',
-    borderRadius:      ms(12),
-    padding:           ms(14),
-    fontSize:          fs(14),
-    color:             '#0F172A',
-    minHeight:         scaleH(120),
-    backgroundColor:   '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: ms(12),
+    padding: ms(14),
+    fontSize: fs(14),
+    color: '#0F172A',
+    minHeight: scaleH(120),
+    backgroundColor: '#F8FAFC',
   },
   charCount: {
-    fontSize:  fs(12),
-    color:     '#94A3B8',
+    fontSize: fs(12),
+    color: '#94A3B8',
     textAlign: 'right',
     marginTop: scaleH(6),
   },
 
   // ── Footer ──
   footer: {
-    backgroundColor:   '#FFFFFF',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: scaleW(16),
-    paddingVertical:   scaleH(16),
-    borderTopWidth:    1,
-    borderTopColor:    '#E2E8F0',
-    elevation:         8,
-    shadowColor:       '#000',
-    shadowOffset:      { width: 0, height: -2 },
-    shadowOpacity:     0.06,
-    shadowRadius:      6,
+    paddingVertical: scaleH(16),
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
   },
   submitBtn: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    justifyContent:  'center',
-    gap:             scaleW(8),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scaleW(8),
     backgroundColor: '#3B82F6',
-    borderRadius:    ms(14),
+    borderRadius: ms(14),
     paddingVertical: scaleH(16),
   },
   submitBtnDisabled: { backgroundColor: '#E2E8F0' },
   submitText: {
-    fontSize:      fs(16),
-    fontWeight:    '800',
-    color:         '#FFFFFF',
+    fontSize: fs(16),
+    fontWeight: '800',
+    color: '#FFFFFF',
     letterSpacing: 0.2,
   },
   submitTextDisabled: { color: '#9CA3AF' },

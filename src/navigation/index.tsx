@@ -2,72 +2,93 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-import { View, StatusBar } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
+import { navigationRef } from './navigationRef';
 import { useAuthStore } from '../store/useAuthStore';
 import Splash from '../screens/Splash';
 
 const MIN_SPLASH_DURATION = 2800;
 
 const RootNavigator = () => {
+    const [showSplash, setShowSplash] = useState(true);
     const [isHydrated, setIsHydrated] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
-    const [showSplash, setShowSplash] = useState(true);
     const { isAuthenticated, fetchProfile } = useAuthStore();
 
     useEffect(() => {
-        let splashTimer: ReturnType<typeof setTimeout>;
-        let splashDone = false;
-        let hydrationDone = false;
+        let splashTimer: ReturnType<typeof setTimeout> | null = null;
+        let isMounted = true;
 
-        const tryHideSplash = () => {
-            if (splashDone) {
-                setShowSplash(false);
+        const startSplash = async () => {
+            // Start the splash timer immediately
+            splashTimer = setTimeout(() => {
+                if (isMounted) {
+                    setShowSplash(false);
+                }
+            }, MIN_SPLASH_DURATION);
+
+            // Handle hydration and profile fetch in parallel
+            try {
+                // Wait for hydration if not already done
+                if (!useAuthStore.persist.hasHydrated()) {
+                    await new Promise<void>(resolve => {
+                        const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+                            unsubscribe();
+                            resolve();
+                        });
+                    });
+                }
+
+                if (!isMounted) return;
+                setIsHydrated(true);
+
+                // If authenticated, verify token
+                const state = useAuthStore.getState();
+                if (state.isAuthenticated && state.token) {
+                    setIsVerifying(true);
+                    try {
+                        await fetchProfile();
+                    } catch (err) {
+                        console.warn('Profile fetch error:', err);
+                    } finally {
+                        if (isMounted) {
+                            setIsVerifying(false);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Hydration error:', err);
+                if (isMounted) {
+                    setIsHydrated(true);
+                }
             }
         };
 
-        // Splash minimum duration
-        splashTimer = setTimeout(() => {
-            splashDone = true;
-            tryHideSplash();
-        }, MIN_SPLASH_DURATION);
+        startSplash();
 
-        const handleHydration = async () => {
-            setIsHydrated(true);
-
-            const state = useAuthStore.getState();
-            if (state.isAuthenticated && state.token) {
-                setIsVerifying(true);
-                await fetchProfile();
-                setIsVerifying(false);
-            }
-
-            hydrationDone = true;
-            tryHideSplash();
-        };
-
-        if (useAuthStore.persist.hasHydrated()) {
-            handleHydration();
-        } else {
-            const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
-                handleHydration();
-            });
-            return () => {
+        return () => {
+            isMounted = false;
+            if (splashTimer) {
                 clearTimeout(splashTimer);
-                unsubscribe();
-            };
-        }
+            }
+        };
+    }, [fetchProfile]);
 
-        return () => clearTimeout(splashTimer);
-    }, []);  // fetchProfile is stable from Zustand, safe to omit
-
+    // Always show splash while showSplash is true
     if (showSplash) {
         return <Splash />;
     }
 
+    // Show loading while hydrating or verifying
     if (!isHydrated || isVerifying) {
-        return <SplashPlaceholder />;
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+                <ActivityIndicator size="large" color="#2563EB" />
+            </View>
+        );
     }
 
+    // Finally show the navigation
     return (
         <NavigationContainer ref={navigationRef}>
             {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}

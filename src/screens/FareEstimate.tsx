@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -13,8 +12,11 @@ import {
   Dimensions,
   PixelRatio,
   TextInput,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Switch } from 'react-native';
@@ -47,10 +49,25 @@ const VEHICLE_IMAGES: Record<string, any> = {
   tata_407: require('../assets/images/vehicle3.png'),
 };
 
+// ─── Restricted Items List ────────────────────────────────────────────────────
+const RESTRICTED_ITEMS = [
+  'Pornographic Materials', 'Dry Ice',
+  'Human Body Parts', 'Explosives',
+  'Fire Arms', 'Flammables',
+  'Livestock', 'Pets & Animals',
+  'Dangerous Goods', 'Hazardous Goods',
+  'Illegal Goods', 'Radioactive Materials',
+  'Precious Jewelleries', 'Currencies & Coins',
+  'Stones and Gems', 'Gambling Devices',
+  'Lottery Tickets', 'Fire Extinguishers',
+  'Cigarettes & Alcohols', 'Narcotics and Illegal Drugs',
+];
+
 // ─── Component ───────────────────────────────────────────────────────────────
 const FareEstimate = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const paidBy = 'sender';
   const [estimateData, setEstimateData] = useState<FareEstimateResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +84,9 @@ const FareEstimate = () => {
     code: string; title: string; discount_amount: number;
   } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  // ── NEW: Restricted items modal ────────────────────────────────────────────
+  const [showRestrictedModal, setShowRestrictedModal] = useState(false);
 
   const { user } = useAuthStore();
   const { setActiveBooking } = useBookingStore();
@@ -109,7 +129,7 @@ const FareEstimate = () => {
     fetchFareEstimate();
     vehicleApi.getCoinsBalance()
       .then(res => setCoinsBalance(res?.coins ?? 0))
-      .catch(() => {});
+      .catch(() => { });
   }, [fetchFareEstimate]);
 
   // ── Apply coupon ────────────────────────────────────────────────────────────
@@ -125,8 +145,8 @@ const FareEstimate = () => {
         vehicle_type: selectedVehicleType,
       });
       setAppliedCoupon({
-        code:            result.code,
-        title:           result.title,
+        code: result.code,
+        title: result.title,
         discount_amount: result.discount_amount,
       });
       setCouponInput('');
@@ -141,10 +161,7 @@ const FareEstimate = () => {
   const removeCoupon = () => setAppliedCoupon(null);
 
   // ── Navigation helper ───────────────────────────────────────────────────────
-  const navigateToTracking = (
-    bookingId: string,
-    showBookingSuccess = false,
-  ) => {
+  const navigateToTracking = (bookingId: string, showBookingSuccess = false) => {
     navigation.reset({
       index: 1,
       routes: [
@@ -162,11 +179,15 @@ const FareEstimate = () => {
     });
   };
 
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate('Home');
+  };
+
   // ── Confirm booking ─────────────────────────────────────────────────────────
   const handleConfirmBooking = async () => {
     try {
       setBookingLoading(true);
-
       const bookingData = {
         name: senderName || user?.name || '',
         mobile_number: senderMobile || user?.phone || '',
@@ -180,21 +201,18 @@ const FareEstimate = () => {
         receiver_name: receiverName || undefined,
         receiver_phone: receiverPhone || undefined,
         alternative_phone: alternativePhone || undefined,
-        paid_by: paidBy,
+        paid_by: paidBy as 'sender' | 'receiver',
         coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
         coupon_code: appliedCoupon?.code || undefined,
       };
-
-      const bookingResponse = await vehicleApi.createBooking(bookingData);
+      const bookingResponse = await vehicleApi.createBooking(bookingData as any);
       if (!bookingResponse.success) {
         const raw = bookingResponse.message;
         const msg = Array.isArray(raw) ? raw.join('\n') : (raw || 'Failed to create booking. Please try again.');
         Alert.alert('Booking Failed', msg);
         return;
       }
-
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
-
       setActiveBooking({
         id: bookingId,
         status: 'searching',
@@ -208,7 +226,6 @@ const FareEstimate = () => {
         dropCoords,
         paidBy,
       });
-
       navigateToTracking(bookingId, false);
     } catch (err: any) {
       const raw = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
@@ -222,7 +239,8 @@ const FareEstimate = () => {
   // ── Loading state ───────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
         <ActivityIndicator size="large" color="#2563EB" />
         <Text style={styles.loadingText}>Calculating best fare...</Text>
       </View>
@@ -232,7 +250,8 @@ const FareEstimate = () => {
   // ── Error state ─────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
         <Icon name="error-outline" size={sp(48)} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchFareEstimate} activeOpacity={0.8}>
@@ -244,7 +263,6 @@ const FareEstimate = () => {
 
   const breakdown = estimateData?.breakdown;
   const baseFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
-  // 100 coins = ₹2 discount (fixed unit — always exactly 100 coins per redemption)
   const COINS_PER_REDEMPTION = 100;
   const RUPEES_PER_REDEMPTION = 2;
   const coinDiscount = useCoins ? RUPEES_PER_REDEMPTION : 0;
@@ -271,22 +289,29 @@ const FareEstimate = () => {
     return 'Higher than usual demand';
   };
 
-  // ── Main render ─────────────────────────────────────────────────────────────
+  // ─── Main render ──────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={sp(24)} color="#1F2937" />
+        <TouchableOpacity
+          onPress={handleGoBack}
+          style={styles.backBtnRound}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.6}
+        >
+          <Icon name="arrow-back" size={sp(20)} color="#111111" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Fare Estimate</Text>
-        <View style={styles.headerButton} />
+        <Text style={styles.headerTitleLarge}>Fare Estimate</Text>
+        <View style={styles.headerRightSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ── Route Card ── */}
         <View style={styles.card}>
           <View style={styles.vehicleInfoRow}>
@@ -415,12 +440,25 @@ const FareEstimate = () => {
               <Text style={styles.coinDiscountValue}>−₹{coinDiscount.toFixed(2)}</Text>
             </View>
           )}
-          {useCoins && coinDiscount > 0 && (
+          {appliedCoupon && couponDiscount > 0 && (
+            <View style={[styles.row, { marginTop: scaleH(4) }]}>
+              <View style={styles.coinDiscountLabel}>
+                <Icon name="local-offer" size={sp(14)} color="#16A34A" />
+                <Text style={[styles.coinDiscountText, { color: '#16A34A' }]}>
+                  Coupon ({appliedCoupon.code})
+                </Text>
+              </View>
+              <Text style={[styles.coinDiscountValue, { color: '#16A34A' }]}>
+                −₹{couponDiscount}
+              </Text>
+            </View>
+          )}
+          {((useCoins && coinDiscount > 0) || (appliedCoupon && couponDiscount > 0)) && (
             <>
               <View style={styles.divider} />
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Total Payable</Text>
-                <Text style={[styles.totalValue, { color: '#7C3AED' }]}>₹{totalFare}</Text>
+                <Text style={[styles.totalValue, { color: '#16A34A' }]}>₹{totalFare}</Text>
               </View>
             </>
           )}
@@ -439,9 +477,7 @@ const FareEstimate = () => {
                   <Text style={styles.coinsTitle}>
                     You have <Text style={styles.coinsBold}>{coinsBalance} coins</Text>
                   </Text>
-                  <Text style={styles.coinsSub}>
-                    Use 100 coins → get ₹2 off
-                  </Text>
+                  <Text style={styles.coinsSub}>Use 100 coins → get ₹2 off</Text>
                 </View>
               </View>
               <Switch
@@ -454,7 +490,7 @@ const FareEstimate = () => {
           </>
         )}
 
-        {/* ── Coupon Code ── */}
+        {/* ── Promo Code ── */}
         <Text style={styles.sectionTitle}>Promo Code</Text>
         {appliedCoupon ? (
           <View style={styles.couponApplied}>
@@ -467,7 +503,10 @@ const FareEstimate = () => {
             </View>
             <View style={styles.couponAppliedRight}>
               <Text style={styles.couponAppliedSaving}>−₹{appliedCoupon.discount_amount}</Text>
-              <TouchableOpacity onPress={removeCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={removeCoupon}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Icon name="close" size={sp(18)} color="#6B7280" />
               </TouchableOpacity>
             </View>
@@ -498,10 +537,75 @@ const FareEstimate = () => {
           </View>
         )}
 
+        {/* ══════════════════════════════════════════════════════════════════════
+            NEW ── Goods Description Section
+        ══════════════════════════════════════════════════════════════════════ */}
+        <Text style={styles.sectionTitle}>Goods Description</Text>
+        <View style={styles.goodsCard}>
+          {/* Main goods info row */}
+          <View style={styles.goodsInfoRow}>
+            <View style={styles.goodsTextBlock}>
+              <Text style={styles.goodsCategory}>Hardwares</Text>
+              <Text style={styles.goodsMeta}>
+                {vehicle?.capacity || '20.0 Kg'} {'•'} 01 Package {'•'} COD (Default)
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.goodsChangeBtn}
+              activeOpacity={0.75}
+              onPress={() =>
+                Alert.alert('Change Goods', 'You can update goods details before booking.')
+              }
+            >
+              <Text style={styles.goodsChangeBtnText}>Change</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Restricted items warning strip */}
+          <TouchableOpacity
+            style={styles.restrictedBanner}
+            onPress={() => setShowRestrictedModal(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.restrictedBannerLeft}>
+              <View style={styles.restrictedIconWrap}>
+                <Icon name="do-not-disturb" size={sp(16)} color="#B45309" />
+              </View>
+              <Text style={styles.restrictedBannerText}>Do not send restricted items</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.restrictedViewBtn}
+              onPress={() => setShowRestrictedModal(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.restrictedViewBtnText}>View List</Text>
+              <Icon name="chevron-right" size={sp(14)} color="#B45309" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Read before Booking ── */}
+        <Text style={styles.sectionTitle}>Read before Booking</Text>
+        <View style={styles.notesCard}>
+          {[
+            'Fare includes 15 mins free loading/unloading time.',
+            '₹ 1.5/min for additional loading/unloading time.',
+            'Fare may change if route or location changes.',
+            'Parking charges to be paid by customer.',
+            'Fare includes toll and permit charges, if any.',
+            "We don't allow overloading.",
+          ].map((note, idx) => (
+            <View key={idx} style={styles.noteRow}>
+              <View style={styles.noteBullet} />
+              <Text style={styles.noteText}>{note}</Text>
+            </View>
+          ))}
+        </View>
+
       </ScrollView>
 
       {/* ── Footer ── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, scaleH(14)) }]}>
         <View style={styles.priceContainer}>
           <Text style={styles.finalPriceLabel}>
             {(coinDiscount > 0 || couponDiscount > 0) ? 'Payable (after discounts)' : 'Total Fare'}
@@ -509,8 +613,14 @@ const FareEstimate = () => {
           {(coinDiscount > 0 || couponDiscount > 0) && (
             <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>
           )}
-          <Text style={[styles.finalPrice, (coinDiscount > 0 || couponDiscount > 0) && { color: '#16A34A' }]}
-            adjustsFontSizeToFit numberOfLines={1}>
+          <Text
+            style={[
+              styles.finalPrice,
+              (coinDiscount > 0 || couponDiscount > 0) && { color: '#16A34A' },
+            ]}
+            adjustsFontSizeToFit
+            numberOfLines={1}
+          >
             ₹{totalFare}
           </Text>
         </View>
@@ -523,44 +633,159 @@ const FareEstimate = () => {
         />
       </View>
 
-    </SafeAreaView>
+      {/* ══════════════════════════════════════════════════════════════════════
+          NEW ── Restricted Items Bottom Sheet Modal
+      ══════════════════════════════════════════════════════════════════════ */}
+      <Modal
+        visible={showRestrictedModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowRestrictedModal(false)}
+        statusBarTranslucent
+      >
+        {/* Dim overlay — tap to close */}
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowRestrictedModal(false)}
+        >
+          {/* Sheet — stops tap from bubbling */}
+          <TouchableOpacity
+            style={[
+              styles.modalSheet,
+              { paddingBottom: Math.max(insets.bottom, scaleH(20)) },
+            ]}
+            activeOpacity={1}
+            onPress={() => { }}
+          >
+            {/* Drag handle */}
+            <View style={styles.modalHandle} />
+
+            {/* Header row */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Restricted Items</Text>
+              <TouchableOpacity
+                onPress={() => setShowRestrictedModal(false)}
+                style={styles.modalCloseBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="close" size={sp(20)} color="#374151" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Warning banner */}
+            <View style={styles.modalWarningBanner}>
+              <View style={styles.modalWarningTextWrap}>
+                <Text style={styles.modalWarningText}>
+                  Your order should not contain any of these restricted items
+                </Text>
+              </View>
+              {/* Decorative box icon placeholder */}
+              <View style={styles.modalWarningIcon}>
+                <Icon name="inventory-2" size={sp(40)} color="#D97706" />
+                <View style={styles.modalWarningBadge}>
+                  <Icon name="do-not-disturb" size={sp(18)} color="#DC2626" />
+                </View>
+              </View>
+            </View>
+
+            {/* Items grid — two columns */}
+            <ScrollView
+              style={styles.modalScroll}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              <View style={styles.restrictedGrid}>
+                {Array.from({ length: Math.ceil(RESTRICTED_ITEMS.length / 2) }, (_, i) => (
+                  <View key={i} style={styles.restrictedGridRow}>
+                    <View style={styles.restrictedGridCol}>
+                      <View style={styles.restrictedBullet} />
+                      <Text style={styles.restrictedItem}>{RESTRICTED_ITEMS[i * 2]}</Text>
+                    </View>
+                    {RESTRICTED_ITEMS[i * 2 + 1] && (
+                      <View style={styles.restrictedGridCol}>
+                        <View style={styles.restrictedBullet} />
+                        <Text style={styles.restrictedItem}>{RESTRICTED_ITEMS[i * 2 + 1]}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* CTA */}
+            <TouchableOpacity
+              style={styles.modalOkBtn}
+              onPress={() => setShowRestrictedModal(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalOkBtnText}>Okay, Understood</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+    </View>
   );
 };
 
-// ─── Responsive Styles ────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const GUTTER = scaleW(16);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
-  // ── Header ──────────────────────────────────────────────────────────────────
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: sp(16),
-    paddingVertical: sp(isSmallScreen ? 10 : 12),
+    paddingHorizontal: GUTTER,
+    paddingTop: scaleH(14),
+    paddingBottom: scaleH(14),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#E8E8E8',
+    gap: scaleW(10),
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  headerTitle: {
-    fontSize: nf(isSmallScreen ? 16 : 18),
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  headerButton: {
-    padding: sp(8),
-    borderRadius: sp(8),
-    minWidth: sp(40),
+  backBtnRound: {
+    width: sp(36),
+    height: sp(36),
+    borderRadius: sp(18),
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    flexShrink: 0,
   },
-  // ── Scroll content ───────────────────────────────────────────────────────────
+  headerTitleLarge: {
+    flex: 1,
+    fontSize: nf(isSmallScreen ? 18 : 20),
+    fontWeight: '800',
+    color: '#111111',
+    letterSpacing: -0.3,
+  },
+  headerRightSpacer: {
+    width: sp(36),
+    flexShrink: 0,
+  },
+
+  // ── Scroll content ──
   content: {
-    padding: sp(16),
+    padding: GUTTER,
     paddingBottom: sp(100),
+    backgroundColor: '#F9FAFB',
   },
-  // ── Card ─────────────────────────────────────────────────────────────────────
+
+  // ── Card ──
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: sp(16),
@@ -574,14 +799,15 @@ const styles = StyleSheet.create({
     borderColor: '#F3F4F6',
   },
   sectionTitle: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: nf(isSmallScreen ? 14 : 15),
     fontWeight: '600',
     color: '#374151',
-    marginTop: sp(24),
-    marginBottom: sp(12),
-    marginLeft: sp(4),
+    marginTop: sp(20),
+    marginBottom: sp(10),
+    marginLeft: sp(2),
   },
-  // ── Vehicle row ──────────────────────────────────────────────────────────────
+
+  // ── Vehicle row ──
   vehicleInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -596,9 +822,7 @@ const styles = StyleSheet.create({
     marginRight: sp(12),
     flexShrink: 0,
   },
-  vehicleTextWrapper: {
-    flex: 1,
-  },
+  vehicleTextWrapper: { flex: 1 },
   vehicleName: {
     fontSize: nf(isSmallScreen ? 14 : 16),
     fontWeight: '600',
@@ -609,7 +833,8 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: sp(2),
   },
-  // ── Route timeline ───────────────────────────────────────────────────────────
+
+  // ── Route timeline ──
   routeContainer: {
     flexDirection: 'row',
     marginBottom: sp(14),
@@ -626,14 +851,8 @@ const styles = StyleSheet.create({
     borderRadius: sp(6),
     borderWidth: 2,
   },
-  pickupDot: {
-    borderColor: '#2563EB',
-    backgroundColor: '#FFFFFF',
-  },
-  dropDot: {
-    borderColor: '#059669',
-    backgroundColor: '#059669',
-  },
+  pickupDot: { borderColor: '#2563EB', backgroundColor: '#FFFFFF' },
+  dropDot: { borderColor: '#059669', backgroundColor: '#059669' },
   line: {
     width: 2,
     flex: 1,
@@ -662,7 +881,8 @@ const styles = StyleSheet.create({
     color: '#111827',
     lineHeight: nf(isSmallScreen ? 18 : 20),
   },
-  // ── Stats row ────────────────────────────────────────────────────────────────
+
+  // ── Stats row ──
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -688,7 +908,8 @@ const styles = StyleSheet.create({
     height: sp(20),
     backgroundColor: '#D1D5DB',
   },
-  // ── Breakdown rows ───────────────────────────────────────────────────────────
+
+  // ── Breakdown rows ──
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -732,18 +953,20 @@ const styles = StyleSheet.create({
     color: '#2563EB',
     flexShrink: 0,
   },
-  // ── Surge banner ─────────────────────────────────────────────────────────────
+
+  // ── Surge banner ──
   surgeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF5F5',
     borderWidth: 1.5,
     borderColor: '#B91C1C',
     borderRadius: sp(12),
     paddingVertical: sp(10),
     paddingHorizontal: sp(14),
-    marginBottom: sp(12),
+    marginTop: sp(12),
+    marginBottom: sp(4),
     gap: sp(10),
   },
   surgeBannerLeft: {
@@ -752,10 +975,7 @@ const styles = StyleSheet.create({
     gap: sp(8),
     flex: 1,
   },
-  surgeBannerText: {
-    flex: 1,
-    gap: sp(2),
-  },
+  surgeBannerText: { flex: 1, gap: sp(2) },
   surgeBannerTitle: {
     fontSize: nf(isSmallScreen ? 12 : 13),
     fontWeight: '700',
@@ -778,254 +998,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
-  surgeRowLabel: {
-    color: '#B91C1C',
-    fontWeight: '500',
-  },
-  surgeRowValue: {
-    color: '#B91C1C',
-    fontWeight: '700',
-  },
-  // ── Who Pays Slider ──────────────────────────────────────────────────────────
-  whoPaysSlider: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: sp(14),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: sp(6),
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  sliderPill: {
-    position: 'absolute',
-    top: sp(6),
-    bottom: sp(6),
-    backgroundColor: '#2563EB',
-    borderRadius: sp(10),
-  },
-  sliderOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: sp(10),
-    paddingVertical: sp(isSmallScreen ? 10 : 13),
-    paddingHorizontal: sp(isSmallScreen ? 10 : 14),
-    zIndex: 1,
-  },
-  sliderIconBox: {
-    width: sp(isSmallScreen ? 32 : 36),
-    height: sp(isSmallScreen ? 32 : 36),
-    borderRadius: sp(isSmallScreen ? 16 : 18),
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  sliderIconBoxActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-  },
-  sliderTextBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  sliderLabel: {
-    fontSize: nf(isSmallScreen ? 13 : 14),
-    fontWeight: '500',
-    color: '#374151',
-  },
-  sliderLabelActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  sliderSub: {
-    fontSize: nf(isSmallScreen ? 10 : 11),
-    color: '#9CA3AF',
-    marginTop: sp(1),
-  },
-  sliderSubActive: {
-    color: 'rgba(255, 255, 255, 0.75)',
-  },
-  // ── Payment method options ───────────────────────────────────────────────────
-  paymentContainer: {
-    gap: sp(12),
-  },
-  paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    padding: sp(isSmallScreen ? 12 : 16),
-    borderRadius: sp(12),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  selectedPayment: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-  },
-  paymentLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: sp(12),
-    flex: 1,
-  },
-  iconBox: {
-    width: sp(isSmallScreen ? 36 : 40),
-    height: sp(isSmallScreen ? 36 : 40),
-    borderRadius: sp(isSmallScreen ? 10 : 12),
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  selectedIconBox: {
-    backgroundColor: '#DBEAFE',
-  },
-  // ── Asset icon inside payment iconBox ────────────────────────────────────────
-  paymentIconImg: {
-    width: sp(isSmallScreen ? 22 : 26),
-    height: sp(isSmallScreen ? 22 : 26),
-  },
-  paymentTitle: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
-    fontWeight: '500',
-    color: '#374151',
-  },
-  selectedPaymentText: {
-    color: '#2563EB',
-    fontWeight: '600',
-  },
-  paymentSub: {
-    fontSize: nf(isSmallScreen ? 11 : 12),
-    color: '#9CA3AF',
-    marginTop: sp(1),
-  },
-  radio: {
-    width: sp(20),
-    height: sp(20),
-    borderRadius: sp(10),
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  radioSelected: {
-    borderColor: '#2563EB',
-  },
-  radioInner: {
-    width: sp(10),
-    height: sp(10),
-    borderRadius: sp(5),
-    backgroundColor: '#2563EB',
-  },
-  // ── Footer ───────────────────────────────────────────────────────────────────
-  footer: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: sp(16),
-    paddingVertical: sp(isSmallScreen ? 10 : 14),
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: sp(14),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 10,
-    paddingBottom: sp(isSmallScreen ? 10 : 14),
-  },
-  priceContainer: {
-    flex: 1,
-    minWidth: 0,
-  },
-  finalPriceLabel: {
-    fontSize: nf(isSmallScreen ? 11 : 12),
-    color: '#6B7280',
-  },
-  finalPrice: {
-    fontSize: nf(isSmallScreen ? 20 : 24),
-    fontWeight: '700',
-    color: '#111827',
-  },
-  bookButton: {
-    flex: isSmallScreen ? 1.6 : 2,
-    backgroundColor: '#2563EB',
-    borderRadius: sp(12),
-    height: sp(isSmallScreen ? 44 : 50),
-  },
-  bookButtonText: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
-    fontWeight: '600',
-  },
-  // ── Loading / Error ──────────────────────────────────────────────────────────
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  loadingText: {
-    marginTop: sp(16),
-    fontSize: nf(16),
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: sp(24),
-    backgroundColor: '#F9FAFB',
-  },
-  errorText: {
-    marginTop: sp(16),
-    fontSize: nf(16),
-    color: '#374151',
-    textAlign: 'center',
-    marginBottom: sp(24),
-    lineHeight: nf(24),
-  },
-  retryButton: {
-    backgroundColor: '#2563EB',
-    paddingHorizontal: sp(24),
-    paddingVertical: sp(12),
-    borderRadius: sp(8),
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: nf(15),
-  },
-  // ── Payment modal ────────────────────────────────────────────────────────────
-  paymentModalContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  paymentModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: sp(16),
-    paddingVertical: sp(12),
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  paymentModalTitle: {
-    fontSize: nf(isSmallScreen ? 16 : 18),
-    fontWeight: '600',
-    color: '#111827',
-  },
-  webviewLoader: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
+  surgeRowLabel: { color: '#B91C1C', fontWeight: '500' },
+  surgeRowValue: { color: '#B91C1C', fontWeight: '700' },
 
-  // ── Coin discount row ────────────────────────────────────────────────────────
+  // ── Coin discount ──
   coinDiscountLabel: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1042,7 +1018,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ── Coins card ───────────────────────────────────────────────────────────────
+  // ── Coins card ──
   coinsCard: {
     backgroundColor: '#FAF5FF',
     borderRadius: ms(14),
@@ -1069,33 +1045,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  coinsTextBlock: {
-    flex: 1,
-  },
+  coinsTextBlock: { flex: 1 },
   coinsTitle: {
     fontSize: nf(13),
     color: '#374151',
     fontWeight: '500',
   },
-  coinsBold: {
-    color: '#7C3AED',
-    fontWeight: '700',
-  },
+  coinsBold: { color: '#7C3AED', fontWeight: '700' },
   coinsSub: {
     fontSize: nf(11),
     color: '#6B7280',
     marginTop: scaleH(2),
   },
 
-  // ── Footer strikethrough price ───────────────────────────────────────────────
-  finalPriceStrike: {
-    fontSize: nf(12),
-    color: '#9CA3AF',
-    textDecorationLine: 'line-through',
-    marginTop: scaleH(1),
-  },
-
-  // ── Coupon ───────────────────────────────────────────────────────────────────
+  // ── Coupon ──
   couponRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1153,7 +1116,6 @@ const styles = StyleSheet.create({
     fontSize: nf(13),
     fontWeight: '700',
     color: '#15803D',
-    fontFamily: 'monospace',
   },
   couponAppliedTitle: {
     fontSize: nf(11),
@@ -1164,6 +1126,351 @@ const styles = StyleSheet.create({
     fontSize: nf(14),
     fontWeight: '700',
     color: '#16A34A',
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // NEW ── Goods Description Card
+  // ══════════════════════════════════════════════════════════════════════════
+  goodsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(16),
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  goodsInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: sp(16),
+    paddingVertical: scaleH(14),
+    gap: sp(12),
+  },
+  goodsTextBlock: { flex: 1 },
+  goodsCategory: {
+    fontSize: nf(isSmallScreen ? 14 : 15),
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: scaleH(3),
+  },
+  goodsMeta: {
+    fontSize: nf(isSmallScreen ? 11 : 12),
+    color: '#6B7280',
+    lineHeight: nf(17),
+  },
+  goodsChangeBtn: {
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(7),
+    borderRadius: sp(8),
+    borderWidth: 1.5,
+    borderColor: '#2563EB',
+    flexShrink: 0,
+  },
+  goodsChangeBtnText: {
+    fontSize: nf(13),
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+
+  // Restricted items warning strip (inside goods card)
+  restrictedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFBEB',
+    borderTopWidth: 1,
+    borderTopColor: '#FDE68A',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(10),
+  },
+  restrictedBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    flex: 1,
+  },
+  restrictedIconWrap: {
+    width: sp(26),
+    height: sp(26),
+    borderRadius: sp(13),
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  restrictedBannerText: {
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontWeight: '600',
+    color: '#92400E',
+    flex: 1,
+  },
+  restrictedViewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(2),
+    flexShrink: 0,
+  },
+  restrictedViewBtnText: {
+    fontSize: nf(12),
+    fontWeight: '700',
+    color: '#B45309',
+  },
+
+  // ── Read before Booking notes ──
+  notesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(14),
+    padding: sp(14),
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    gap: scaleH(8),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    marginBottom: scaleH(8),
+  },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: sp(8),
+  },
+  noteBullet: {
+    width: sp(5),
+    height: sp(5),
+    borderRadius: sp(3),
+    backgroundColor: '#9CA3AF',
+    marginTop: scaleH(7),
+    flexShrink: 0,
+  },
+  noteText: {
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    color: '#4B5563',
+    lineHeight: nf(isSmallScreen ? 17 : 19),
+    flex: 1,
+  },
+
+  // ── Footer ──
+  footer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: GUTTER,
+    paddingTop: sp(isSmallScreen ? 10 : 14),
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(14),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  priceContainer: { flex: 1, minWidth: 0 },
+  finalPriceLabel: {
+    fontSize: nf(isSmallScreen ? 11 : 12),
+    color: '#6B7280',
+  },
+  finalPriceStrike: {
+    fontSize: nf(12),
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginTop: scaleH(1),
+  },
+  finalPrice: {
+    fontSize: nf(isSmallScreen ? 20 : 24),
+    fontWeight: '700',
+    color: '#111827',
+  },
+  bookButton: {
+    flex: isSmallScreen ? 1.6 : 2,
+    backgroundColor: '#2563EB',
+    borderRadius: sp(12),
+    height: sp(isSmallScreen ? 44 : 50),
+  },
+  bookButtonText: {
+    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontWeight: '600',
+  },
+
+  // ── Loading / Error ──
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: sp(16),
+    fontSize: nf(16),
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: sp(24),
+    backgroundColor: '#F9FAFB',
+  },
+  errorText: {
+    marginTop: sp(16),
+    fontSize: nf(16),
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: sp(24),
+    lineHeight: nf(24),
+  },
+  retryButton: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: sp(24),
+    paddingVertical: sp(12),
+    borderRadius: sp(8),
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: nf(15),
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // NEW ── Restricted Items Bottom Sheet Modal
+  // ══════════════════════════════════════════════════════════════════════════
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: sp(24),
+    borderTopRightRadius: sp(24),
+    paddingTop: scaleH(12),
+    paddingHorizontal: GUTTER,
+    maxHeight: SCREEN_HEIGHT * 0.82,
+    // shadow on iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  modalHandle: {
+    width: sp(40),
+    height: scaleH(4),
+    borderRadius: sp(2),
+    backgroundColor: '#D1D5DB',
+    alignSelf: 'center',
+    marginBottom: scaleH(16),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: scaleH(14),
+  },
+  modalTitle: {
+    fontSize: nf(isSmallScreen ? 17 : 19),
+    fontWeight: '800',
+    color: '#111111',
+    letterSpacing: -0.3,
+  },
+  modalCloseBtn: {
+    width: sp(34),
+    height: sp(34),
+    borderRadius: sp(17),
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Warning banner inside modal
+  modalWarningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: sp(12),
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: sp(14),
+    paddingVertical: scaleH(14),
+    marginBottom: scaleH(16),
+    gap: sp(12),
+  },
+  modalWarningTextWrap: { flex: 1 },
+  modalWarningText: {
+    fontSize: nf(isSmallScreen ? 13 : 14),
+    fontWeight: '600',
+    color: '#78350F',
+    lineHeight: nf(20),
+  },
+  modalWarningIcon: {
+    width: sp(56),
+    height: sp(56),
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  modalWarningBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+  },
+
+  // Two-column grid
+  modalScroll: {
+    flexGrow: 0,
+    marginBottom: scaleH(16),
+  },
+  restrictedGrid: {
+    gap: scaleH(4),
+  },
+  restrictedGridRow: {
+    flexDirection: 'row',
+    gap: scaleW(8),
+  },
+  restrictedGridCol: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: sp(6),
+    paddingVertical: scaleH(5),
+  },
+  restrictedBullet: {
+    width: sp(5),
+    height: sp(5),
+    borderRadius: sp(3),
+    backgroundColor: '#6B7280',
+    marginTop: scaleH(6),
+    flexShrink: 0,
+  },
+  restrictedItem: {
+    flex: 1,
+    fontSize: nf(isSmallScreen ? 12 : 13),
+    color: '#374151',
+    lineHeight: nf(18),
+    fontWeight: '400',
+  },
+
+  // "Okay, Understood" CTA
+  modalOkBtn: {
+    backgroundColor: '#2563EB',
+    borderRadius: sp(14),
+    paddingVertical: scaleH(15),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: scaleH(4),
+  },
+  modalOkBtnText: {
+    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 });
 

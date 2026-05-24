@@ -5,35 +5,52 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
   Animated,
   ActivityIndicator,
   Image,
   Dimensions,
   PixelRatio,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, VehiclePricing } from '../api/vehicle';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH  = 320;
-const BASE_HEIGHT = 700;
+const BASE_WIDTH  = 390;
+const BASE_HEIGHT = 844;
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
 const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
 const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
-// ─── Colors ───────────────────────────────────────────────────────────────────
-const BLUE       = '#378ADD';
-const BLUE_CARD  = '#EBF4FD';
-const DARK       = '#1A1A1A';
-const GREY       = '#6B7280';
-const GREY_LIGHT = '#F3F4F6';
-const WHITE      = '#FFFFFF';
-const BG         = '#F5F5F5';
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  bg:           '#F2F2F2',
+  surface:      '#FFFFFF',
+  surfaceAlt:   '#F7F7F7',
+  primary:      '#111111',
+  blue:         '#2563EB',
+  blueBadge:    '#1D4ED8',
+  yellow:       '#FBBF24',
+  yellowDeep:   '#F59E0B',
+  green:        '#16A34A',
+  orange:       '#EA580C',
+  purple:       '#7C3AED',
+  text:         '#111111',
+  textSub:      '#555555',
+  textMuted:    '#999999',
+  border:       '#E5E5E5',
+  borderSel:    '#D1D5DB',
+  shadow:       '#000000',
+  white:        '#FFFFFF',
+  chooseBtn:    '#F5F5F5',
+  chooseBorder: '#E0E0E0',
+};
 
 // ─── Vehicle Images ───────────────────────────────────────────────────────────
 const VEHICLE_IMAGES: Record<string, any> = {
@@ -48,23 +65,22 @@ const VEHICLE_IMAGES: Record<string, any> = {
 
 // ─── ETA ranges per vehicle type ─────────────────────────────────────────────
 const VEHICLE_ETA: Record<string, string> = {
-  bike:       '20–25 mins',
-  scooty:     '25–30 mins',
-  auto:       '35–40 mins',
-  pickup:     '45–55 mins',
-  mini_truck: '60–75 mins',
- 
+  bike:       '20–25',
+  scooty:     '25–30',
+  auto:       '35–40',
+  pickup:     '45–55',
+  mini_truck: '60–75',
 };
 
 // ─── Vehicle Meta ─────────────────────────────────────────────────────────────
-const VEHICLE_META: Record<string, { capacity: string; startingLabel: string; baseAmount: number }> = {
-  bike:       { capacity: 'Up to 20 kg',   startingLabel: 'From ₹35',  baseAmount: 35  },
-  scooty:     { capacity: 'Up to 22 kg',   startingLabel: 'From ₹40',  baseAmount: 40  },
-  auto:       { capacity: 'Up to 700 kg',  startingLabel: 'From ₹80',  baseAmount: 80  },
-  pickup:     { capacity: 'Up to 1.5 ton', startingLabel: 'From ₹150', baseAmount: 150 },
-  mini_truck: { capacity: 'Up to 2.5 ton', startingLabel: 'From ₹250', baseAmount: 250 },
-  tata_ace:   { capacity: 'Up to 1.5 ton', startingLabel: 'From ₹150', baseAmount: 150 },
-  tata_407:   { capacity: 'Up to 2.5 ton', startingLabel: 'From ₹250', baseAmount: 250 },
+const VEHICLE_META: Record<string, { capacity: string; startingLabel: string; baseAmount: number; tag: string; tagIcon: string; tagColor: string }> = {
+  bike:       { capacity: 'Up to 20 kg',   startingLabel: 'From ₹35',  baseAmount: 35,  tag: 'Fastest option',    tagIcon: 'bolt',            tagColor: C.blue    },
+  scooty:     { capacity: 'Up to 22 kg',   startingLabel: 'From ₹40',  baseAmount: 40,  tag: 'Budget-friendly',   tagIcon: 'local-offer',     tagColor: C.green   },
+  auto:       { capacity: 'Up to 700 kg',  startingLabel: 'From ₹80',  baseAmount: 80,  tag: 'Best for heavy items', tagIcon: 'inventory-2',  tagColor: C.orange  },
+  pickup:     { capacity: 'Up to 1.5 ton', startingLabel: 'From ₹150', baseAmount: 150, tag: 'For business needs', tagIcon: 'business-center', tagColor: C.purple  },
+  mini_truck: { capacity: 'Up to 2.5 ton', startingLabel: 'From ₹250', baseAmount: 250, tag: 'For bulk shipments', tagIcon: 'inventory',       tagColor: C.blue    },
+  tata_ace:   { capacity: 'Up to 1.5 ton', startingLabel: 'From ₹150', baseAmount: 150, tag: 'For business needs', tagIcon: 'business-center', tagColor: C.purple  },
+  tata_407:   { capacity: 'Up to 2.5 ton', startingLabel: 'From ₹250', baseAmount: 250, tag: 'For bulk shipments', tagIcon: 'inventory',       tagColor: C.blue    },
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -89,6 +105,9 @@ export interface UIVehicle {
   multiStopFee: number;
   eta: string;
   baseAmount: number;
+  tag: string;
+  tagIcon: string;
+  tagColor: string;
 }
 
 const formatVehicleName = (vehicleType: string): string =>
@@ -98,6 +117,8 @@ const formatVehicleName = (vehicleType: string): string =>
 const VehicleSelection = () => {
   const navigation = useNavigation<any>();
   const route      = useRoute<any>();
+  const insets     = useSafeAreaInsets();
+
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [vehicles, setVehicles]               = useState<UIVehicle[]>([]);
   const [loading, setLoading]                 = useState(true);
@@ -134,6 +155,9 @@ const VehicleSelection = () => {
               capacity: '—',
               startingLabel: `From ₹${vehicle.base_fare}`,
               baseAmount: parseFloat(vehicle.base_fare),
+              tag: '',
+              tagIcon: 'info',
+              tagColor: C.blue,
             };
             return {
               id: vehicle.id,
@@ -154,8 +178,11 @@ const VehicleSelection = () => {
               perMinuteRate: parseFloat(vehicle.per_minute_rate),
               nightSurchargePercent: parseFloat(vehicle.night_surcharge_percent),
               multiStopFee: parseFloat(vehicle.multi_stop_fee),
-              eta: VEHICLE_ETA[key] ?? '30–40 mins',
+              eta: VEHICLE_ETA[key] ?? '30–40',
               baseAmount: meta.baseAmount,
+              tag: meta.tag,
+              tagIcon: meta.tagIcon,
+              tagColor: meta.tagColor,
             };
           });
         setVehicles(transformed);
@@ -183,7 +210,7 @@ const VehicleSelection = () => {
     });
   };
 
-  // ── Vehicle Card ─────────────────────────────────────────────────────────
+  // ── Vehicle Card ──────────────────────────────────────────────────────────
   const renderVehicleCard = ({ item, index }: { item: UIVehicle; index: number }) => {
     const isSelected   = selectedVehicle === item.id;
     const isFastest    = index === 0;
@@ -193,38 +220,18 @@ const VehicleSelection = () => {
       <TouchableOpacity
         style={[styles.card, isSelected && styles.cardSelected]}
         onPress={() => setSelectedVehicle(item.id)}
-        activeOpacity={0.82}
+        activeOpacity={0.85}
       >
-        {/* Top row: Fastest badge + name + Choose button */}
-        <View style={styles.cardTopBar}>
-          <View style={styles.cardTopLeft}>
-            {isFastest && (
-              <View style={styles.fastestBadge}>
-                <Text style={styles.fastestText}>Fastest ⚡</Text>
-              </View>
-            )}
-            <Text style={styles.vehicleName}>{item.name}</Text>
+        {/* Fastest badge — absolute top-left corner */}
+        {isFastest && (
+          <View style={styles.fastestBadge}>
+            <Text style={styles.fastestText}>Fastest ⚡</Text>
           </View>
+        )}
 
-          <TouchableOpacity
-            style={[styles.selectBtn, isSelected && styles.selectBtnActive]}
-            onPress={() => setSelectedVehicle(item.id)}
-            activeOpacity={0.8}
-          >
-            <Icon
-              name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
-              size={ms(14)}
-              color={isSelected ? WHITE : GREY}
-            />
-            <Text style={[styles.selectBtnText, isSelected && styles.selectBtnTextActive]}>
-              {isSelected ? 'Chosen' : 'Choose'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Middle: image + capacity + price */}
-        <View style={styles.cardBody}>
-          <View style={[styles.imgBox, isSelected && styles.imgBoxSelected]}>
+        <View style={styles.cardInner}>
+          {/* Vehicle image — large, left side */}
+          <View style={styles.imgWrap}>
             {vehicleImage ? (
               <Image source={vehicleImage} style={styles.vehicleImg} resizeMode="contain" />
             ) : (
@@ -232,64 +239,86 @@ const VehicleSelection = () => {
             )}
           </View>
 
-          {/* Capacity */}
-          <View style={styles.metaBlock}>
-            <View style={styles.metaRow}>
-              <Icon name="inventory-2" size={ms(11)} color={GREY} />
-              <Text style={styles.metaText}>{item.capacity}</Text>
+          {/* Name + capacity + tag — centre */}
+          <View style={styles.infoCol}>
+            <Text style={styles.vehicleName}>{item.name}</Text>
+
+            <View style={styles.infoRow}>
+              <Icon name="inventory-2" size={ms(13)} color={C.textMuted} />
+              <Text style={styles.infoText}>{item.capacity}</Text>
             </View>
+
+            {item.tag ? (
+              <View style={styles.infoRow}>
+                <Icon name={item.tagIcon as any} size={ms(13)} color={item.tagColor} />
+                <Text style={[styles.infoText, { color: item.tagColor }]}>{item.tag}</Text>
+              </View>
+            ) : null}
           </View>
 
-          {/* Price */}
-          <View style={styles.priceBlock}>
-            <Text style={[styles.priceAmount, isSelected && styles.priceAmountSelected]}>
-              ₹{item.baseAmount}
+          {/* Choose button — right side, pill shaped */}
+          <TouchableOpacity
+            style={[styles.chooseBtn, isSelected && styles.chooseBtnActive]}
+            onPress={() => setSelectedVehicle(item.id)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.chooseRadio, isSelected && styles.chooseRadioActive]}>
+              {isSelected && <View style={styles.chooseRadioDot} />}
+            </View>
+            <Text style={[styles.chooseBtnText, isSelected && styles.chooseBtnTextActive]}>
+              {isSelected ? 'Chosen' : 'Choose'}
             </Text>
-            <Text style={styles.priceLabel}>Starts From</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
   };
 
   const selectedData = getSelectedVehicleData();
+  const hasSelection = !!selectedVehicle;
 
   return (
-    <View style={styles.container}>
+    /*
+      KEY FIX — same pattern as PickupDropSelection & FareEstimate:
+      • Plain <View> with paddingTop = insets.top (NOT SafeAreaView)
+      • StatusBar translucent so the OS bar sits inside insets.top
+      • Works on notch / Dynamic Island / punch-hole Android & iOS devices
+    */
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.surface} translucent />
+
       {/* ── Header ── */}
-      <SafeAreaView style={styles.safeHeader}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => {
-              if (navigation.canGoBack()) navigation.goBack();
-              else navigation.navigate('PickupDropSelection');
-            }}
-            style={styles.backBtn}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            activeOpacity={0.6}
-          >
-            <Icon name="arrow-back" size={ms(18)} color={DARK} />
-          </TouchableOpacity>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>Select Vehicle</Text>
-            <Text style={styles.headerSub}>Choose the right vehicle for your delivery</Text>
-          </View>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => {
+            if (navigation.canGoBack()) navigation.goBack();
+            else navigation.navigate('PickupDropSelection');
+          }}
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.6}
+        >
+          <Icon name="arrow-back" size={ms(20)} color={C.text} />
+        </TouchableOpacity>
+        <View style={styles.headerTextBlock}>
+          <Text style={styles.headerTitle}>Select Vehicle</Text>
+          <Text style={styles.headerSub}>Choose the right vehicle for your delivery</Text>
         </View>
-      </SafeAreaView>
+      </View>
 
       {/* ── List ── */}
       <Animated.View style={[styles.listWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" color={BLUE} />
-            <Text style={styles.loadingText}>Loading vehicles...</Text>
+            <ActivityIndicator size="large" color={C.blue} />
+            <Text style={styles.loadingText}>Loading vehicles…</Text>
           </View>
         ) : error ? (
           <View style={styles.centered}>
             <Icon name="error-outline" size={ms(40)} color="#EF4444" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={fetchVehicleTypes} activeOpacity={0.7}>
-              <Icon name="refresh" size={ms(16)} color={WHITE} />
+              <Icon name="refresh" size={ms(16)} color={C.white} />
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -306,40 +335,54 @@ const VehicleSelection = () => {
         )}
       </Animated.View>
 
-      {/* ── Sticky Footer ── */}
-      <View style={styles.footer}>
-        {/* Delivery ETA info row */}
+      {/* ── Sticky Footer — insets.bottom for home indicator clearance ── */}
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, scaleH(16)) }]}>
+        {/* Delivery info row */}
         <View style={styles.footerInfoRow}>
           <View style={styles.deliveryInfoBlock}>
-            <Icon name="schedule" size={ms(14)} color={GREY} />
+            <View style={styles.clockBox}>
+              <Icon name="schedule" size={ms(20)} color={C.text} />
+            </View>
             <View style={styles.deliveryTextBlock}>
-              <Text style={styles.deliveryLabel}>Estimated Delivery</Text>
-              <Text style={styles.deliveryEta}>ETA updates based on distance & traffic</Text>
+              <Text style={styles.deliveryLabel}>
+                {hasSelection ? 'Delivery Info' : 'Select a vehicle'}
+              </Text>
+              <Text style={styles.deliveryEta}>
+                {hasSelection
+                  ? 'Select a vehicle to see estimated delivery time'
+                  : 'to see delivery time & fare'}
+              </Text>
             </View>
           </View>
 
           <View style={styles.etaBlock}>
             <Text style={styles.etaLabel}>ETA</Text>
             <Text style={styles.etaValue}>
-              {selectedData ? selectedData.eta : '— min'}
+              {selectedData ? selectedData.eta : '—'}{' '}
+              <Text style={styles.etaUnit}>min</Text>
             </Text>
           </View>
         </View>
 
-        {/* Check Final Price button */}
+        {/* CTA — yellow when enabled */}
         <TouchableOpacity
-          style={[styles.confirmBtn, !selectedVehicle && styles.confirmBtnDisabled]}
+          style={[styles.confirmBtn, !hasSelection && styles.confirmBtnDisabled]}
           onPress={handleBook}
-          disabled={!selectedVehicle}
+          disabled={!hasSelection}
           activeOpacity={0.85}
         >
-          <Text style={[styles.confirmText, !selectedVehicle && styles.confirmTextDisabled]}>
-            Check Final Price
+          {!hasSelection && (
+            <View style={styles.confirmIconBox}>
+              <Icon name="inventory-2" size={ms(18)} color={C.textMuted} />
+            </View>
+          )}
+          <Text style={[styles.confirmText, !hasSelection && styles.confirmTextDisabled]}>
+            {hasSelection ? 'Check Final Price' : 'Select a Vehicle to Continue'}
           </Text>
-          <Image
-            source={require('../assets/images/arrow.png')}
-            style={[styles.arrowIcon, !selectedVehicle && styles.arrowDisabled]}
-            resizeMode="contain"
+          <Icon
+            name="arrow-forward"
+            size={ms(18)}
+            color={hasSelection ? C.primary : C.textMuted}
           />
         </TouchableOpacity>
       </View>
@@ -347,279 +390,319 @@ const VehicleSelection = () => {
   );
 };
 
-// ─── Derived sizes ────────────────────────────────────────────────────────────
-const IMG_BOX_W = ms(70);
-const IMG_BOX_H = ms(60);
-const IMG_W     = ms(60);
-const IMG_H     = ms(52);
-const BACK_SIZE = ms(32);
-const ARROW_SZ  = ms(16);
+// ─── Sizes ────────────────────────────────────────────────────────────────────
+const GUTTER   = scaleW(16);
+const IMG_SIZE = ms(90);
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: BG },
-  safeHeader: { backgroundColor: WHITE },
+  // ── Root — plain View, paddingTop set inline via insets.top ──────────────────
+  container: {
+    flex:            1,
+    backgroundColor: C.surface, // white shows behind translucent status bar
+  },
 
-  // ── Header ──
+  // ── Header ───────────────────────────────────────────────────────────────────
+  // safeHeader removed — insets.top on container handles it.
+  // paddingTop here is comfortable breathing room BELOW the status bar.
   header: {
     flexDirection:     'row',
     alignItems:        'center',
-    paddingHorizontal: scaleW(12),
-    paddingVertical:   scaleH(10),
-    backgroundColor:   WHITE,
+    paddingHorizontal: GUTTER,
+    paddingTop:        scaleH(14),
+    paddingBottom:     scaleH(14),
+    backgroundColor:   C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: C.border,
+    gap:               scaleW(12),
+    // subtle shadow for depth
+    shadowColor:       C.shadow,
+    shadowOffset:      { width: 0, height: 1 },
+    shadowOpacity:     0.06,
+    shadowRadius:      4,
+    elevation:         3,
   },
   backBtn: {
-    width:           BACK_SIZE,
-    height:          BACK_SIZE,
-    borderRadius:    BACK_SIZE / 2,
-    backgroundColor: GREY_LIGHT,
+    width:           ms(38),
+    height:          ms(38),
+    borderRadius:    ms(19),
+    backgroundColor: C.surfaceAlt,
     justifyContent:  'center',
     alignItems:      'center',
-    marginRight:     scaleW(10),
+    borderWidth:     1,
+    borderColor:     C.border,
+    flexShrink:      0,
   },
   headerTextBlock: { flex: 1 },
   headerTitle: {
-    fontSize:      fs(18),
+    fontSize:      fs(22),
     fontWeight:    '800',
-    color:         DARK,
-    letterSpacing: -0.3,
+    color:         C.text,
+    letterSpacing: -0.4,
   },
   headerSub: {
-    fontSize:   fs(10),
-    color:      GREY,
+    fontSize:   fs(12),
+    color:      C.textMuted,
     marginTop:  scaleH(1),
-    fontWeight: '500',
+    fontWeight: '400',
   },
 
-  // ── List ──
-  listWrap:    { flex: 1 },
+  // ── List ─────────────────────────────────────────────────────────────────────
+  listWrap:    { flex: 1, backgroundColor: C.bg },
   listContent: {
-    paddingHorizontal: scaleW(10),
-    paddingTop:        scaleH(10),
+    paddingHorizontal: GUTTER,
+    paddingTop:        scaleH(12),
     paddingBottom:     scaleH(12),
+    gap:               scaleH(10),
   },
 
-  // ── Card ──
+  // ── Card ─────────────────────────────────────────────────────────────────────
   card: {
-    backgroundColor: WHITE,
-    borderRadius:    ms(14),
-    marginBottom:    scaleH(9),
-    borderWidth:     1.5,
-    borderColor:     '#E5E7EB',
+    backgroundColor: C.surface,
+    borderRadius:    ms(16),
+    borderWidth:     1,
+    borderColor:     C.border,
     overflow:        'hidden',
-    shadowColor:     '#000',
+    shadowColor:     C.shadow,
     shadowOffset:    { width: 0, height: 2 },
     shadowOpacity:   0.06,
-    shadowRadius:    6,
+    shadowRadius:    8,
     elevation:       3,
   },
   cardSelected: {
-    backgroundColor: BLUE_CARD,
-    borderColor:     BLUE,
+    borderColor: C.primary,
+    borderWidth: 1.5,
   },
 
-  // Top bar
-  cardTopBar: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    justifyContent:    'space-between',
-    paddingHorizontal: ms(11),
-    paddingTop:        ms(9),
-    paddingBottom:     ms(4),
-  },
-  cardTopLeft: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           scaleW(6),
-    flex:          1,
-  },
+  // Fastest badge — absolute top-left, blue pill
   fastestBadge: {
-    backgroundColor:   BLUE,
+    position:          'absolute',
+    top:               ms(12),
+    left:              ms(12),
+    zIndex:            10,
+    backgroundColor:   C.blue,
     borderRadius:      ms(20),
-    paddingHorizontal: scaleW(8),
-    paddingVertical:   scaleH(2),
+    paddingHorizontal: scaleW(10),
+    paddingVertical:   scaleH(3),
   },
   fastestText: {
-    fontSize:   fs(9),
-    fontWeight: '800',
-    color:      WHITE,
+    fontSize:      fs(10),
+    fontWeight:    '800',
+    color:         C.white,
+    letterSpacing: 0.2,
+  },
+
+  cardInner: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: scaleW(14),
+    paddingVertical:   scaleH(14),
+    gap:               scaleW(12),
+    // extra top padding on first card to clear the Fastest badge
+    paddingTop:        scaleH(32),
+  },
+
+  // Vehicle image — large, prominent
+  imgWrap: {
+    width:          IMG_SIZE,
+    height:         IMG_SIZE,
+    justifyContent: 'center',
+    alignItems:     'center',
+    flexShrink:     0,
+  },
+  vehicleImg: {
+    width:  IMG_SIZE,
+    height: IMG_SIZE,
+  },
+  emoji: { fontSize: fs(36) },
+
+  // Name + meta — centre column
+  infoCol: {
+    flex: 1,
+    gap:  scaleH(5),
   },
   vehicleName: {
-    fontSize:   fs(14),
-    fontWeight: '800',
-    color:      DARK,
+    fontSize:      fs(20),
+    fontWeight:    '800',
+    color:         C.text,
+    letterSpacing: -0.3,
+    marginBottom:  scaleH(2),
   },
-
-  // Choose button
-  selectBtn: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               scaleW(4),
-    borderRadius:      ms(20),
-    paddingHorizontal: scaleW(9),
-    paddingVertical:   scaleH(4),
-    borderWidth:       1.5,
-    borderColor:       '#D1D5DB',
-    backgroundColor:   WHITE,
-  },
-  selectBtnActive: {
-    backgroundColor: DARK,
-    borderColor:     DARK,
-  },
-  selectBtnText: {
-    fontSize:   fs(10),
-    fontWeight: '700',
-    color:      GREY,
-  },
-  selectBtnTextActive: { color: WHITE },
-
-  // Card body
-  cardBody: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    paddingHorizontal: ms(11),
-    paddingBottom:     ms(11),
-  },
-  imgBox: {
-    width:           IMG_BOX_W,
-    height:          IMG_BOX_H,
-    borderRadius:    ms(10),
-    backgroundColor: GREY_LIGHT,
-    justifyContent:  'center',
-    alignItems:      'center',
-    marginRight:     scaleW(9),
-    flexShrink:      0,
-  },
-  imgBoxSelected: { backgroundColor: '#D6EAFA' },
-  vehicleImg:     { width: IMG_W, height: IMG_H },
-  emoji:          { fontSize: fs(24) },
-
-  metaBlock: { flex: 1 },
-  metaRow: {
+  infoRow: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           scaleW(4),
+    gap:           scaleW(5),
   },
-  metaText: {
+  infoText: {
     fontSize:   fs(13),
-    color:      GREY,
-    fontWeight: '600',
-  },
-
-  priceBlock:  { alignItems: 'flex-end', flexShrink: 0 },
-  priceAmount: {
-    fontSize:      fs(24),
-    fontWeight:    '900',
-    color:         DARK,
-    letterSpacing: -0.8,
-  },
-  priceAmountSelected: { color: BLUE },
-  priceLabel: {
-    fontSize:   fs(9),
-    color:      GREY,
+    color:      C.textSub,
     fontWeight: '500',
-    marginTop:  scaleH(-2),
   },
 
-  // ── Footer ──
-  footer: {
-    backgroundColor:   WHITE,
+  // Choose pill button — right side
+  chooseBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               scaleW(6),
+    borderRadius:      ms(24),
+    borderWidth:       1.5,
+    borderColor:       C.chooseBorder,
+    backgroundColor:   C.chooseBtn,
     paddingHorizontal: scaleW(12),
-    paddingTop:        scaleH(10),
-    paddingBottom:     scaleH(16),
+    paddingVertical:   scaleH(8),
+    flexShrink:        0,
+  },
+  chooseBtnActive: {
+    backgroundColor: C.primary,
+    borderColor:     C.primary,
+  },
+  chooseRadio: {
+    width:          ms(16),
+    height:         ms(16),
+    borderRadius:   ms(8),
+    borderWidth:    1.5,
+    borderColor:    C.textMuted,
+    justifyContent: 'center',
+    alignItems:     'center',
+  },
+  chooseRadioActive: {
+    borderColor: C.white,
+  },
+  chooseRadioDot: {
+    width:           ms(7),
+    height:          ms(7),
+    borderRadius:    ms(4),
+    backgroundColor: C.white,
+  },
+  chooseBtnText: {
+    fontSize:   fs(13),
+    fontWeight: '700',
+    color:      C.textSub,
+  },
+  chooseBtnTextActive: { color: C.white },
+
+  // ── Footer ───────────────────────────────────────────────────────────────────
+  // paddingBottom is set inline via insets.bottom
+  footer: {
+    backgroundColor:   C.surface,
+    paddingHorizontal: GUTTER,
+    paddingTop:        scaleH(12),
     borderTopWidth:    1,
-    borderTopColor:    '#E5E7EB',
-    elevation:         8,
-    shadowColor:       '#000',
+    borderTopColor:    C.border,
+    elevation:         10,
+    shadowColor:       C.shadow,
     shadowOffset:      { width: 0, height: -3 },
     shadowOpacity:     0.08,
-    shadowRadius:      6,
+    shadowRadius:      8,
   },
   footerInfoRow: {
-    flexDirection:  'row',
-    justifyContent: 'space-between',
-    alignItems:     'flex-start',
-    marginBottom:   scaleH(9),
-    gap:            scaleW(12),
+    flexDirection: 'row',
+    alignItems:    'center',
+    marginBottom:  scaleH(12),
+    gap:           scaleW(12),
   },
   deliveryInfoBlock: {
     flexDirection: 'row',
-    alignItems:    'flex-start',
-    gap:           scaleW(8),
+    alignItems:    'center',
+    gap:           scaleW(10),
     flex:          1,
+  },
+  clockBox: {
+    width:           ms(40),
+    height:          ms(40),
+    borderRadius:    ms(12),
+    backgroundColor: C.surfaceAlt,
+    borderWidth:     1,
+    borderColor:     C.border,
+    justifyContent:  'center',
+    alignItems:      'center',
+    flexShrink:      0,
   },
   deliveryTextBlock: { flex: 1 },
   deliveryLabel: {
-    fontSize:     fs(12),
+    fontSize:     fs(13),
     fontWeight:   '700',
-    color:        DARK,
-    marginBottom: scaleH(2),
+    color:        C.text,
+    marginBottom: scaleH(1),
   },
   deliveryEta: {
-    fontSize:   fs(10),
-    color:      GREY,
-    fontWeight: '500',
-    lineHeight: fs(14),
+    fontSize:   fs(11),
+    color:      C.textMuted,
+    fontWeight: '400',
+    lineHeight: fs(16),
   },
-  etaBlock: { alignItems: 'flex-end' },
+  etaBlock:  { alignItems: 'flex-end', flexShrink: 0 },
   etaLabel: {
-    fontSize:     fs(10),
-    color:        GREY,
-    fontWeight:   '600',
-    marginBottom: scaleH(2),
+    fontSize:      fs(10),
+    color:         C.textMuted,
+    fontWeight:    '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom:  scaleH(1),
   },
   etaValue: {
-    fontSize:   fs(16),
-    fontWeight: '800',
-    color:      DARK,
-  },
-
-  confirmBtn: {
-    backgroundColor: BLUE,
-    borderRadius:    ms(13),
-    paddingVertical: scaleH(13),
-    flexDirection:   'row',
-    justifyContent:  'center',
-    alignItems:      'center',
-    gap:             scaleW(6),
-  },
-  confirmBtnDisabled: { backgroundColor: '#E5E7EB' },
-  confirmText: {
-    fontSize:      fs(13),
+    fontSize:      fs(22),
     fontWeight:    '800',
-    color:         WHITE,
-    letterSpacing: 0.2,
+    color:         C.text,
+    letterSpacing: -0.5,
   },
-  confirmTextDisabled: { color: '#9CA3AF' },
-  arrowIcon:     { width: ARROW_SZ, height: ARROW_SZ, tintColor: WHITE },
-  arrowDisabled: { tintColor: '#9CA3AF' },
+  etaUnit: {
+    fontSize:   fs(14),
+    fontWeight: '500',
+    color:      C.textMuted,
+  },
 
-  // ── Loading / Error ──
+  // CTA — yellow pill when active
+  confirmBtn: {
+    backgroundColor:   C.yellow,
+    borderRadius:      ms(50),
+    paddingVertical:   scaleH(15),
+    paddingHorizontal: scaleW(20),
+    flexDirection:     'row',
+    justifyContent:    'center',
+    alignItems:        'center',
+    gap:               scaleW(8),
+  },
+  confirmBtnDisabled: {
+    backgroundColor: C.surfaceAlt,
+    borderWidth:     1,
+    borderColor:     C.border,
+  },
+  confirmIconBox: {
+    marginRight: scaleW(2),
+  },
+  confirmText: {
+    fontSize:      fs(15),
+    fontWeight:    '800',
+    color:         C.primary,
+    letterSpacing: 0.1,
+  },
+  confirmTextDisabled: { color: C.textMuted },
+
+  // ── Loading / Error ───────────────────────────────────────────────────────────
   centered: {
     flex:            1,
     justifyContent:  'center',
     alignItems:      'center',
     paddingVertical: scaleH(60),
   },
-  loadingText: { marginTop: scaleH(10), fontSize: fs(12), color: GREY },
+  loadingText: { marginTop: scaleH(10), fontSize: fs(13), color: C.textMuted },
   errorText: {
     marginTop:    scaleH(10),
-    fontSize:     fs(12),
-    color:        GREY,
+    fontSize:     fs(13),
+    color:        C.textSub,
     textAlign:    'center',
     marginBottom: scaleH(16),
   },
   retryBtn: {
     flexDirection:     'row',
     alignItems:        'center',
-    backgroundColor:   BLUE,
-    paddingHorizontal: scaleW(18),
-    paddingVertical:   scaleH(9),
-    borderRadius:      ms(9),
+    backgroundColor:   C.blue,
+    paddingHorizontal: scaleW(20),
+    paddingVertical:   scaleH(10),
+    borderRadius:      ms(10),
     gap:               scaleW(6),
   },
-  retryText: { color: WHITE, fontSize: fs(12), fontWeight: '700' },
+  retryText: { color: C.white, fontSize: fs(13), fontWeight: '700' },
 });
 
 export default VehicleSelection;
