@@ -93,8 +93,8 @@ const Splash = () => {
   // Last letter delay + a small buffer before tagline shows
   const LETTER_STAGGER = 110;
   const LAST_LETTER_DELAY = (ZIPTO_LETTERS.length - 1) * LETTER_STAGGER;
-  const TAGLINE_DELAY = LAST_LETTER_DELAY + 250;
-  const POWERED_DELAY = LAST_LETTER_DELAY + 520;
+  const TAGLINE_DELAY   = LAST_LETTER_DELAY + 250;
+  const POWERED_DELAY   = LAST_LETTER_DELAY + 520;
 
   useEffect(() => {
     // Tagline slides up after letters finish

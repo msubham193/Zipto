@@ -180,7 +180,7 @@ const Profile = () => {
           </TouchableOpacity>
 
           {/* ── Single stat — Orders only (wallet removed) ── */}
-          <View style={styles.statStrip}>
+          {/* <View style={styles.statStrip}>
             <TouchableOpacity
               style={styles.statItem}
               onPress={() => navigation.navigate('MyOrders')}
@@ -196,7 +196,7 @@ const Profile = () => {
               )}
               <Text style={styles.statLabel}>My Orders</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         {/* ── Menu Sections ── */}
