@@ -392,7 +392,7 @@ const VehicleSelection = () => {
 
 // ─── Sizes ────────────────────────────────────────────────────────────────────
 const GUTTER   = scaleW(16);
-const IMG_SIZE = ms(90);
+const IMG_SIZE = ms(60);
 
 const styles = StyleSheet.create({
   // ── Root — plain View, paddingTop set inline via insets.top ──────────────────
@@ -450,9 +450,9 @@ const styles = StyleSheet.create({
   listWrap:    { flex: 1, backgroundColor: C.bg },
   listContent: {
     paddingHorizontal: GUTTER,
-    paddingTop:        scaleH(12),
-    paddingBottom:     scaleH(12),
-    gap:               scaleH(10),
+    paddingTop:        scaleH(10),
+    paddingBottom:     scaleH(10),
+    gap:               scaleH(8),
   },
 
   // ── Card ─────────────────────────────────────────────────────────────────────
@@ -476,16 +476,16 @@ const styles = StyleSheet.create({
   // Fastest badge — absolute top-left, blue pill
   fastestBadge: {
     position:          'absolute',
-    top:               ms(12),
-    left:              ms(12),
+    top:               ms(8),
+    left:              ms(10),
     zIndex:            10,
     backgroundColor:   C.blue,
     borderRadius:      ms(20),
-    paddingHorizontal: scaleW(10),
-    paddingVertical:   scaleH(3),
+    paddingHorizontal: scaleW(8),
+    paddingVertical:   scaleH(2),
   },
   fastestText: {
-    fontSize:      fs(10),
+    fontSize:      fs(9),
     fontWeight:    '800',
     color:         C.white,
     letterSpacing: 0.2,
@@ -494,11 +494,11 @@ const styles = StyleSheet.create({
   cardInner: {
     flexDirection:     'row',
     alignItems:        'center',
-    paddingHorizontal: scaleW(14),
-    paddingVertical:   scaleH(14),
-    gap:               scaleW(12),
+    paddingHorizontal: scaleW(12),
+    paddingVertical:   scaleH(10),
+    gap:               scaleW(10),
     // extra top padding on first card to clear the Fastest badge
-    paddingTop:        scaleH(32),
+    paddingTop:        scaleH(26),
   },
 
   // Vehicle image — large, prominent
@@ -518,22 +518,22 @@ const styles = StyleSheet.create({
   // Name + meta — centre column
   infoCol: {
     flex: 1,
-    gap:  scaleH(5),
+    gap:  scaleH(3),
   },
   vehicleName: {
-    fontSize:      fs(20),
+    fontSize:      fs(15),
     fontWeight:    '800',
     color:         C.text,
-    letterSpacing: -0.3,
-    marginBottom:  scaleH(2),
+    letterSpacing: -0.2,
+    marginBottom:  scaleH(1),
   },
   infoRow: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           scaleW(5),
+    gap:           scaleW(4),
   },
   infoText: {
-    fontSize:   fs(13),
+    fontSize:   fs(11),
     color:      C.textSub,
     fontWeight: '500',
   },
@@ -542,13 +542,13 @@ const styles = StyleSheet.create({
   chooseBtn: {
     flexDirection:     'row',
     alignItems:        'center',
-    gap:               scaleW(6),
+    gap:               scaleW(5),
     borderRadius:      ms(24),
     borderWidth:       1.5,
     borderColor:       C.chooseBorder,
     backgroundColor:   C.chooseBtn,
-    paddingHorizontal: scaleW(12),
-    paddingVertical:   scaleH(8),
+    paddingHorizontal: scaleW(10),
+    paddingVertical:   scaleH(6),
     flexShrink:        0,
   },
   chooseBtnActive: {
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
   },
   chooseBtnText: {
-    fontSize:   fs(13),
+    fontSize:   fs(11),
     fontWeight: '700',
     color:      C.textSub,
   },

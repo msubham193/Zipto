@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Text,
   TextInput,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
   ScrollView,
@@ -16,6 +15,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,51 @@ import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi as mapboxApi } from '../api/googleMaps';
 import { useAuthStore } from '../store/useAuthStore';
+
+// ─── Parse lat/lon from a shared maps link or plain "lat,lon" text ────────────
+function extractCoordsFromText(text: string): { lat: number; lon: number } | null {
+  const patterns = [
+    /@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,                    // Google Maps /@lat,lon,zoom
+    /[?&]q=(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,               // ?q=lat,lon
+    /[?&]ll=(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,              // ll=lat,lon
+    /[?&]center=(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,          // center=lat,lon
+    /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/,                // Google Maps embed !3d!4d
+    /^(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)$/,                // plain lat,lon
+  ];
+  for (const re of patterns) {
+    const m = text.match(re);
+    if (m) {
+      const lat = parseFloat(m[1]);
+      const lon = parseFloat(m[2]);
+      if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) return { lat, lon };
+    }
+  }
+  return null;
+}
+
+async function resolveSharedLink(input: string): Promise<{ lat: number; lon: number } | null> {
+  const text = input.trim();
+
+  // Try direct extraction first
+  const direct = extractCoordsFromText(text);
+  if (direct) return direct;
+
+  // If it looks like a URL, follow redirects (short links like maps.app.goo.gl)
+  if (/^https?:\/\//i.test(text)) {
+    try {
+      const response = await fetch(text, { method: 'GET', redirect: 'follow' });
+      const finalUrl = response.url || text;
+      const fromFinal = extractCoordsFromText(finalUrl);
+      if (fromFinal) return fromFinal;
+      // Also try parsing the response body for embedded coords
+      const body = await response.text();
+      const fromBody = extractCoordsFromText(body.slice(0, 2000));
+      if (fromBody) return fromBody;
+    } catch { /* network failure — fall through */ }
+  }
+
+  return null;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PICKUP_CACHE_KEY = 'pickup_location_cache';
@@ -203,6 +248,13 @@ const PickupDropSelection = () => {
   const [autoFillingPickup, setAutoFillingPickup] = useState(false);
   const [locationChanged, setLocationChanged] = useState(false);
 
+  // Import-from-link modal
+  const [importModal, setImportModal] = useState<{ visible: boolean; field: 'pickup' | 'drop' }>({
+    visible: false, field: 'pickup',
+  });
+  const [importText, setImportText] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
+
   const sessionTokenRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -213,6 +265,30 @@ const PickupDropSelection = () => {
   useEffect(() => {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, []);
+
+  // Receive result from MapLocationPicker
+  const lastPickedKey = useRef<string>('');
+  useEffect(() => {
+    const picked = route.params?.pickedLocation as
+      | { field: 'pickup' | 'drop'; address: string; lat: number; lon: number }
+      | undefined;
+    if (!picked) return;
+    const key = `${picked.field}|${picked.lat}|${picked.lon}`;
+    if (key === lastPickedKey.current) return;
+    lastPickedKey.current = key;
+    const coords = { latitude: picked.lat, longitude: picked.lon };
+    if (picked.field === 'pickup') {
+      setPickup(picked.address);
+      setPickupCoords(coords);
+      setActiveInput('drop');
+      savePickupCache(picked.address, coords);
+    } else {
+      setDrop(picked.address);
+      setDropCoords(coords);
+      setActiveInput('' as 'pickup' | 'drop');
+    }
+    setFilteredLocations([]);
+  }, [route.params?.pickedLocation]);
 
   useEffect(() => {
     (async () => {
@@ -333,6 +409,44 @@ const PickupDropSelection = () => {
   };
 
   const validateMobileNumber = (n: string) => n.replace(/\D/g, '').length === 10;
+
+  const openImport = (field: 'pickup' | 'drop') => {
+    setImportText('');
+    setImportModal({ visible: true, field });
+  };
+
+  const handleImportSubmit = async () => {
+    const text = importText.trim();
+    if (!text) return;
+    setImportLoading(true);
+    try {
+      const coords = await resolveSharedLink(text);
+      if (!coords) {
+        Alert.alert('Could not read location', 'Make sure you pasted a valid Google Maps link or coordinates like "20.2961, 85.8245".');
+        return;
+      }
+      const address = await mapboxApi.reverseGeocode(coords.lat, coords.lon);
+      if (!address) {
+        Alert.alert('Error', 'Could not resolve address for those coordinates.');
+        return;
+      }
+      const coordsObj = { latitude: coords.lat, longitude: coords.lon };
+      if (importModal.field === 'pickup') {
+        setPickup(address);
+        setPickupCoords(coordsObj);
+        setActiveInput('drop');
+        savePickupCache(address, coordsObj);
+      } else {
+        setDrop(address);
+        setDropCoords(coordsObj);
+        setActiveInput('' as 'pickup' | 'drop');
+      }
+      setFilteredLocations([]);
+      setImportModal({ visible: false, field: 'pickup' });
+    } finally {
+      setImportLoading(false);
+    }
+  };
 
   const navigateToBook = () => {
     if (!senderName.trim()) { Alert.alert('Missing Information', 'Please enter sender name'); return; }
@@ -507,6 +621,35 @@ const PickupDropSelection = () => {
               </View>
             </View>
 
+            {/* ── Location action buttons ── */}
+            <View style={styles.mapStopsRow}>
+              <TouchableOpacity
+                style={styles.mapStopsBtn}
+                activeOpacity={0.7}
+                onPress={() =>
+                  navigation.navigate('MapLocationPicker', {
+                    field: activeInput === 'drop' ? 'drop' : 'pickup',
+                    initialLat: (activeInput === 'drop' ? dropCoords?.latitude : pickupCoords?.latitude) ?? undefined,
+                    initialLon: (activeInput === 'drop' ? dropCoords?.longitude : pickupCoords?.longitude) ?? undefined,
+                  })
+                }
+              >
+                <MaterialIcons name="map" size={ms(16)} color={C.accent} />
+                <Text style={styles.mapStopsBtnText}>Choose from Map</Text>
+              </TouchableOpacity>
+
+              <View style={styles.mapStopsDivider} />
+
+              <TouchableOpacity
+                style={styles.mapStopsBtn}
+                activeOpacity={0.7}
+                onPress={() => openImport(activeInput === 'drop' ? 'drop' : 'pickup')}
+              >
+                <MaterialIcons name="link" size={ms(16)} color={C.accent} />
+                <Text style={styles.mapStopsBtnText}>Import Shared Link</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Suggestion lists */}
             {activeInput === 'pickup' && pickup.trim().length > 1 && (
               <View style={styles.suggestionContainer}>
@@ -590,6 +733,79 @@ const PickupDropSelection = () => {
             </View>
           </ScrollView>
         </Animated.View>
+
+        {/* ── Import shared link modal ── */}
+        <Modal
+          visible={importModal.visible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setImportModal(p => ({ ...p, visible: false }))}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => !importLoading && setImportModal(p => ({ ...p, visible: false }))}
+          />
+          <View style={[styles.importSheet, { paddingBottom: Math.max(insets.bottom, scaleH(20)) }]}>
+            <View style={styles.importSheetHandle} />
+            <Text style={styles.importTitle}>
+              Import {importModal.field === 'pickup' ? 'Pickup' : 'Drop'} Location
+            </Text>
+            <Text style={styles.importSub}>
+              Paste a Google Maps share link or coordinates (e.g. 20.2961, 85.8245)
+            </Text>
+            <View style={[styles.importInputWrap, importText.trim().length > 0 && styles.importInputActive]}>
+              <MaterialIcons name="link" size={ms(18)} color={importText ? C.accent : C.textMuted} style={{ marginRight: scaleW(8) }} />
+              <TextInput
+                style={styles.importInput}
+                placeholder="Paste link or coordinates…"
+                placeholderTextColor={C.textMuted}
+                value={importText}
+                onChangeText={setImportText}
+                autoCapitalize="none"
+                autoCorrect={false}
+                multiline={false}
+                returnKeyType="done"
+                onSubmitEditing={handleImportSubmit}
+                editable={!importLoading}
+              />
+              {importText.length > 0 && (
+                <TouchableOpacity onPress={() => setImportText('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <MaterialIcons name="close" size={ms(16)} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Text style={styles.importHint}>
+              Supports: Google Maps links, maps.app.goo.gl, or plain lat,lon
+            </Text>
+
+            <View style={styles.importActions}>
+              <TouchableOpacity
+                style={styles.importCancelBtn}
+                onPress={() => setImportModal(p => ({ ...p, visible: false }))}
+                disabled={importLoading}
+              >
+                <Text style={styles.importCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.importConfirmBtn, (!importText.trim() || importLoading) && styles.importConfirmBtnDisabled]}
+                onPress={handleImportSubmit}
+                disabled={!importText.trim() || importLoading}
+                activeOpacity={0.85}
+              >
+                {importLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <MaterialIcons name="my-location" size={ms(16)} color="#fff" />
+                )}
+                <Text style={[styles.importConfirmText, (!importText.trim() || importLoading) && styles.importConfirmTextDisabled]}>
+                  {importLoading ? 'Resolving…' : 'Use Location'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* ── Footer — sits above the home indicator using insets.bottom ── */}
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, scaleH(16)) }]}>
@@ -924,6 +1140,106 @@ const styles = StyleSheet.create({
   continueBtnTextDisabled: { color: C.textMuted },
   arrowIcon: { width: ARROW_SIZE, height: ARROW_SIZE, tintColor: '#FFFFFF' },
   arrowDisabled: { tintColor: C.textMuted },
+
+  // ── Import modal ──────────────────────────────────────────────────────────
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  importSheet: {
+    backgroundColor: C.surface,
+    borderTopLeftRadius: ms(20),
+    borderTopRightRadius: ms(20),
+    paddingHorizontal: scaleW(20),
+    paddingTop: scaleH(12),
+    gap: scaleH(12),
+    elevation: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+  },
+  importSheetHandle: {
+    width: ms(36),
+    height: ms(4),
+    borderRadius: ms(2),
+    backgroundColor: C.borderMed,
+    alignSelf: 'center',
+    marginBottom: scaleH(4),
+  },
+  importTitle: {
+    fontSize: fs(16),
+    fontWeight: '700',
+    color: C.text,
+    letterSpacing: -0.2,
+  },
+  importSub: {
+    fontSize: fs(12),
+    color: C.textMuted,
+    lineHeight: fs(18),
+    marginTop: scaleH(-4),
+  },
+  importInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surfaceAlt,
+    borderRadius: ms(12),
+    borderWidth: 1.5,
+    borderColor: C.border,
+    paddingHorizontal: scaleW(12),
+    paddingVertical: scaleH(2),
+  },
+  importInputActive: {
+    borderColor: C.accent,
+    backgroundColor: C.accentLight,
+  },
+  importInput: {
+    flex: 1,
+    fontSize: fs(13),
+    color: C.text,
+    paddingVertical: scaleH(10),
+  },
+  importHint: {
+    fontSize: fs(11),
+    color: C.textMuted,
+    marginTop: scaleH(-4),
+  },
+  importActions: {
+    flexDirection: 'row',
+    gap: scaleW(10),
+    marginTop: scaleH(4),
+  },
+  importCancelBtn: {
+    flex: 1,
+    borderRadius: ms(12),
+    paddingVertical: scaleH(13),
+    borderWidth: 1.5,
+    borderColor: C.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  importCancelText: {
+    fontSize: fs(14),
+    fontWeight: '600',
+    color: C.textSub,
+  },
+  importConfirmBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    borderRadius: ms(12),
+    paddingVertical: scaleH(13),
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scaleW(6),
+  },
+  importConfirmBtnDisabled: { backgroundColor: C.border },
+  importConfirmText: {
+    fontSize: fs(14),
+    fontWeight: '700',
+    color: '#fff',
+  },
+  importConfirmTextDisabled: { color: C.textMuted },
 });
 
 export default PickupDropSelection;
