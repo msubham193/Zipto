@@ -16,7 +16,6 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
@@ -30,66 +29,45 @@ const ms = (size: number, factor = 0.45) =>
 const fs = (size: number) =>
   Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
-// ─────────────────────────────────────────────────────────────────────────────
 const HERO_HEIGHT_OPEN   = scaleH(250);
 const HERO_HEIGHT_CLOSED = scaleH(120);
 
 const Login = () => {
   const navigation = useNavigation<any>();
-  const { t } = useTranslation();
-  const [countryCode, setCountryCode] = useState('+91');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [error, setError] = useState('');
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [phone, setPhone]           = useState('');
+  const [error, setError]           = useState('');
   const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
-  // ── NEW: terms agreement checkbox state ────────────────────────────────────
   const [termsAgreed, setTermsAgreed] = useState(false);
+
+  const { login, isLoading, error: authError, clearError } = useAuthStore();
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
-      setKeyboardOpen(true);
       setHeroHeight(HERO_HEIGHT_CLOSED);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardOpen(false);
       setHeroHeight(HERO_HEIGHT_OPEN);
     });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
+    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
-  const { login, isLoading, error: authError } = useAuthStore();
+  useEffect(() => {
+    return () => { clearError(); };
+  }, []);
 
-  // Button is enabled only when both number is filled and terms are agreed
-  const isButtonEnabled = phoneNumber.length === 10 && termsAgreed;
+  const isButtonEnabled = phone.trim().length >= 10 && termsAgreed;
 
   const handleGetOTP = async () => {
-    if (phoneNumber.length !== 10) {
-      setError('Invalid mobile number');
-      return;
-    }
-    if (!termsAgreed) {
-      // Shouldn't be reachable since button is disabled, but guard anyway
-      setError('Please agree to the Terms & Privacy Policy to continue.');
-      return;
-    }
+    const trimmed = phone.trim();
+    if (trimmed.length < 10) { setError('Please enter a valid 10-digit mobile number'); return; }
+    if (!termsAgreed) { setError('Please agree to the Terms & Privacy Policy to continue.'); return; }
     setError('');
     try {
-      const res = await login(countryCode + phoneNumber);
-      navigation.navigate('OTPVerification', {
-        mobile: phoneNumber,
-        fullMobile: countryCode + phoneNumber,
-        isNewUser: res?.isNewUser !== false,
-      });
+      await login(trimmed);
+      navigation.navigate('OTPVerification', { mobile: trimmed });
     } catch {
       // error displayed via authError from store
     }
-  };
-
-  const handleSocialLogin = (_provider: string) => {
-    Alert.alert('Coming Soon', 'Social login will be available in a future update.');
   };
 
   return (
@@ -117,135 +95,68 @@ const Login = () => {
           <View style={styles.contentWrapper}>
             <View style={styles.content}>
               <View style={styles.formSection}>
-                <Text style={styles.title}>Let's get moving</Text>
+                <Text style={styles.title}>Welcome to Zipto</Text>
                 <Text style={styles.subtitle}>
-                  Enter your mobile number to login or signup for the best
-                  logistics service.
+                  Enter your mobile number to get started.
                 </Text>
 
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Code</Text>
-                  <Text style={[styles.label, styles.numberLabel]}>
-                    Mobile Number
-                  </Text>
-                </View>
-
-                <View style={styles.inputRow}>
-                  <View style={styles.codeInput}>
-                    <Text style={styles.codeText}>🇮🇳 {countryCode}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.phoneInputContainer,
-                      error && styles.inputError,
-                    ]}
-                  >
-                    <Image
-                      source={require('../assets/images/cell-phone.png')}
-                      style={styles.phoneIcon}
-                      resizeMode="contain"
-                    />
-                    <TextInput
-                      style={styles.phoneInput}
-                      placeholder="98765 43210"
-                      placeholderTextColor="#6B7280"
-                      keyboardType="phone-pad"
-                      maxLength={10}
-                      value={phoneNumber}
-                      onChangeText={text => {
-                        setPhoneNumber(text);
-                        setError('');
-                      }}
-                    />
-                  </View>
+                {/* Phone Number */}
+                <Text style={styles.label}>Mobile Number</Text>
+                <View style={[styles.inputContainer, !!error && !phone && styles.inputError]}>
+                  <Image
+                    source={require('../assets/images/cell-phone.png')}
+                    style={styles.inputIcon}
+                    resizeMode="contain"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="10-digit mobile number"
+                    placeholderTextColor="#6B7280"
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={phone}
+                    onChangeText={t => { setPhone(t); setError(''); }}
+                  />
                 </View>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
 
-                {/* ── Terms & Conditions Checkbox ─────────────────────────── */}
+                {/* Terms checkbox */}
                 <TouchableOpacity
                   style={styles.checkboxRow}
                   onPress={() => setTermsAgreed(prev => !prev)}
                   activeOpacity={0.7}
                 >
                   <View style={[styles.checkbox, termsAgreed && styles.checkboxChecked]}>
-                    {termsAgreed && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
+                    {termsAgreed && <Text style={styles.checkmark}>✓</Text>}
                   </View>
                   <Text style={styles.checkboxLabel}>
                     I agree to the{' '}
-                    <Text
-                      style={styles.checkboxLink}
-                      onPress={() => Alert.alert('Terms of Service', 'Terms content here.')}
-                    >
+                    <Text style={styles.checkboxLink} onPress={() => Alert.alert('Terms of Service', 'Terms content here.')}>
                       Terms of Service
                     </Text>
                     {' '}and{' '}
-                    <Text
-                      style={styles.checkboxLink}
-                      onPress={() => Alert.alert('Privacy Policy', 'Privacy policy content here.')}
-                    >
+                    <Text style={styles.checkboxLink} onPress={() => Alert.alert('Privacy Policy', 'Privacy policy content here.')}>
                       Privacy Policy
                     </Text>
                   </Text>
                 </TouchableOpacity>
-                {/* ─────────────────────────────────────────────────────────── */}
 
-                <View>
-                  <TouchableOpacity
-                    style={[
-                      styles.otpButton,
-                      !isButtonEnabled && styles.otpButtonDisabled,
-                    ]}
-                    onPress={handleGetOTP}
-                    activeOpacity={isButtonEnabled ? 0.8 : 1}
-                    disabled={!isButtonEnabled}
-                  >
-                    <Text style={styles.otpButtonText}>
-                      {isLoading ? 'Sending...' : 'Get OTP'}
-                    </Text>
-                    <Image
-                      source={require('../assets/images/arrow.png')}
-                      style={styles.arrowIcon}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {!keyboardOpen && (
-                  <>
-                    <View style={styles.dividerContainer}>
-                      <View style={styles.divider} />
-                      <Text style={styles.dividerText}>Or continue with</Text>
-                      <View style={styles.divider} />
-                    </View>
-                    <View style={styles.socialContainer}>
-                      <TouchableOpacity
-                        style={styles.socialButton}
-                        onPress={() => handleSocialLogin('Google')}
-                      >
-                        <Image
-                          source={require('../assets/images/google_logo1.png')}
-                          style={styles.socialLogo}
-                          resizeMode="contain"
-                        />
-                        <Text style={styles.socialButtonText}>Google</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.socialButton}
-                        onPress={() => handleSocialLogin('Apple')}
-                      >
-                        <Image
-                          source={require('../assets/images/apple_logo1.png')}
-                          style={styles.socialLogo}
-                          resizeMode="contain"
-                        />
-                        <Text style={styles.socialButtonText}>Apple</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
+                <TouchableOpacity
+                  style={[styles.loginButton, !isButtonEnabled && styles.loginButtonDisabled]}
+                  onPress={handleGetOTP}
+                  activeOpacity={isButtonEnabled ? 0.8 : 1}
+                  disabled={!isButtonEnabled || isLoading}
+                >
+                  <Text style={styles.loginButtonText}>
+                    {isLoading ? 'Sending OTP...' : 'Get OTP'}
+                  </Text>
+                  <Image
+                    source={require('../assets/images/arrow.png')}
+                    style={styles.arrowIcon}
+                  />
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -255,27 +166,15 @@ const Login = () => {
   );
 };
 
-// ─── Derived responsive values ────────────────────────────────────────────────
 const phoneIconSize = ms(28);
 const arrowIconSize = ms(22);
 const checkboxSize  = ms(20);
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  contentWrapper: {
-    flex: 1,
-    paddingHorizontal: scaleW(20),
-  },
-  // ── Hero ──
+  container:        { flex: 1, backgroundColor: '#FFFFFF' },
+  keyboardView:     { flex: 1 },
+  scrollContent:    { flexGrow: 1 },
+  contentWrapper:   { flex: 1, paddingHorizontal: scaleW(20) },
   heroContainer: {
     paddingHorizontal: scaleW(20),
     paddingTop: scaleH(10),
@@ -292,30 +191,8 @@ const styles = StyleSheet.create({
     height: '110%',
     position: 'absolute',
   },
-  heroOverlay: {
-    position: 'absolute',
-    top: scaleH(16),
-    left: scaleW(16),
-    right: scaleW(16),
-  },
-  heroText: {
-    fontSize: fs(20),
-    fontFamily: 'Poppins-Regular',
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  // ── Content ──
-  content: {
-    flex: 1,
-    paddingTop: scaleH(20),
-    paddingBottom: scaleH(20),
-  },
-  formSection: {
-    flex: 1,
-  },
+  content:     { flex: 1, paddingTop: scaleH(20), paddingBottom: scaleH(20) },
+  formSection: { flex: 1 },
   title: {
     fontSize: fs(28),
     fontWeight: 'bold',
@@ -327,42 +204,16 @@ const styles = StyleSheet.create({
     fontSize: fs(16),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    marginBottom: scaleH(40),
-  },
-  // ── Inputs ──
-  inputContainer: {
-    flexDirection: 'row',
-    marginBottom: scaleH(8),
+    marginBottom: scaleH(32),
   },
   label: {
     fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    flex: 2,
     fontWeight: '600',
+    marginBottom: scaleH(8),
   },
-  numberLabel: {
-    flex: 2.5,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: scaleW(12),
-  },
-  codeInput: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: ms(12),
-    paddingVertical: scaleH(16),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  codeText: {
-    color: '#0F172A',
-    fontSize: fs(16),
-  },
-  phoneInputContainer: {
-    flex: 2.5,
+  inputContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderRadius: ms(12),
@@ -371,27 +222,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  phoneIcon: {
+  inputIcon: {
     width: phoneIconSize,
     height: phoneIconSize,
+    marginRight: scaleW(8),
   },
-  phoneInput: {
+  input: {
     flex: 1,
     color: '#0F172A',
     fontSize: fs(15),
     paddingVertical: scaleH(16),
-    marginLeft: scaleW(8),
   },
-  inputError: {
-    borderColor: '#EF4444',
-  },
+  inputError: { borderColor: '#EF4444' },
   errorText: {
     color: '#EF4444',
     fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
     marginTop: scaleH(6),
+    marginBottom: scaleH(4),
   },
-  // ── Checkbox ──────────────────────────────────────────────────────────────
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -408,13 +257,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: scaleH(1),          // optical alignment with first line of text
+    marginTop: scaleH(1),
     flexShrink: 0,
   },
-  checkboxChecked: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
-  },
+  checkboxChecked: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
   checkmark: {
     color: '#FFFFFF',
     fontSize: fs(12),
@@ -428,12 +274,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     lineHeight: fs(20),
   },
-  checkboxLink: {
-    color: '#2563EB',
-    fontWeight: '600',
-  },
-  // ── OTP Button ──
-  otpButton: {
+  checkboxLink:    { color: '#2563EB', fontWeight: '600' },
+  loginButton: {
     backgroundColor: '#2563EB',
     borderRadius: ms(12),
     paddingVertical: scaleH(16),
@@ -441,12 +283,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: scaleH(20),
-    marginBottom: scaleH(20),
+    marginBottom: scaleH(12),
   },
-  otpButtonDisabled: {
-    backgroundColor: '#93C5FD',   // washed-out blue when disabled
-  },
-  otpButtonText: {
+  loginButtonDisabled: { backgroundColor: '#93C5FD' },
+  loginButtonText: {
     color: '#FFFFFF',
     fontSize: fs(16),
     fontWeight: '600',
@@ -457,62 +297,6 @@ const styles = StyleSheet.create({
     width: arrowIconSize,
     height: arrowIconSize,
     tintColor: '#eaecf1',
-  },
-  // ── Divider ──
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: scaleH(16),
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  dividerText: {
-    marginHorizontal: scaleW(12),
-    color: '#64748B',
-    fontSize: fs(13),
-  },
-  // ── Social login ──
-  socialContainer: {
-    flexDirection: 'row',
-    gap: scaleW(12),
-    marginBottom: scaleH(20),
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: scaleH(14),
-    borderRadius: ms(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: scaleW(8),
-  },
-  socialLogo: {
-    width: ms(20),
-    height: ms(20),
-  },
-  socialButtonText: {
-    color: '#0F172A',
-    fontSize: fs(15),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-  },
-  // ── Footer (terms moved to checkbox, kept for potential future use) ────────
-  termsText: {
-    fontSize: fs(11),
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-    textAlign: 'center',
-    paddingTop: scaleH(20),
-    paddingBottom: scaleH(20),
-  },
-  link: {
-    color: '#2563EB',
   },
 });
 

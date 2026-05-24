@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="notification_color">#3B82F6</color>
+    <color name="zipto_splash_bg">#1E22AD</color>
 </resources>

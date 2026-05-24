@@ -214,6 +214,15 @@ export const authApi = {
     return response.data;
   },
 
+  // Primary auth flow: Firebase idToken → Zipto JWT
+  verifyFirebase: async (idToken: string, role = 'customer') => {
+    const response = await client.post('/auth/verify-firebase', {
+      idToken,
+      role,
+    });
+    return response.data;
+  },
+
 
   getCustomerProfile: async () => {
     const response = await client.get('/customer/profile');
@@ -234,6 +243,23 @@ export const authApi = {
     const response = await client.post('/auth/refresh-token', {
       refresh_token: refreshToken,
     });
+    return response.data;
+  },
+};
+
+export const paymentApi = {
+  createOrder: async (payload: { booking_id: string; amount: number; payment_method?: string }) => {
+    const response = await client.post('/payment/create-order', payload);
+    return response.data;
+  },
+
+  verifyPayment: async (payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    booking_id?: string;
+  }) => {
+    const response = await client.post('/payment/verify', payload);
     return response.data;
   },
 };

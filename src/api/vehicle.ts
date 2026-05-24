@@ -89,6 +89,8 @@ export interface CreateBookingRequest {
   receiver_phone?: string;
   alternative_phone?: string;
   paid_by?: 'sender' | 'receiver';
+  coins_to_redeem?: number;
+  coupon_code?: string;
 }
 
 export interface CreateBookingResponse {
@@ -185,11 +187,14 @@ export interface BookingDetails {
   } | null;
   vehicle: any | null;
   otp?: string;
+  pickup_otp?: string;
+  pickup_otp_verified?: boolean;
   delivery_otp?: string;
+  delivery_otp_verified?: boolean;
+  otp_verified?: boolean;
   receiver_name?: string;
   receiver_phone?: string;
   alternative_phone?: string;
-  otp_verified?: boolean;
   vehicle_type?: string;
   payments?: {
     id: string;
@@ -364,8 +369,33 @@ export const vehicleApi = {
     return response.data;
   },
 
-  getOfferStatus: async (offerId: string): Promise<{ success: boolean; data: { status: 'searching' | 'accepted' | 'expired'; booking_id?: string } }> => {
+  getOfferStatus: async (offerId: string): Promise<{
+    success: boolean;
+    data: {
+      status: 'searching' | 'accepted' | 'timed_out' | 'expired';
+      booking_id?: string;
+      current_fare?: number;
+      suggested_fare?: number;
+      retry_count?: number;
+      can_retry?: boolean;
+    };
+  }> => {
     const response = await client.get(`/booking/offer/${offerId}/status`);
+    return response.data;
+  },
+
+  updateOfferFare: async (offerId: string, newFare: number): Promise<{ success: boolean; data: any }> => {
+    const response = await client.patch(`/booking/offer/${offerId}/fare`, { new_fare: newFare });
+    return response.data;
+  },
+
+  retrySearch: async (offerId: string, newFare: number): Promise<{ success: boolean; data: any }> => {
+    const response = await client.post(`/booking/offer/${offerId}/retry`, { new_fare: newFare });
+    return response.data;
+  },
+
+  cancelOffer: async (offerId: string): Promise<{ success: boolean }> => {
+    const response = await client.put(`/booking/offer/${offerId}/cancel`);
     return response.data;
   },
 
@@ -423,6 +453,22 @@ export const vehicleApi = {
 
   getRatingByBooking: async (bookingId: string): Promise<GetRatingResponse> => {
     const response = await client.get(`/rating/booking/${bookingId}`);
+    return response.data?.data ?? response.data;
+  },
+
+  validateCoupon: async (payload: {
+    code: string;
+    order_value: number;
+    vehicle_type?: string;
+  }): Promise<{
+    coupon_id: string;
+    code: string;
+    title: string;
+    type: string;
+    discount_amount: number;
+    final_fare: number;
+  }> => {
+    const response = await client.post('/booking/coupon/validate', payload);
     return response.data?.data ?? response.data;
   },
 };

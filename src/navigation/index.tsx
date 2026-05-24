@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-import { View, ActivityIndicator } from 'react-native';
+import { View, StatusBar } from 'react-native';
 import { useAuthStore } from '../store/useAuthStore';
 import Splash from '../screens/Splash';
 
@@ -65,15 +65,11 @@ const RootNavigator = () => {
     }
 
     if (!isHydrated || isVerifying) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
-                <ActivityIndicator size="large" color="#2563EB" />
-            </View>
-        );
+        return <SplashPlaceholder />;
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
         </NavigationContainer>
     );
