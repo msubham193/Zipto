@@ -8,8 +8,6 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,15 +16,7 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/useAuthStore';
 import { authApi } from '../api/client';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const EditProfile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -165,7 +155,7 @@ const EditProfile = () => {
 // ─── Derived responsive values ────────────────────────────────────────────────
 const backBtnSize = ms(40);
 const avatarSize  = ms(100);
-const textAreaH   = scaleH(100);
+const textAreaH   = vs(100);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
@@ -176,8 +166,8 @@ const styles = StyleSheet.create({
     flexDirection:      'row',
     alignItems:         'center',
     justifyContent:     'space-between',
-    paddingHorizontal:  scaleW(16),
-    paddingVertical:    scaleH(16),
+    paddingHorizontal:  hs(16),
+    paddingVertical:    vs(16),
     backgroundColor:    '#FFFFFF',
     borderBottomWidth:  1,
     borderBottomColor:  '#E2E8F0',
@@ -202,7 +192,7 @@ const styles = StyleSheet.create({
   // ── Avatar (display only) ──
   avatarSection: {
     alignItems:       'center',
-    paddingVertical:  scaleH(28),
+    paddingVertical:  vs(28),
     backgroundColor:  '#FFFFFF',
   },
   largeAvatar: {
@@ -217,38 +207,38 @@ const styles = StyleSheet.create({
   },
 
   // ── Form ──
-  formSection: { padding: scaleW(16) },
-  inputGroup:  { marginBottom: scaleH(20) },
+  formSection: { padding: hs(16) },
+  inputGroup:  { marginBottom: vs(20) },
   inputLabel: {
     fontSize:     fs(14),
     fontWeight:   '600',
     color:        '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   input: {
     backgroundColor:  '#FFFFFF',
     borderWidth:      1,
     borderColor:      '#E2E8F0',
     borderRadius:     ms(12),
-    paddingHorizontal: scaleW(16),
-    paddingVertical:  scaleH(14),
+    paddingHorizontal: hs(16),
+    paddingVertical:  vs(14),
     fontSize:         fs(15),
     color:            '#0F172A',
   },
   textArea: {
     height:            textAreaH,
     textAlignVertical: 'top',
-    paddingTop:        scaleH(14),
+    paddingTop:        vs(14),
   },
 
   // ── Save Button ──
   buttonContainer: {
-    padding:       scaleW(16),
-    paddingBottom: scaleH(32),
+    padding:       hs(16),
+    paddingBottom: vs(32),
   },
   saveButton: {
     backgroundColor: '#3B82F6',
-    paddingVertical: scaleH(16),
+    paddingVertical: vs(16),
     borderRadius:    ms(12),
     alignItems:      'center',
     elevation:       2,

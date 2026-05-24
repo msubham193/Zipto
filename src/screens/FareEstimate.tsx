@@ -9,8 +9,6 @@ import {
   ActivityIndicator,
   StatusBar,
   Image,
-  Dimensions,
-  PixelRatio,
   TextInput,
   Modal,
   Platform,
@@ -23,18 +21,8 @@ import { Switch } from 'react-native';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBookingStore } from '../store/useBookingStore';
-
-// ─── Responsive Utilities ────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH = 393;
-const BASE_HEIGHT = 852;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-const nf = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-const sp = (size: number) => Math.round(scaleW(size));
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH, SCREEN_HEIGHT } from '../utils/metrics';
+const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 const isLargeScreen = SCREEN_WIDTH >= 428;
 
@@ -432,7 +420,7 @@ const FareEstimate = () => {
             <Text style={styles.totalValue}>₹{baseFare}</Text>
           </View>
           {useCoins && coinDiscount > 0 && (
-            <View style={[styles.row, { marginTop: scaleH(4) }]}>
+            <View style={[styles.row, { marginTop: vs(4) }]}>
               <View style={styles.coinDiscountLabel}>
                 <Icon name="toll" size={sp(14)} color="#7C3AED" />
                 <Text style={styles.coinDiscountText}>Coins Discount (100 coins)</Text>
@@ -441,7 +429,7 @@ const FareEstimate = () => {
             </View>
           )}
           {appliedCoupon && couponDiscount > 0 && (
-            <View style={[styles.row, { marginTop: scaleH(4) }]}>
+            <View style={[styles.row, { marginTop: vs(4) }]}>
               <View style={styles.coinDiscountLabel}>
                 <Icon name="local-offer" size={sp(14)} color="#16A34A" />
                 <Text style={[styles.coinDiscountText, { color: '#16A34A' }]}>
@@ -558,7 +546,7 @@ const FareEstimate = () => {
       </ScrollView>
 
       {/* ── Footer ── */}
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, scaleH(14)) }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, vs(14)) }]}>
         <View style={styles.priceContainer}>
           <Text style={styles.finalPriceLabel}>
             {(coinDiscount > 0 || couponDiscount > 0) ? 'Payable (after discounts)' : 'Total Fare'}
@@ -606,7 +594,7 @@ const FareEstimate = () => {
           <TouchableOpacity
             style={[
               styles.modalSheet,
-              { paddingBottom: Math.max(insets.bottom, scaleH(20)) },
+              { paddingBottom: Math.max(insets.bottom, vs(20)) },
             ]}
             activeOpacity={1}
             onPress={() => { }}
@@ -683,7 +671,7 @@ const FareEstimate = () => {
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const GUTTER = scaleW(16);
+const GUTTER = hs(16);
 
 const styles = StyleSheet.create({
   container: {
@@ -696,12 +684,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: GUTTER,
-    paddingTop: scaleH(14),
-    paddingBottom: scaleH(14),
+    paddingTop: vs(14),
+    paddingBottom: vs(14),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
-    gap: scaleW(10),
+    gap: hs(10),
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -721,7 +709,7 @@ const styles = StyleSheet.create({
   },
   headerTitleLarge: {
     flex: 1,
-    fontSize: nf(isSmallScreen ? 18 : 20),
+    fontSize: fs(isSmallScreen ? 18 : 20),
     fontWeight: '800',
     color: '#111111',
     letterSpacing: -0.3,
@@ -752,7 +740,7 @@ const styles = StyleSheet.create({
     borderColor: '#F3F4F6',
   },
   sectionTitle: {
-    fontSize: nf(isSmallScreen ? 14 : 15),
+    fontSize: fs(isSmallScreen ? 14 : 15),
     fontWeight: '600',
     color: '#374151',
     marginTop: sp(20),
@@ -777,12 +765,12 @@ const styles = StyleSheet.create({
   },
   vehicleTextWrapper: { flex: 1 },
   vehicleName: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: fs(isSmallScreen ? 14 : 16),
     fontWeight: '600',
     color: '#1F2937',
   },
   vehicleCapacity: {
-    fontSize: nf(isSmallScreen ? 11 : 12),
+    fontSize: fs(isSmallScreen ? 11 : 12),
     color: '#6B7280',
     marginTop: sp(2),
   },
@@ -824,15 +812,15 @@ const styles = StyleSheet.create({
     paddingVertical: sp(2),
   },
   label: {
-    fontSize: nf(isSmallScreen ? 10 : 12),
+    fontSize: fs(isSmallScreen ? 10 : 12),
     color: '#6B7280',
     marginBottom: sp(2),
   },
   addressText: {
-    fontSize: nf(isSmallScreen ? 13 : 15),
+    fontSize: fs(isSmallScreen ? 13 : 15),
     fontWeight: '500',
     color: '#111827',
-    lineHeight: nf(isSmallScreen ? 18 : 20),
+    lineHeight: fs(isSmallScreen ? 18 : 20),
   },
 
   // ── Stats row ──
@@ -852,7 +840,7 @@ const styles = StyleSheet.create({
     gap: sp(6),
   },
   statText: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 14),
     fontWeight: '500',
     color: '#4B5563',
   },
@@ -871,13 +859,13 @@ const styles = StyleSheet.create({
     gap: sp(8),
   },
   rowLabel: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 14),
     color: '#6B7280',
     flex: 1,
     flexShrink: 1,
   },
   rowValue: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 14),
     fontWeight: '500',
     color: '#111827',
     flexShrink: 0,
@@ -895,13 +883,13 @@ const styles = StyleSheet.create({
     gap: sp(8),
   },
   totalLabel: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: fs(isSmallScreen ? 14 : 16),
     fontWeight: '600',
     color: '#111827',
     flex: 1,
   },
   totalValue: {
-    fontSize: nf(isSmallScreen ? 18 : 20),
+    fontSize: fs(isSmallScreen ? 18 : 20),
     fontWeight: '700',
     color: '#2563EB',
     flexShrink: 0,
@@ -930,12 +918,12 @@ const styles = StyleSheet.create({
   },
   surgeBannerText: { flex: 1, gap: sp(2) },
   surgeBannerTitle: {
-    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     fontWeight: '700',
     color: '#B91C1C',
   },
   surgeBannerReason: {
-    fontSize: nf(isSmallScreen ? 10 : 11),
+    fontSize: fs(isSmallScreen ? 10 : 11),
     color: '#6B7280',
   },
   surgeBadge: {
@@ -946,7 +934,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   surgeBadgeText: {
-    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.2,
@@ -961,12 +949,12 @@ const styles = StyleSheet.create({
     gap: sp(4),
   },
   coinDiscountText: {
-    fontSize: nf(13),
+    fontSize: fs(13),
     color: '#7C3AED',
     fontWeight: '500',
   },
   coinDiscountValue: {
-    fontSize: nf(13),
+    fontSize: fs(13),
     color: '#7C3AED',
     fontWeight: '600',
   },
@@ -978,11 +966,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#DDD6FE',
     paddingHorizontal: sp(14),
-    paddingVertical: scaleH(14),
+    paddingVertical: vs(14),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   coinsCardLeft: {
     flexDirection: 'row',
@@ -1000,15 +988,15 @@ const styles = StyleSheet.create({
   },
   coinsTextBlock: { flex: 1 },
   coinsTitle: {
-    fontSize: nf(13),
+    fontSize: fs(13),
     color: '#374151',
     fontWeight: '500',
   },
   coinsBold: { color: '#7C3AED', fontWeight: '700' },
   coinsSub: {
-    fontSize: nf(11),
+    fontSize: fs(11),
     color: '#6B7280',
-    marginTop: scaleH(2),
+    marginTop: vs(2),
   },
 
   // ── Coupon ──
@@ -1016,22 +1004,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: sp(8),
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
   couponInput: {
     flex: 1,
-    height: scaleH(46),
+    height: vs(46),
     borderWidth: 1.5,
     borderColor: '#D1D5DB',
     borderRadius: ms(10),
     paddingHorizontal: sp(14),
-    fontSize: nf(14),
+    fontSize: fs(14),
     color: '#111827',
     backgroundColor: '#F9FAFB',
     letterSpacing: 1,
   },
   couponApplyBtn: {
-    height: scaleH(46),
+    height: vs(46),
     paddingHorizontal: sp(18),
     backgroundColor: '#2563EB',
     borderRadius: ms(10),
@@ -1041,7 +1029,7 @@ const styles = StyleSheet.create({
   couponApplyText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: nf(13),
+    fontSize: fs(13),
   },
   couponApplied: {
     flexDirection: 'row',
@@ -1052,8 +1040,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#86EFAC',
     paddingHorizontal: sp(14),
-    paddingVertical: scaleH(12),
-    marginBottom: scaleH(12),
+    paddingVertical: vs(12),
+    marginBottom: vs(12),
   },
   couponAppliedLeft: {
     flexDirection: 'row',
@@ -1066,17 +1054,17 @@ const styles = StyleSheet.create({
     gap: sp(10),
   },
   couponAppliedCode: {
-    fontSize: nf(13),
+    fontSize: fs(13),
     fontWeight: '700',
     color: '#15803D',
   },
   couponAppliedTitle: {
-    fontSize: nf(11),
+    fontSize: fs(11),
     color: '#4B5563',
-    marginTop: scaleH(2),
+    marginTop: vs(2),
   },
   couponAppliedSaving: {
-    fontSize: nf(14),
+    fontSize: fs(14),
     fontWeight: '700',
     color: '#16A34A',
   },
@@ -1088,13 +1076,13 @@ const styles = StyleSheet.create({
     padding: sp(14),
     borderWidth: 1,
     borderColor: '#F3F4F6',
-    gap: scaleH(8),
+    gap: vs(8),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   noteRow: {
     flexDirection: 'row',
@@ -1106,13 +1094,13 @@ const styles = StyleSheet.create({
     height: sp(5),
     borderRadius: sp(3),
     backgroundColor: '#9CA3AF',
-    marginTop: scaleH(7),
+    marginTop: vs(7),
     flexShrink: 0,
   },
   noteText: {
-    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     color: '#4B5563',
-    lineHeight: nf(isSmallScreen ? 17 : 19),
+    lineHeight: fs(isSmallScreen ? 17 : 19),
     flex: 1,
   },
 
@@ -1134,17 +1122,17 @@ const styles = StyleSheet.create({
   },
   priceContainer: { flex: 1, minWidth: 0 },
   finalPriceLabel: {
-    fontSize: nf(isSmallScreen ? 11 : 12),
+    fontSize: fs(isSmallScreen ? 11 : 12),
     color: '#6B7280',
   },
   finalPriceStrike: {
-    fontSize: nf(12),
+    fontSize: fs(12),
     color: '#9CA3AF',
     textDecorationLine: 'line-through',
-    marginTop: scaleH(1),
+    marginTop: vs(1),
   },
   finalPrice: {
-    fontSize: nf(isSmallScreen ? 20 : 24),
+    fontSize: fs(isSmallScreen ? 20 : 24),
     fontWeight: '700',
     color: '#111827',
   },
@@ -1155,7 +1143,7 @@ const styles = StyleSheet.create({
     height: sp(isSmallScreen ? 44 : 50),
   },
   bookButtonText: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: fs(isSmallScreen ? 14 : 16),
     fontWeight: '600',
   },
 
@@ -1168,7 +1156,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: sp(16),
-    fontSize: nf(16),
+    fontSize: fs(16),
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -1181,11 +1169,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: sp(16),
-    fontSize: nf(16),
+    fontSize: fs(16),
     color: '#374151',
     textAlign: 'center',
     marginBottom: sp(24),
-    lineHeight: nf(24),
+    lineHeight: fs(24),
   },
   retryButton: {
     backgroundColor: '#2563EB',
@@ -1196,7 +1184,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: nf(15),
+    fontSize: fs(15),
   },
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1211,7 +1199,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: sp(24),
     borderTopRightRadius: sp(24),
-    paddingTop: scaleH(12),
+    paddingTop: vs(12),
     paddingHorizontal: GUTTER,
     maxHeight: SCREEN_HEIGHT * 0.82,
     // shadow on iOS
@@ -1223,20 +1211,20 @@ const styles = StyleSheet.create({
   },
   modalHandle: {
     width: sp(40),
-    height: scaleH(4),
+    height: vs(4),
     borderRadius: sp(2),
     backgroundColor: '#D1D5DB',
     alignSelf: 'center',
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: scaleH(14),
+    marginBottom: vs(14),
   },
   modalTitle: {
-    fontSize: nf(isSmallScreen ? 17 : 19),
+    fontSize: fs(isSmallScreen ? 17 : 19),
     fontWeight: '800',
     color: '#111111',
     letterSpacing: -0.3,
@@ -1259,16 +1247,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FDE68A',
     paddingHorizontal: sp(14),
-    paddingVertical: scaleH(14),
-    marginBottom: scaleH(16),
+    paddingVertical: vs(14),
+    marginBottom: vs(16),
     gap: sp(12),
   },
   modalWarningTextWrap: { flex: 1 },
   modalWarningText: {
-    fontSize: nf(isSmallScreen ? 13 : 14),
+    fontSize: fs(isSmallScreen ? 13 : 14),
     fontWeight: '600',
     color: '#78350F',
-    lineHeight: nf(20),
+    lineHeight: fs(20),
   },
   modalWarningIcon: {
     width: sp(56),
@@ -1286,35 +1274,35 @@ const styles = StyleSheet.create({
   // Two-column grid
   modalScroll: {
     flexGrow: 0,
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
   },
   restrictedGrid: {
-    gap: scaleH(4),
+    gap: vs(4),
   },
   restrictedGridRow: {
     flexDirection: 'row',
-    gap: scaleW(8),
+    gap: hs(8),
   },
   restrictedGridCol: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: sp(6),
-    paddingVertical: scaleH(5),
+    paddingVertical: vs(5),
   },
   restrictedBullet: {
     width: sp(5),
     height: sp(5),
     borderRadius: sp(3),
     backgroundColor: '#6B7280',
-    marginTop: scaleH(6),
+    marginTop: vs(6),
     flexShrink: 0,
   },
   restrictedItem: {
     flex: 1,
-    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     color: '#374151',
-    lineHeight: nf(18),
+    lineHeight: fs(18),
     fontWeight: '400',
   },
 
@@ -1322,13 +1310,13 @@ const styles = StyleSheet.create({
   modalOkBtn: {
     backgroundColor: '#2563EB',
     borderRadius: sp(14),
-    paddingVertical: scaleH(15),
+    paddingVertical: vs(15),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: scaleH(4),
+    marginTop: vs(4),
   },
   modalOkBtnText: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: fs(isSmallScreen ? 14 : 16),
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.2,

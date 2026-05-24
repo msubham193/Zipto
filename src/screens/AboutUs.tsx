@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -15,15 +13,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
 
 // ─── Brand Colors ─────────────────────────────────────────────────────────────
 const BRAND_ORANGE = '#e45c33';
@@ -315,8 +305,8 @@ const ContactRow = ({
 );
 
 // ─── Derived layout values ────────────────────────────────────────────────────
-const GUTTER       = scaleW(20);
-const CARD_GAP     = scaleW(10);
+const GUTTER       = hs(20);
+const CARD_GAP     = hs(10);
 const STAT_CARD_W  = (SCREEN_WIDTH - GUTTER * 2 - CARD_GAP * 3) / 2;
 const VALUE_CARD_W = STAT_CARD_W;
 
@@ -329,8 +319,8 @@ const styles = StyleSheet.create({
     flexDirection:      'row',
     alignItems:         'center',
     justifyContent:     'space-between',
-    paddingHorizontal:  scaleW(16),
-    paddingVertical:    scaleH(14),
+    paddingHorizontal:  hs(16),
+    paddingVertical:    vs(14),
     backgroundColor:    WHITE,
     borderBottomWidth:  1,
     borderBottomColor:  SLATE_200,
@@ -353,18 +343,18 @@ const styles = StyleSheet.create({
   placeholder: { width: ms(40) },
 
   scrollView:    { flex: 1 },
-  scrollContent: { paddingHorizontal: GUTTER, paddingBottom: scaleH(40) },
+  scrollContent: { paddingHorizontal: GUTTER, paddingBottom: vs(40) },
 
   // ── Hero ──
   heroSection: {
     alignItems:    'center',
-    paddingTop:    scaleH(40),
-    paddingBottom: scaleH(32),
+    paddingTop:    vs(40),
+    paddingBottom: vs(32),
   },
   wordmark: {
     flexDirection: 'row',
     alignItems:    'flex-end',
-    marginBottom:  scaleH(10),
+    marginBottom:  vs(10),
   },
   wordmarkZ: {
     fontSize:   fs(54),
@@ -385,22 +375,22 @@ const styles = StyleSheet.create({
     color:         SLATE_400,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
-    marginBottom:  scaleH(16),
+    marginBottom:  vs(16),
   },
   taglineLine: {
-    width:           scaleW(48),
+    width:           hs(48),
     height:          3,
     borderRadius:    2,
     backgroundColor: '#3B82F6',
   },
 
   // ── Section ──
-  section: { marginBottom: scaleH(28) },
+  section: { marginBottom: vs(28) },
   sectionHeader: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           scaleW(10),
-    marginBottom:  scaleH(14),
+    gap:           hs(10),
+    marginBottom:  vs(14),
   },
   sectionIconBadge: {
     width:          ms(34),
@@ -448,13 +438,13 @@ const styles = StyleSheet.create({
     borderWidth:    2,
     justifyContent: 'center',
     alignItems:     'center',
-    marginBottom:   scaleH(10),
+    marginBottom:   vs(10),
   },
   statValue: {
     fontSize:     fs(13),   // ← reduced from fs(26)
     fontWeight:   '700',    // ← reduced from '800'
     fontFamily:   'Poppins-Regular',
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
     textAlign:    'center',
   },
   statLabel: {
@@ -474,13 +464,13 @@ const styles = StyleSheet.create({
     shadowOffset:    { width: 0, height: 1 },
     shadowOpacity:   0.05,
     shadowRadius:    4,
-    paddingVertical: scaleH(4),
+    paddingVertical: vs(4),
   },
   featureRow: {
     flexDirection:     'row',
     alignItems:        'center',
     paddingHorizontal: ms(16),
-    paddingVertical:   scaleH(12),
+    paddingVertical:   vs(12),
     borderBottomWidth: 1,
     borderBottomColor: SLATE_100,
   },
@@ -489,9 +479,9 @@ const styles = StyleSheet.create({
     height:          6,
     borderRadius:    3,
     backgroundColor: BRAND_ORANGE,
-    marginRight:     scaleW(10),
+    marginRight:     hs(10),
   },
-  featureIcon: { marginRight: scaleW(10) },
+  featureIcon: { marginRight: hs(10) },
   featureText: {
     flex:       1,
     fontSize:   fs(13),
@@ -524,7 +514,7 @@ const styles = StyleSheet.create({
     borderRadius:   ms(24),
     justifyContent: 'center',
     alignItems:     'center',
-    marginBottom:   scaleH(8),
+    marginBottom:   vs(8),
   },
   valueText: {
     fontSize:   fs(12),
@@ -556,14 +546,14 @@ const styles = StyleSheet.create({
     borderRadius:   ms(11),
     justifyContent: 'center',
     alignItems:     'center',
-    marginRight:    scaleW(12),
+    marginRight:    hs(12),
   },
   contactTextBlock: { flex: 1 },
   contactLabel: {
     fontSize:      fs(11),
     fontFamily:    'Poppins-Regular',
     color:         SLATE_400,
-    marginBottom:  scaleH(2),
+    marginBottom:  vs(2),
     fontWeight:    '500',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -577,7 +567,7 @@ const styles = StyleSheet.create({
   divider: {
     height:          1,
     backgroundColor: SLATE_100,
-    marginLeft:      ms(42) + scaleW(12) + ms(16),
+    marginLeft:      ms(42) + hs(12) + ms(16),
   },
 
   // ── Social ──
@@ -596,11 +586,11 @@ const styles = StyleSheet.create({
   socialRow: {
     flexDirection:     'row',
     alignItems:        'center',
-    paddingVertical:   scaleH(14),
+    paddingVertical:   vs(14),
     paddingHorizontal: ms(16),
     borderBottomWidth: 1,
     borderBottomColor: SLATE_100,
-    minHeight:         scaleH(60),
+    minHeight:         vs(60),
   },
   socialRowLast: { borderBottomWidth: 0 },
   socialIconBox: {
@@ -609,9 +599,9 @@ const styles = StyleSheet.create({
     borderRadius:   ms(10),
     justifyContent: 'center',
     alignItems:     'center',
-    marginRight:    scaleW(14),
+    marginRight:    hs(14),
   },
-  socialTextBlock: { flex: 1, marginRight: scaleW(8) },
+  socialTextBlock: { flex: 1, marginRight: hs(8) },
   socialPlatform: {
     fontSize:      fs(15),
     fontWeight:    '600',
@@ -624,7 +614,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color:      BRAND_BLUE,
     fontWeight: '500',
-    marginTop:  scaleH(2),
+    marginTop:  vs(2),
   },
   socialArrow: {
     width:           ms(28),
@@ -643,28 +633,28 @@ const styles = StyleSheet.create({
   // ── Footer ──
   footer: {
     alignItems:    'center',
-    paddingTop:    scaleH(20),
-    paddingBottom: scaleH(10),
+    paddingTop:    vs(20),
+    paddingBottom: vs(10),
   },
   footerLine: {
-    width:           scaleW(60),
+    width:           hs(60),
     height:          2,
     borderRadius:    1,
     backgroundColor: SLATE_200,
-    marginBottom:    scaleH(16),
+    marginBottom:    vs(16),
   },
   versionText: {
     fontSize:     fs(12),
     fontWeight:   '600',
     fontFamily:   'Poppins-Regular',
     color:        SLATE_400,
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   copyrightText: {
     fontSize:     fs(11),
     fontFamily:   'Poppins-Regular',
     color:        '#CBD5E1',
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
   },
 });
 

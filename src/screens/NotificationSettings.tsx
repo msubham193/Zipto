@@ -6,35 +6,18 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 // ─── Derived responsive values ────────────────────────────────────────────────
 const backBtnSize = ms(40);
 // desc indent = icon size + gap
-const descIndent  = ms(20) + scaleW(8);
+const descIndent  = ms(20) + hs(8);
 
 // ─── Reusable row component ───────────────────────────────────────────────────
 const SwitchRow = ({
@@ -194,8 +177,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -217,7 +200,7 @@ const styles = StyleSheet.create({
   placeholder: { width: backBtnSize },
 
   scrollView:    { flex: 1 },
-  scrollContent: { padding: scaleW(16) },
+  scrollContent: { padding: hs(16) },
 
   // ── Info banner ──
   infoCard: {
@@ -226,8 +209,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     padding: ms(14),
     borderRadius: ms(12),
-    gap: scaleW(12),
-    marginBottom: scaleH(24),
+    gap: hs(12),
+    marginBottom: vs(24),
   },
   infoText: {
     flex: 1,
@@ -238,13 +221,13 @@ const styles = StyleSheet.create({
   },
 
   // ── Section ──
-  section: { marginBottom: scaleH(24) },
+  section: { marginBottom: vs(24) },
   sectionTitle: {
     fontSize: fs(16),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
 
   // ── Card ──
@@ -264,15 +247,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(14),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(14),
   },
-  settingInfo:   { flex: 1, marginRight: scaleW(12) },
+  settingInfo:   { flex: 1, marginRight: hs(12) },
   settingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(8),
-    marginBottom: scaleH(4),
+    gap: hs(8),
+    marginBottom: vs(4),
   },
   settingTitle: {
     fontSize: fs(15),
@@ -289,7 +272,7 @@ const styles = StyleSheet.create({
   settingDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginLeft: scaleW(16),
+    marginLeft: hs(16),
   },
 });
 

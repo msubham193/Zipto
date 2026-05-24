@@ -8,8 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
-  Dimensions,
-  PixelRatio,
   ActivityIndicator,
   StatusBar,
   Keyboard,
@@ -19,22 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/useAuthStore';
 import { authApi } from '../api/client';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const ProfileSetup = () => {
   const navigation = useNavigation<any>();
@@ -281,19 +264,19 @@ const styles = StyleSheet.create({
   },
   inner: {
     flexGrow: 1,
-    paddingHorizontal: scaleW(24),
-    paddingTop: scaleH(60),
+    paddingHorizontal: hs(24),
+    paddingTop: vs(60),
     alignItems: 'center',
   },
 
   // ── Skip ──
   skipButton: {
     position: 'absolute',
-    top: scaleH(52),
-    right: scaleW(24),
+    top: vs(52),
+    right: hs(24),
     zIndex: 10,
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(8),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(8),
     borderRadius: ms(20),
     backgroundColor: '#F1F5F9',
   },
@@ -305,8 +288,8 @@ const styles = StyleSheet.create({
 
   // ── Avatar ──
   avatarContainer: {
-    marginTop: scaleH(40),
-    marginBottom: scaleH(32),
+    marginTop: vs(40),
+    marginBottom: vs(32),
     position: 'relative',
   },
   avatar: {
@@ -347,7 +330,7 @@ const styles = StyleSheet.create({
     fontSize: fs(26),
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
     textAlign: 'center',
   },
   subtitle: {
@@ -355,7 +338,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: fs(15) * 1.5,
-    marginBottom: scaleH(36),
+    marginBottom: vs(36),
   },
 
   // ── Interactive area — now uses translateY (native driver) ──
@@ -367,7 +350,7 @@ const styles = StyleSheet.create({
   // ── Input ──
   inputWrapper: {
     width: '100%',
-    marginBottom: scaleH(24),
+    marginBottom: vs(24),
   },
   inputContainer: {
     flexDirection: 'row',
@@ -376,8 +359,8 @@ const styles = StyleSheet.create({
     borderRadius: ms(14),
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    paddingHorizontal: scaleW(16),
-    height: scaleH(56),
+    paddingHorizontal: hs(16),
+    height: vs(56),
   },
   inputContainerFocused: {
     borderColor: '#2563EB',
@@ -392,7 +375,7 @@ const styles = StyleSheet.create({
     borderColor: '#EF4444',
   },
   inputIcon: {
-    marginRight: scaleW(12),
+    marginRight: hs(12),
   },
   input: {
     flex: 1,
@@ -404,8 +387,8 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: fs(12),
-    marginTop: scaleH(8),
-    marginLeft: scaleW(4),
+    marginTop: vs(8),
+    marginLeft: hs(4),
   },
 
   // ── Button ──
@@ -413,11 +396,11 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#2563EB',
     borderRadius: ms(14),
-    paddingVertical: scaleH(16),
+    paddingVertical: vs(16),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   View,
   StyleSheet,
-  Dimensions,
   Text,
   TouchableOpacity,
   ActivityIndicator,
@@ -14,7 +13,6 @@ import {
   Vibration,
   TextInput,
   ScrollView,
-  PixelRatio,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,20 +23,7 @@ import { googleMapsApi } from '../api/googleMaps';
 import { paymentApi } from '../api/client';
 import { useBookingStore } from '../store/useBookingStore';
 import RazorpayCheckout from 'react-native-razorpay';
-
-const { width, height } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (width / BASE_WIDTH) * size;
-const scaleH = (size: number) => (height / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH, SCREEN_HEIGHT } from '../utils/metrics';
 
 type BookingStatus = 'searching' | 'assigned' | 'arriving' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -1260,8 +1245,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   map: {
-    width,
-    height,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
     ...StyleSheet.absoluteFillObject,
   },
   mapLoadingOverlay: {
@@ -1942,7 +1927,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   successContainer: {
-    width: width * 0.82,
+    width: SCREEN_WIDTH * 0.82,
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
     paddingVertical: 34,
@@ -1994,7 +1979,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: height * 0.78,
+    maxHeight: SCREEN_HEIGHT * 0.78,
     overflow: 'hidden',
   },
   cancelModalScroll: {

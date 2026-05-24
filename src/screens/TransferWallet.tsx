@@ -9,8 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -19,22 +17,7 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { vehicleApi } from '../api/vehicle';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const TransferToWalletScreen = () => {
   const navigation =
@@ -360,8 +343,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -387,7 +370,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: scaleH(12),
+    marginTop: vs(12),
     fontSize: fs(15),
     color: '#64748B',
   },
@@ -397,19 +380,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: scaleH(24),
+    paddingBottom: vs(24),
   },
 
   // ── Balance Card ──
   balanceCardContainer: {
-    padding: scaleW(16),
+    padding: hs(16),
   },
   balanceCard: {
     borderRadius: ms(20),
     padding: ms(24),
     position: 'relative',
     overflow: 'hidden',
-    minHeight: scaleH(150),
+    minHeight: vs(150),
     elevation: 8,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
@@ -422,13 +405,13 @@ const styles = StyleSheet.create({
   balanceLabel: {
     fontSize: fs(14),
     color: '#DBEAFE',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   balanceAmount: {
     fontSize: fs(44),
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   balanceSubtext: {
     fontSize: fs(16),
@@ -436,21 +419,21 @@ const styles = StyleSheet.create({
   },
   coinsIconContainer: {
     position: 'absolute',
-    right: scaleW(20),
-    top: scaleH(20),
+    right: hs(20),
+    top: vs(20),
     opacity: 0.2,
   },
 
   // ── Section ──
   section: {
-    paddingHorizontal: scaleW(16),
-    marginBottom: scaleH(20),
+    paddingHorizontal: hs(16),
+    marginBottom: vs(20),
   },
   sectionTitle: {
     fontSize: fs(17),
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
 
   // ── Input Card ──
@@ -470,7 +453,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     borderRadius: ms(12),
-    paddingHorizontal: scaleW(14),
+    paddingHorizontal: hs(14),
     backgroundColor: '#F8FAFC',
   },
   input: {
@@ -478,14 +461,14 @@ const styles = StyleSheet.create({
     fontSize: fs(18),
     fontWeight: '600',
     color: '#0F172A',
-    paddingVertical: scaleH(14),
-    marginLeft: scaleW(10),
+    paddingVertical: vs(14),
+    marginLeft: hs(10),
   },
   conversionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: scaleH(10),
-    gap: scaleW(6),
+    marginTop: vs(10),
+    gap: hs(6),
   },
   conversionText: {
     fontSize: fs(14),
@@ -495,13 +478,13 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: fs(13),
     color: '#EF4444',
-    marginTop: scaleH(6),
+    marginTop: vs(6),
     fontWeight: '500',
   },
   quickAmountContainer: {
     flexDirection: 'row',
-    gap: scaleW(8),
-    marginTop: scaleH(16),
+    gap: hs(8),
+    marginTop: vs(16),
   },
   quickAmountBtn: {
     flex: 1,
@@ -548,7 +531,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: scaleH(10),
+    paddingVertical: vs(10),
   },
   summaryLabel: {
     fontSize: fs(14),
@@ -572,9 +555,9 @@ const styles = StyleSheet.create({
     borderRadius: ms(14),
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: scaleW(16),
-    marginBottom: scaleH(20),
-    gap: scaleW(10),
+    marginHorizontal: hs(16),
+    marginBottom: vs(20),
+    gap: hs(10),
     elevation: 4,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 2 },
@@ -598,20 +581,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     padding: ms(16),
     borderRadius: ms(12),
-    marginHorizontal: scaleW(16),
+    marginHorizontal: hs(16),
     alignItems: 'flex-start',
     borderWidth: 1,
     borderColor: '#DBEAFE',
   },
   infoBannerContent: {
     flex: 1,
-    marginLeft: scaleW(12),
+    marginLeft: hs(12),
   },
   infoBannerText: {
     fontSize: fs(13),
     color: '#1E40AF',
     lineHeight: fs(13) * 1.6,
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
   },
 
   // ── Success Modal ──
@@ -620,7 +603,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: scaleW(24),
+    padding: hs(24),
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
@@ -630,19 +613,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalIcon: {
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
   },
   modalTitle: {
     fontSize: fs(22),
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   modalSubtitle: {
     fontSize: fs(15),
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: scaleH(20),
+    marginBottom: vs(20),
   },
   modalInfoRow: {
     flexDirection: 'row',
@@ -651,7 +634,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     padding: ms(14),
     borderRadius: ms(10),
-    marginBottom: scaleH(20),
+    marginBottom: vs(20),
   },
   modalInfoLabel: {
     fontSize: fs(14),
@@ -664,8 +647,8 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     backgroundColor: '#3B82F6',
-    paddingVertical: scaleH(14),
-    paddingHorizontal: scaleW(48),
+    paddingVertical: vs(14),
+    paddingHorizontal: hs(48),
     borderRadius: ms(12),
   },
   modalButtonText: {

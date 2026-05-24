@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
-  Dimensions,
-  PixelRatio,
   Platform,
   Alert,
   ActivityIndicator,
@@ -16,18 +14,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {notificationApi} from '../api/client';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 interface CustomerNotification {
   id: string;
@@ -265,8 +252,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(12),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(12),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -293,7 +280,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
   },
   headerTitle: {
     fontSize: fs(18),
@@ -308,7 +295,7 @@ const styles = StyleSheet.create({
     height: ms(20),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: scaleW(5),
+    paddingHorizontal: hs(5),
   },
   badgeText: {
     fontSize: fs(11),
@@ -318,7 +305,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(4),
+    gap: hs(4),
   },
   iconBtn: {
     width: ms(36),
@@ -333,7 +320,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: scaleW(40),
+    paddingHorizontal: hs(40),
   },
   emptyIconWrap: {
     width: ms(100),
@@ -342,14 +329,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: scaleH(20),
+    marginBottom: vs(20),
   },
   emptyTitle: {
     fontSize: fs(18),
     fontWeight: '700',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   emptySubtitle: {
     fontSize: fs(14),
@@ -360,9 +347,9 @@ const styles = StyleSheet.create({
   },
 
   retryBtn: {
-    marginTop: scaleH(16),
-    paddingHorizontal: scaleW(24),
-    paddingVertical: scaleH(10),
+    marginTop: vs(16),
+    paddingHorizontal: hs(24),
+    paddingVertical: vs(10),
     backgroundColor: '#3B82F6',
     borderRadius: ms(8),
   },
@@ -375,16 +362,16 @@ const styles = StyleSheet.create({
 
   // ── Notification card ──
   scrollContent: {
-    padding: scaleW(16),
-    paddingBottom: scaleH(40),
+    padding: hs(16),
+    paddingBottom: vs(40),
   },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#FFFFFF',
     borderRadius: ms(14),
-    padding: scaleW(14),
-    marginBottom: scaleH(10),
+    padding: hs(14),
+    marginBottom: vs(10),
     ...Platform.select({
       android: {elevation: 1},
       ios: {
@@ -405,7 +392,7 @@ const styles = StyleSheet.create({
     borderRadius: ms(12),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: scaleW(12),
+    marginRight: hs(12),
     flexShrink: 0,
   },
   cardBody: {flex: 1},
@@ -414,14 +401,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(3),
+    marginBottom: vs(3),
   },
   cardMessage: {
     fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     lineHeight: fs(13) * 1.5,
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   cardTime: {
     fontSize: fs(11),
@@ -433,8 +420,8 @@ const styles = StyleSheet.create({
     height: ms(8),
     borderRadius: ms(4),
     backgroundColor: '#3B82F6',
-    marginLeft: scaleW(8),
-    marginTop: scaleH(4),
+    marginLeft: hs(8),
+    marginTop: vs(4),
     flexShrink: 0,
   },
 });

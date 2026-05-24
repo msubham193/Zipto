@@ -80,7 +80,11 @@
       "Bash(find c:/Users/subha/Desktop/DESKTOP/sandeep/Zipto/node_modules/@rnmapbox/maps/android/src/main/java -name *.java -o -name *.kt)",
       "Bash(NDK_BIN=C:/Users/subha/AppData/Local/Android/Sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/windows-x86_64/bin LIBS=c:/Users/subha/Desktop/DESKTOP/sandeep/Zipto/android/app/build/intermediates/merged_native_libs/debug/mergeDebugNativeLibs/out/lib/arm64-v8a __NEW_LINE_00c5da54da539ffe__ $NDK_BIN/llvm-nm.exe -D $LIBS/libreactnative.so)",
       "Bash(find c:/Users/subha/.gradle/caches -name rnmapbox*.aar)",
-      "Bash(adb reverse:*)"
+      "Bash(adb reverse:*)",
+      "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/Notifications.tsx)",
+      "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/NotificationSettings.tsx)",
+      "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/OTPVerification.tsx)",
+      "Bash(sed -i '' 's/scaleW\\(/hs\\(/g; s/scaleH\\(/vs\\(/g' /Users/sandeepnayak/Desktop/Zipto/src/screens/Payment.tsx)"
     ]
   }
 }

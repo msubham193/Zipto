@@ -4,26 +4,9 @@ import {
   StyleSheet,
   Text,
   Animated,
-  Dimensions,
-  PixelRatio,
   StatusBar,
 } from 'react-native';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const ZIPTO_LETTERS = ['Z', 'i', 'p', 't', 'o'];
 
@@ -201,11 +184,8 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.38)',
     fontFamily: 'Cocon-Regular',
     textAlign: 'center',
-    paddingBottom: scaleH(32),
+    paddingBottom: vs(32),
   },
 });
 
 export default Splash;
-
-
-

@@ -10,8 +10,6 @@ import {
   ScrollView,
   Animated,
   Image,
-  Dimensions,
-  PixelRatio,
   Platform,
   KeyboardAvoidingView,
   StatusBar,
@@ -24,6 +22,7 @@ import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi as mapboxApi } from '../api/googleMaps';
 import { useAuthStore } from '../store/useAuthStore';
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 // ─── Parse lat/lon from a shared maps link or plain "lat,lon" text ────────────
 function extractCoordsFromText(text: string): { lat: number; lon: number } | null {
@@ -89,14 +88,6 @@ function haversineDistance(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -183,9 +174,9 @@ const sub = StyleSheet.create({
   sectionLabel: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(8),
-    marginBottom: scaleH(12),
-    marginTop: scaleH(2),
+    gap: hs(8),
+    marginBottom: vs(12),
+    marginTop: vs(2),
   },
   sectionIconBox: {
     width: ms(26),
@@ -207,19 +198,19 @@ const sub = StyleSheet.create({
     borderRadius: ms(10),
     borderWidth: 1,
     borderColor: C.border,
-    paddingHorizontal: scaleW(12),
-    marginBottom: scaleH(8),
+    paddingHorizontal: hs(12),
+    marginBottom: vs(8),
   },
   fieldWrapFocused: {
     borderColor: C.accent,
     backgroundColor: C.accentLight,
   },
-  fieldIcon: { marginRight: scaleW(8) },
+  fieldIcon: { marginRight: hs(8) },
   fieldInput: {
     flex: 1,
     fontSize: fs(13),
     color: C.text,
-    paddingVertical: scaleH(10),
+    paddingVertical: vs(10),
     fontWeight: '400',
   },
 });
@@ -712,7 +703,7 @@ const PickupDropSelection = () => {
             </View>
 
             {/* ── Receiver Details ── */}
-            <View style={[styles.card, { marginBottom: scaleH(12) }]}>
+            <View style={[styles.card, { marginBottom: vs(12) }]}>
               <SectionLabel label="Receiver Details" icon="download" iconColor={C.red} />
               <FieldInput
                 icon="person-outline"
@@ -746,7 +737,7 @@ const PickupDropSelection = () => {
             activeOpacity={1}
             onPress={() => !importLoading && setImportModal(p => ({ ...p, visible: false }))}
           />
-          <View style={[styles.importSheet, { paddingBottom: Math.max(insets.bottom, scaleH(20)) }]}>
+          <View style={[styles.importSheet, { paddingBottom: Math.max(insets.bottom, vs(20)) }]}>
             <View style={styles.importSheetHandle} />
             <Text style={styles.importTitle}>
               Import {importModal.field === 'pickup' ? 'Pickup' : 'Drop'} Location
@@ -755,7 +746,7 @@ const PickupDropSelection = () => {
               Paste a Google Maps share link or coordinates (e.g. 20.2961, 85.8245)
             </Text>
             <View style={[styles.importInputWrap, importText.trim().length > 0 && styles.importInputActive]}>
-              <MaterialIcons name="link" size={ms(18)} color={importText ? C.accent : C.textMuted} style={{ marginRight: scaleW(8) }} />
+              <MaterialIcons name="link" size={ms(18)} color={importText ? C.accent : C.textMuted} style={{ marginRight: hs(8) }} />
               <TextInput
                 style={styles.importInput}
                 placeholder="Paste link or coordinates…"
@@ -808,7 +799,7 @@ const PickupDropSelection = () => {
         </Modal>
 
         {/* ── Footer — sits above the home indicator using insets.bottom ── */}
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, scaleH(16)) }]}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, vs(16)) }]}>
           <TouchableOpacity
             style={[styles.continueBtn, !canProceed && styles.continueBtnDisabled]}
             onPress={navigateToBook}
@@ -831,7 +822,7 @@ const PickupDropSelection = () => {
 };
 
 // ─── Style constants ──────────────────────────────────────────────────────────
-const GUTTER = scaleW(16);
+const GUTTER = hs(16);
 const DOT_SIZE = ms(11);
 const ARROW_SIZE = ms(20);
 
@@ -848,12 +839,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: GUTTER,
-    paddingTop: scaleH(14),   // comfortable breathing room below status bar
-    paddingBottom: scaleH(14),
+    paddingTop: vs(14),   // comfortable breathing room below status bar
+    paddingBottom: vs(14),
     backgroundColor: C.surface,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
-    gap: scaleW(10),
+    gap: hs(10),
   },
 
   backBtnRound: {
@@ -880,9 +871,9 @@ const styles = StyleSheet.create({
   // ── Form scroll ──────────────────────────────────────────────────────────
   formScroll: {
     paddingHorizontal: GUTTER,
-    paddingTop: scaleH(14),
-    paddingBottom: scaleH(16),
-    gap: scaleH(10),
+    paddingTop: vs(14),
+    paddingBottom: vs(16),
+    gap: vs(10),
     backgroundColor: C.bg,
   },
 
@@ -902,9 +893,9 @@ const styles = StyleSheet.create({
   routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scaleW(14),
-    paddingVertical: scaleH(6),
-    minHeight: scaleH(62),
+    paddingHorizontal: hs(14),
+    paddingVertical: vs(6),
+    minHeight: vs(62),
     backgroundColor: C.surface,
   },
   routeRowActive: {
@@ -913,7 +904,7 @@ const styles = StyleSheet.create({
   routeIconCol: {
     width: ms(24),
     alignItems: 'center',
-    marginRight: scaleW(12),
+    marginRight: hs(12),
     flexShrink: 0,
   },
   dotPickup: {
@@ -934,30 +925,30 @@ const styles = StyleSheet.create({
   },
   routeConnector: {
     width: 2,
-    height: scaleH(20),
+    height: vs(20),
     backgroundColor: C.border,
-    marginTop: scaleH(3),
+    marginTop: vs(3),
     borderRadius: 1,
   },
   routeDivider: {
     height: 1,
     backgroundColor: C.separator,
-    marginLeft: scaleW(50),
+    marginLeft: hs(50),
   },
   routeTextInput: {
     flex: 1,
     fontSize: fs(13),
     color: '#111111',   // explicit dark — never inherits a faded colour
-    paddingVertical: scaleH(10),
-    paddingHorizontal: scaleW(4),
+    paddingVertical: vs(10),
+    paddingHorizontal: hs(4),
     fontWeight: '400',
     includeFontPadding: false,      // Android: removes extra gap that clips ascenders
     textAlignVertical: 'center',
   },
-  locateLoader: { marginLeft: scaleW(8) },
+  locateLoader: { marginLeft: hs(8) },
   locateBtn: {
-    marginLeft: scaleW(8),
-    padding: scaleW(4),
+    marginLeft: hs(8),
+    padding: hs(4),
   },
 
   // ── Map / Add stops ───────────────────────────────────────────────────────
@@ -979,8 +970,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleW(6),
-    paddingVertical: scaleH(12),
+    gap: hs(6),
+    paddingVertical: vs(12),
   },
   mapStopsBtnText: {
     fontSize: fs(13),
@@ -990,7 +981,7 @@ const styles = StyleSheet.create({
   mapStopsDivider: {
     width: 1,
     backgroundColor: C.border,
-    marginVertical: scaleH(10),
+    marginVertical: vs(10),
   },
 
   // ── Suggestions ───────────────────────────────────────────────────────────
@@ -1006,13 +997,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 6,
   },
-  suggestionBox: { paddingVertical: scaleH(4) },
+  suggestionBox: { paddingVertical: vs(4) },
   suggestionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: scaleH(14),
-    paddingHorizontal: scaleW(16),
-    gap: scaleW(12),
+    paddingVertical: vs(14),
+    paddingHorizontal: hs(16),
+    gap: hs(12),
   },
   suggestionRowBorder: {
     borderBottomWidth: 1,
@@ -1032,7 +1023,7 @@ const styles = StyleSheet.create({
     fontSize: fs(14),
     fontWeight: '600',
     color: C.text,
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
   },
   suggestionAddress: {
     fontSize: fs(12),
@@ -1042,15 +1033,15 @@ const styles = StyleSheet.create({
   suggestionLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(10),
-    paddingVertical: scaleH(16),
-    paddingHorizontal: scaleW(16),
+    gap: hs(10),
+    paddingVertical: vs(16),
+    paddingHorizontal: hs(16),
   },
   suggestionLoadingText: { fontSize: fs(13), color: C.textMuted },
   suggestionEmpty: {
     alignItems: 'center',
-    paddingVertical: scaleH(24),
-    gap: scaleH(4),
+    paddingVertical: vs(24),
+    gap: vs(4),
   },
   suggestionEmptyText: { fontSize: fs(13), color: C.textSub, fontWeight: '500' },
   suggestionEmptySub: { fontSize: fs(12), color: C.textMuted },
@@ -1074,23 +1065,23 @@ const styles = StyleSheet.create({
     fontSize: fs(11),
     fontWeight: '700',
     color: C.textMuted,
-    marginBottom: scaleH(8),
-    marginTop: scaleH(2),
+    marginBottom: vs(8),
+    marginTop: vs(2),
     textTransform: 'uppercase',
     letterSpacing: 0.7,
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: scaleW(7),
-    marginBottom: scaleH(10),
+    gap: hs(7),
+    marginBottom: vs(10),
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(4),
-    paddingHorizontal: scaleW(12),
-    paddingVertical: scaleH(7),
+    gap: hs(4),
+    paddingHorizontal: hs(12),
+    paddingVertical: vs(7),
     borderRadius: ms(20),
     backgroundColor: C.pill,
     borderWidth: 1,
@@ -1110,7 +1101,7 @@ const styles = StyleSheet.create({
   // ── Footer ────────────────────────────────────────────────────────────────
   footer: {
     paddingHorizontal: GUTTER,
-    paddingTop: scaleH(12),
+    paddingTop: vs(12),
     // paddingBottom is set inline using insets.bottom for home indicator clearance
     backgroundColor: C.surface,
     borderTopWidth: 1,
@@ -1124,11 +1115,11 @@ const styles = StyleSheet.create({
   continueBtn: {
     backgroundColor: C.primary,
     borderRadius: ms(14),
-    paddingVertical: scaleH(15),
+    paddingVertical: vs(15),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
   },
   continueBtnDisabled: { backgroundColor: C.border },
   continueBtnText: {
@@ -1150,9 +1141,9 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     borderTopLeftRadius: ms(20),
     borderTopRightRadius: ms(20),
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(12),
-    gap: scaleH(12),
+    paddingHorizontal: hs(20),
+    paddingTop: vs(12),
+    gap: vs(12),
     elevation: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
@@ -1165,7 +1156,7 @@ const styles = StyleSheet.create({
     borderRadius: ms(2),
     backgroundColor: C.borderMed,
     alignSelf: 'center',
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   importTitle: {
     fontSize: fs(16),
@@ -1177,7 +1168,7 @@ const styles = StyleSheet.create({
     fontSize: fs(12),
     color: C.textMuted,
     lineHeight: fs(18),
-    marginTop: scaleH(-4),
+    marginTop: vs(-4),
   },
   importInputWrap: {
     flexDirection: 'row',
@@ -1186,8 +1177,8 @@ const styles = StyleSheet.create({
     borderRadius: ms(12),
     borderWidth: 1.5,
     borderColor: C.border,
-    paddingHorizontal: scaleW(12),
-    paddingVertical: scaleH(2),
+    paddingHorizontal: hs(12),
+    paddingVertical: vs(2),
   },
   importInputActive: {
     borderColor: C.accent,
@@ -1197,22 +1188,22 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fs(13),
     color: C.text,
-    paddingVertical: scaleH(10),
+    paddingVertical: vs(10),
   },
   importHint: {
     fontSize: fs(11),
     color: C.textMuted,
-    marginTop: scaleH(-4),
+    marginTop: vs(-4),
   },
   importActions: {
     flexDirection: 'row',
-    gap: scaleW(10),
-    marginTop: scaleH(4),
+    gap: hs(10),
+    marginTop: vs(4),
   },
   importCancelBtn: {
     flex: 1,
     borderRadius: ms(12),
-    paddingVertical: scaleH(13),
+    paddingVertical: vs(13),
     borderWidth: 1.5,
     borderColor: C.border,
     alignItems: 'center',
@@ -1227,11 +1218,11 @@ const styles = StyleSheet.create({
     flex: 2,
     flexDirection: 'row',
     borderRadius: ms(12),
-    paddingVertical: scaleH(13),
+    paddingVertical: vs(13),
     backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleW(6),
+    gap: hs(6),
   },
   importConfirmBtnDisabled: { backgroundColor: C.border },
   importConfirmText: {

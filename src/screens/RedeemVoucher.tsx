@@ -5,8 +5,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,22 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
 
 const RedeemVouchersScreen = () => {
   const navigation =
@@ -144,8 +127,8 @@ const RedeemVouchersScreen = () => {
 const backBtnSize    = ms(40);
 const voucherIconSz  = ms(64);
 // Card width: two cards per row with a gap between them
-const cardGap        = scaleW(12);
-const voucherCardW   = (SCREEN_WIDTH - scaleW(16) * 2 - cardGap) / 2;
+const cardGap        = hs(12);
+const voucherCardW   = (SCREEN_WIDTH - hs(16) * 2 - cardGap) / 2;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
@@ -156,8 +139,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -178,17 +161,17 @@ const styles = StyleSheet.create({
   },
 
   scrollView:    { flex: 1 },
-  scrollContent: { paddingBottom: scaleH(24) },
+  scrollContent: { paddingBottom: vs(24) },
 
   // ── Balance card ──
   balanceCardContainer: {
-    padding: scaleW(16),
+    padding: hs(16),
   },
   balanceCard: {
     borderRadius: ms(20),
     padding: ms(24),
     overflow: 'hidden',
-    minHeight: scaleH(140),
+    minHeight: vs(140),
     elevation: 8,
     shadowColor: '#F59E0B',
     shadowOffset: { width: 0, height: 4 },
@@ -200,7 +183,7 @@ const styles = StyleSheet.create({
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#FEF3C7',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   balanceAmount: {
     fontSize: fs(48),
@@ -210,19 +193,19 @@ const styles = StyleSheet.create({
   },
   coinsIconContainer: {
     position: 'absolute',
-    right: scaleW(20),
-    top: scaleH(20),
+    right: hs(20),
+    top: vs(20),
     opacity: 0.2,
   },
 
   // ── Section ──
-  section: { paddingHorizontal: scaleW(16) },
+  section: { paddingHorizontal: hs(16) },
   sectionTitle: {
     fontSize: fs(18),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
   },
 
   // ── Voucher grid ──
@@ -251,14 +234,14 @@ const styles = StyleSheet.create({
     borderRadius: voucherIconSz / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: scaleH(10),
+    marginBottom: vs(10),
   },
   voucherBrand: {
     fontSize: fs(15),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
     textAlign: 'center',
   },
   voucherValue: {
@@ -266,13 +249,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#F59E0B',
-    marginBottom: scaleH(6),
+    marginBottom: vs(6),
   },
   voucherCoinsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(4),
-    marginBottom: scaleH(12),
+    gap: hs(4),
+    marginBottom: vs(12),
   },
   voucherCoins: {
     fontSize: fs(12),
@@ -282,12 +265,12 @@ const styles = StyleSheet.create({
   voucherButton: {
     flexDirection: 'row',
     backgroundColor: '#F59E0B',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(8),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(8),
     borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleW(6),
+    gap: hs(6),
     width: '100%',
   },
   disabledButton:    { backgroundColor: '#94A3B8' },
@@ -304,12 +287,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     padding: ms(16),
     borderRadius: ms(12),
-    marginHorizontal: scaleW(16),
-    marginTop: scaleH(16),
+    marginHorizontal: hs(16),
+    marginTop: vs(16),
     alignItems: 'flex-start',
     borderWidth: 1,
     borderColor: '#FDE68A',
-    gap: scaleW(10),
+    gap: hs(10),
   },
   infoBannerText: {
     flex: 1,

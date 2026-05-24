@@ -6,29 +6,12 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Image,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { setLanguage } from '../store';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const LanguageSelection = () => {
   const navigation = useNavigation<any>();
@@ -156,8 +139,8 @@ const styles = StyleSheet.create({
     height: decorCircle1Size,
     borderRadius: decorCircle1Size / 2,
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
-    top: -scaleH(150),
-    right: -scaleW(80),
+    top: -vs(150),
+    right: -hs(80),
   },
   decorCircle2: {
     position: 'absolute',
@@ -165,8 +148,8 @@ const styles = StyleSheet.create({
     height: decorCircle2Size,
     borderRadius: decorCircle2Size / 2,
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    bottom: scaleH(120),
-    left: -scaleW(100),
+    bottom: vs(120),
+    left: -hs(100),
   },
   decorCircle3: {
     position: 'absolute',
@@ -175,16 +158,16 @@ const styles = StyleSheet.create({
     borderRadius: decorCircle3Size / 2,
     backgroundColor: 'rgba(59, 130, 246, 0.06)',
     top: '50%',
-    right: -scaleW(60),
+    right: -hs(60),
   },
 
   // ── Hero ──
   heroContainer: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(10),
+    paddingHorizontal: hs(20),
+    paddingTop: vs(10),
   },
   heroCard: {
-    height: scaleH(250),
+    height: vs(250),
     borderRadius: ms(16),
     overflow: 'hidden',
     borderWidth: 1,
@@ -198,9 +181,9 @@ const styles = StyleSheet.create({
   },
   heroOverlay: {
     position: 'absolute',
-    top: scaleH(16),
-    left: scaleW(16),
-    right: scaleW(16),
+    top: vs(16),
+    left: hs(16),
+    right: hs(16),
   },
   heroText: {
     fontSize: fs(20),
@@ -215,12 +198,12 @@ const styles = StyleSheet.create({
   // ── Content ──
   contentWrapper: {
     flex: 1,
-    paddingHorizontal: scaleW(20),
+    paddingHorizontal: hs(20),
   },
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingBottom: scaleH(20),
+    paddingBottom: vs(20),
   },
   formSection: {
     flex: 1,
@@ -230,14 +213,14 @@ const styles = StyleSheet.create({
   // ── Logo icon ──
   iconWrapper: {
     alignItems: 'center',
-    marginBottom: scaleH(24),
+    marginBottom: vs(24),
     position: 'relative',
   },
   glow: {
     position: 'absolute',
     width: glowSize,
     height: glowSize,
-    top: -scaleH(10),
+    top: -vs(10),
     borderRadius: glowSize / 2,
     backgroundColor: 'rgba(59, 130, 246, 0.25)',
   },
@@ -263,7 +246,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     textAlign: 'center',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   subtitle: {
     fontSize: fs(16),
@@ -271,12 +254,12 @@ const styles = StyleSheet.create({
     color: '#475569',
     textAlign: 'center',
     lineHeight: fs(16) * 1.4,
-    marginBottom: scaleH(40),
+    marginBottom: vs(40),
   },
 
   // ── Language buttons ──
   buttonContainer: {
-    gap: scaleH(16),
+    gap: vs(16),
   },
   languageButton: {
     backgroundColor: '#FFFFFF',
@@ -294,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: scaleW(16),
+    marginRight: hs(16),
   },
   flagIcon: {
     fontSize: fs(28),
@@ -307,7 +290,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
   },
   languageSubtext: {
     fontSize: fs(14),

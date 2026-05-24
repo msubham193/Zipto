@@ -7,8 +7,6 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Dimensions,
-  PixelRatio,
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,15 +17,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/useAuthStore';
 import BottomTabBar from './BottomTabBar';
 import { vehicleApi } from '../api/vehicle';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -154,7 +144,7 @@ const Profile = () => {
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, scaleH(16)) + scaleH(80) }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, vs(16)) + vs(80) }]}
       >
         {/* ── Hero Profile Card ── */}
         <View style={styles.heroCard}>
@@ -190,7 +180,7 @@ const Profile = () => {
                 <MaterialIcons name="local-shipping" size={ms(22)} color="#F97316" />
               </View>
               {statsLoading ? (
-                <ActivityIndicator size="small" color="#F97316" style={{ marginTop: scaleH(6) }} />
+                <ActivityIndicator size="small" color="#F97316" style={{ marginTop: vs(6) }} />
               ) : (
                 <Text style={styles.statValue}>{orderCount ?? 0}</Text>
               )}
@@ -255,12 +245,12 @@ const Profile = () => {
 };
 
 // ─── Sizes ────────────────────────────────────────────────────────────────────
-const GUTTER       = scaleW(16);
+const GUTTER       = hs(16);
 const AVATAR_SIZE  = ms(88);
 const RING_SIZE    = AVATAR_SIZE + ms(8);
 const BACK_SIZE    = ms(38);
 const ICON_BOX     = ms(42);
-const MENU_DIVIDER = ICON_BOX + scaleW(14) + GUTTER;
+const MENU_DIVIDER = ICON_BOX + hs(14) + GUTTER;
 
 const styles = StyleSheet.create({
   root: {
@@ -273,12 +263,12 @@ const styles = StyleSheet.create({
     flexDirection:     'row',
     alignItems:        'center',
     paddingHorizontal: GUTTER,
-    paddingTop:        scaleH(14),
-    paddingBottom:     scaleH(14),
+    paddingTop:        vs(14),
+    paddingBottom:     vs(14),
     backgroundColor:   C.surface,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
-    gap:               scaleW(10),
+    gap:               hs(10),
     shadowColor:       C.shadow,
     shadowOffset:      { width: 0, height: 1 },
     shadowOpacity:     0.05,
@@ -307,17 +297,17 @@ const styles = StyleSheet.create({
 
   // ── Scroll ────────────────────────────────────────────────────────────────
   scroll:        { flex: 1, backgroundColor: C.bg },
-  scrollContent: { paddingHorizontal: GUTTER, paddingTop: scaleH(20) },
+  scrollContent: { paddingHorizontal: GUTTER, paddingTop: vs(20) },
 
   // ── Hero card ─────────────────────────────────────────────────────────────
   heroCard: {
     backgroundColor: C.surface,
     borderRadius:    ms(20),
     alignItems:      'center',
-    paddingTop:      scaleH(28),
-    paddingBottom:   scaleH(20),
+    paddingTop:      vs(28),
+    paddingBottom:   vs(20),
     paddingHorizontal: GUTTER,
-    marginBottom:    scaleH(20),
+    marginBottom:    vs(20),
     borderWidth:     1,
     borderColor:     C.border,
     shadowColor:     C.shadow,
@@ -334,7 +324,7 @@ const styles = StyleSheet.create({
     borderColor:     '#BFDBFE',
     justifyContent:  'center',
     alignItems:      'center',
-    marginBottom:    scaleH(14),
+    marginBottom:    vs(14),
   },
   avatar: {
     width:           AVATAR_SIZE,
@@ -355,31 +345,31 @@ const styles = StyleSheet.create({
     fontWeight:    '800',
     color:         C.text,
     letterSpacing: -0.3,
-    marginBottom:  scaleH(4),
+    marginBottom:  vs(4),
     textAlign:     'center',
   },
   heroEmail: {
     fontSize:     fs(13),
     color:        C.textSub,
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
     textAlign:    'center',
   },
   heroPhone: {
     fontSize:     fs(13),
     color:        C.textMuted,
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
     textAlign:    'center',
   },
   editPill: {
     flexDirection:     'row',
     alignItems:        'center',
-    gap:               scaleW(5),
+    gap:               hs(5),
     borderRadius:      ms(20),
     borderWidth:       1.5,
     borderColor:       C.primary,
-    paddingHorizontal: scaleW(16),
-    paddingVertical:   scaleH(7),
-    marginBottom:      scaleH(20),
+    paddingHorizontal: hs(16),
+    paddingVertical:   vs(7),
+    marginBottom:      vs(20),
   },
   editPillText: {
     fontSize:   fs(13),
@@ -392,7 +382,7 @@ const styles = StyleSheet.create({
     width:         '100%',
     borderTopWidth: 1,
     borderTopColor: C.border,
-    paddingTop:    scaleH(16),
+    paddingTop:    vs(16),
     alignItems:    'center',
   },
   statItem: { alignItems: 'center' },
@@ -403,29 +393,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF7ED',
     justifyContent:  'center',
     alignItems:      'center',
-    marginBottom:    scaleH(6),
+    marginBottom:    vs(6),
   },
   statValue: {
     fontSize:   fs(20),
     fontWeight: '800',
     color:      C.text,
-    marginTop:  scaleH(2),
+    marginTop:  vs(2),
   },
   statLabel: {
     fontSize:   fs(12),
     fontWeight: '500',
     color:      C.textMuted,
-    marginTop:  scaleH(2),
+    marginTop:  vs(2),
   },
 
   // ── Menu sections ─────────────────────────────────────────────────────────
-  section: { marginBottom: scaleH(16) },
+  section: { marginBottom: vs(16) },
   sectionTitle: {
     fontSize:     fs(12),
     fontWeight:   '700',
     color:        C.textMuted,
-    marginBottom: scaleH(8),
-    marginLeft:   scaleW(4),
+    marginBottom: vs(8),
+    marginLeft:   hs(4),
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
@@ -444,9 +434,9 @@ const styles = StyleSheet.create({
   menuRow: {
     flexDirection:     'row',
     alignItems:        'center',
-    paddingVertical:   scaleH(14),
+    paddingVertical:   vs(14),
     paddingHorizontal: GUTTER,
-    gap:               scaleW(14),
+    gap:               hs(14),
   },
   menuIconBox: {
     width:           ICON_BOX,
@@ -473,9 +463,9 @@ const styles = StyleSheet.create({
     flexDirection:     'row',
     alignItems:        'center',
     justifyContent:    'center',
-    gap:               scaleW(8),
+    gap:               hs(8),
     backgroundColor:   C.surface,
-    paddingVertical:   scaleH(16),
+    paddingVertical:   vs(16),
     borderRadius:      ms(14),
     borderWidth:       1.5,
     borderColor:       C.red,
@@ -494,13 +484,13 @@ const styles = StyleSheet.create({
   // ── Version ───────────────────────────────────────────────────────────────
   versionBlock: {
     alignItems:     'center',
-    paddingVertical: scaleH(24),
+    paddingVertical: vs(24),
   },
   versionText: {
     fontSize:     fs(12),
     fontWeight:   '500',
     color:        C.textMuted,
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   copyright: {
     fontSize:   fs(11),

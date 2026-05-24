@@ -6,8 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   StatusBar,
-  Dimensions,
-  PixelRatio,
   Platform,
 } from 'react-native';
 import MapView, { Region } from 'react-native-maps';
@@ -15,14 +13,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { googleMapsApi } from '../api/googleMaps';
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
 const ODISHA_CENTER = { latitude: 20.2961, longitude: 85.8245 };
 const DEFAULT_DELTA = { latitudeDelta: 0.05, longitudeDelta: 0.05 };
@@ -114,7 +106,7 @@ const MapLocationPicker = () => {
       </View>
 
       {/* Header overlay */}
-      <View style={[s.header, { paddingTop: insets.top + scaleH(8) }]}>
+      <View style={[s.header, { paddingTop: insets.top + vs(8) }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={s.backBtn}
@@ -132,7 +124,7 @@ const MapLocationPicker = () => {
       </View>
 
       {/* Bottom card */}
-      <View style={[s.bottomCard, { paddingBottom: Math.max(insets.bottom, scaleH(16)) }]}>
+      <View style={[s.bottomCard, { paddingBottom: Math.max(insets.bottom, vs(16)) }]}>
         <View style={s.addressRow}>
           <View style={[s.addressDot, field === 'pickup' ? s.addressDotPickup : s.addressDotDrop]} />
           <View style={{ flex: 1 }}>
@@ -210,9 +202,9 @@ const s = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scaleW(16),
-    paddingBottom: scaleH(12),
-    gap: scaleW(10),
+    paddingHorizontal: hs(16),
+    paddingBottom: vs(12),
+    gap: hs(10),
     backgroundColor: 'rgba(255,255,255,0.94)',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E8E8E8',
@@ -247,7 +239,7 @@ const s = StyleSheet.create({
   headerSub: {
     fontSize: fs(11),
     color: '#888',
-    marginTop: scaleH(1),
+    marginTop: vs(1),
   },
 
   // ── Bottom card ───────────────────────────────────────────────────────────────
@@ -259,9 +251,9 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: ms(20),
     borderTopRightRadius: ms(20),
-    paddingHorizontal: scaleW(16),
-    paddingTop: scaleH(16),
-    gap: scaleH(14),
+    paddingHorizontal: hs(16),
+    paddingTop: vs(16),
+    gap: vs(14),
     ...Platform.select({
       android: { elevation: 12 },
       ios: {
@@ -275,13 +267,13 @@ const s = StyleSheet.create({
   addressRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: scaleW(12),
+    gap: hs(12),
   },
   addressDot: {
     width: ms(12),
     height: ms(12),
     borderRadius: ms(6),
-    marginTop: scaleH(4),
+    marginTop: vs(4),
     flexShrink: 0,
   },
   addressDotPickup: { backgroundColor: '#22C55E' },
@@ -292,12 +284,12 @@ const s = StyleSheet.create({
     color: '#999',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
   },
   resolveRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
   },
   resolvingText: { fontSize: fs(13), color: '#888' },
   addressText: {
@@ -315,11 +307,11 @@ const s = StyleSheet.create({
   confirmBtn: {
     backgroundColor: '#2563EB',
     borderRadius: ms(14),
-    paddingVertical: scaleH(15),
+    paddingVertical: vs(15),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
   },
   confirmBtnDisabled: { backgroundColor: '#E5E7EB' },
   confirmBtnText: {

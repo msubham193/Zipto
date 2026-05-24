@@ -10,23 +10,11 @@ import {
   Platform,
   Image,
   ScrollView,
-  Dimensions,
-  PixelRatio,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const RESEND_COOLDOWN = 30;
 
@@ -189,13 +177,13 @@ const styles = StyleSheet.create({
   container:        { flex: 1, backgroundColor: '#FFFFFF' },
   keyboardView:     { flex: 1 },
   scrollContent:    { flexGrow: 1 },
-  contentWrapper:   { flex: 1, paddingHorizontal: scaleW(20) },
+  contentWrapper:   { flex: 1, paddingHorizontal: hs(20) },
   heroContainer: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(10),
+    paddingHorizontal: hs(20),
+    paddingTop: vs(10),
   },
   heroCard: {
-    height: scaleH(200),
+    height: vs(200),
     borderRadius: ms(16),
     overflow: 'hidden',
     borderWidth: 1,
@@ -207,12 +195,12 @@ const styles = StyleSheet.create({
     height: '110%',
     position: 'absolute',
   },
-  content: { flex: 1, paddingTop: scaleH(20), paddingBottom: scaleH(20) },
+  content: { flex: 1, paddingTop: vs(20), paddingBottom: vs(20) },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(6),
-    marginBottom: scaleH(20),
+    gap: hs(6),
+    marginBottom: vs(20),
     alignSelf: 'flex-start',
   },
   backIcon: {
@@ -231,13 +219,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   subtitle: {
     fontSize: fs(15),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    marginBottom: scaleH(32),
+    marginBottom: vs(32),
     lineHeight: fs(22),
   },
   phoneText: {
@@ -249,12 +237,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     fontWeight: '600',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   inputContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: ms(12),
-    paddingHorizontal: scaleW(14),
+    paddingHorizontal: hs(14),
     borderWidth: 1,
     borderColor: '#E2E8F0',
     justifyContent: 'center',
@@ -265,26 +253,26 @@ const styles = StyleSheet.create({
     fontSize: fs(24),
     fontWeight: '700',
     fontFamily: 'Poppins-Regular',
-    paddingVertical: scaleH(16),
-    letterSpacing: scaleW(10),
+    paddingVertical: vs(16),
+    letterSpacing: hs(10),
     textAlign: 'center',
   },
   errorText: {
     color: '#EF4444',
     fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: scaleH(6),
-    marginBottom: scaleH(4),
+    marginTop: vs(6),
+    marginBottom: vs(4),
   },
   verifyButton: {
     backgroundColor: '#2563EB',
     borderRadius: ms(12),
-    paddingVertical: scaleH(16),
+    paddingVertical: vs(16),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: scaleH(24),
-    marginBottom: scaleH(16),
+    marginTop: vs(24),
+    marginBottom: vs(16),
   },
   verifyButtonDisabled: { backgroundColor: '#93C5FD' },
   verifyButtonText: {
@@ -292,7 +280,7 @@ const styles = StyleSheet.create({
     fontSize: fs(16),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
-    marginRight: scaleW(8),
+    marginRight: hs(8),
   },
   arrowIcon: {
     width: arrowIconSize,
@@ -303,7 +291,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: scaleH(8),
+    paddingVertical: vs(8),
   },
   resendLabel: {
     fontSize: fs(13),

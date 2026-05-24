@@ -2,11 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
-  Dimensions,
   Text,
   TouchableOpacity,
   Image,
-  PixelRatio,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,16 +18,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import BottomTabBar from './BottomTabBar';
 import { useAuthStore } from '../store/useAuthStore';
 import { notificationApi } from '../api/client';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH = 393;
-const BASE_HEIGHT = 852;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const nf = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-const sp = (size: number) => Math.round(scaleW(size));
-
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
+const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 
 const Home = () => {
@@ -286,7 +276,7 @@ const styles = StyleSheet.create({
     marginBottom: sp(12),
   },
   ziptoText: {
-    fontSize: nf(32),
+    fontSize: fs(32),
     fontFamily: 'Cocon-Regular',
     color: '#0047C3',
   },
@@ -325,7 +315,7 @@ const styles = StyleSheet.create({
     gap: sp(4),
   },
   locationText: {
-    fontSize: nf(14),
+    fontSize: fs(14),
     fontFamily: 'Poppins-Medium',
     color: '#1A1A1A',
     maxWidth: sp(220),
@@ -348,14 +338,14 @@ const styles = StyleSheet.create({
     marginBottom: sp(24),
   },
   servicesTitle: {
-    fontSize: nf(isSmallScreen ? 18 : 20),
+    fontSize: fs(isSmallScreen ? 18 : 20),
     fontWeight: '800',
     fontFamily: 'Poppins-Bold',
     color: '#111827',
     marginBottom: sp(2),
   },
   servicesSubTitle: {
-    fontSize: nf(isSmallScreen ? 13 : 14),
+    fontSize: fs(isSmallScreen ? 13 : 14),
     fontFamily: 'Poppins-Regular',
     color: '#6B7280',
     marginBottom: sp(16),
@@ -410,17 +400,17 @@ const styles = StyleSheet.create({
     marginTop: sp(10),
   },
   serviceCardTitle: {
-    fontSize: nf(isSmallScreen ? 13 : 14),
+    fontSize: fs(isSmallScreen ? 13 : 14),
     fontWeight: '700',
     fontFamily: 'Poppins-SemiBold',
     color: '#0F172A',
     marginBottom: sp(2),
   },
   serviceDescription: {
-    fontSize: nf(isSmallScreen ? 10 : 11),
+    fontSize: fs(isSmallScreen ? 10 : 11),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    lineHeight: nf(isSmallScreen ? 14 : 16),
+    lineHeight: fs(isSmallScreen ? 14 : 16),
   },
 
   // Info Banner
@@ -447,13 +437,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoTitle: {
-    fontSize: nf(isSmallScreen ? 12 : 13),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     fontWeight: '700',
     fontFamily: 'Poppins-SemiBold',
     color: '#1E293B',
   },
   infoDesc: {
-    fontSize: nf(isSmallScreen ? 11 : 12),
+    fontSize: fs(isSmallScreen ? 11 : 12),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginTop: sp(2),

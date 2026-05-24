@@ -5,30 +5,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
 import { THEME } from '../theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import BottomTabBar from './BottomTabBar';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const Payment = () => {
   const navigation = useNavigation();
@@ -100,12 +83,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scaleW(ms(THEME.spacing.m)),
-    paddingVertical: scaleH(ms(THEME.spacing.m)),
+    paddingHorizontal: hs(ms(THEME.spacing.m)),
+    paddingVertical: vs(ms(THEME.spacing.m)),
     backgroundColor: THEME.colors.white,
   },
   backButton: {
-    marginRight: scaleW(ms(THEME.spacing.m)),
+    marginRight: hs(ms(THEME.spacing.m)),
     width: backBtnSize,
     height: backBtnSize,
     borderRadius: backBtnSize / 2,
@@ -122,27 +105,27 @@ const styles = StyleSheet.create({
   // ── Content ──
   content: {
     flex: 1,
-    paddingHorizontal: scaleW(ms(THEME.spacing.l)),
-    paddingTop: scaleH(ms(THEME.spacing.l)),
+    paddingHorizontal: hs(ms(THEME.spacing.l)),
+    paddingTop: vs(ms(THEME.spacing.l)),
   },
   amount: {
     fontSize: fs(40),
     fontWeight: 'bold',
     textAlign: 'center',
     color: THEME.colors.primary,
-    marginBottom: scaleH(6),
+    marginBottom: vs(6),
   },
   amountLabel: {
     textAlign: 'center',
     fontSize: fs(14),
     color: THEME.colors.textSecondary,
-    marginBottom: scaleH(ms(THEME.spacing.xl)),
+    marginBottom: vs(ms(THEME.spacing.xl)),
   },
   sectionTitle: {
     fontSize: fs(ms(THEME.sizes.body1)),
     fontWeight: 'bold',
     color: THEME.colors.text,
-    marginBottom: scaleH(ms(THEME.spacing.m)),
+    marginBottom: vs(ms(THEME.spacing.m)),
   },
 
   // ── Method cards ──
@@ -150,10 +133,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.colors.white,
-    paddingHorizontal: scaleW(ms(THEME.spacing.m)),
-    paddingVertical: scaleH(ms(THEME.spacing.m)),
+    paddingHorizontal: hs(ms(THEME.spacing.m)),
+    paddingVertical: vs(ms(THEME.spacing.m)),
     borderRadius: ms(8),
-    marginBottom: scaleH(ms(THEME.spacing.m)),
+    marginBottom: vs(ms(THEME.spacing.m)),
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -163,16 +146,16 @@ const styles = StyleSheet.create({
   },
   methodName: {
     flex: 1,
-    marginLeft: scaleW(10),
+    marginLeft: hs(10),
     fontSize: fs(ms(THEME.sizes.body1)),
     color: THEME.colors.text,
   },
 
   // ── Footer ──
   footer: {
-    paddingHorizontal: scaleW(ms(THEME.spacing.m)),
-    paddingTop: scaleH(ms(THEME.spacing.m)),
-    paddingBottom: scaleH(10),
+    paddingHorizontal: hs(ms(THEME.spacing.m)),
+    paddingTop: vs(ms(THEME.spacing.m)),
+    paddingBottom: vs(10),
   },
 });
 

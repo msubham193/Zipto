@@ -8,24 +8,13 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 // ─── Derived responsive values ────────────────────────────────────────────────
 const backBtnSize = ms(40);
@@ -54,7 +43,7 @@ const StarRating = ({
 );
 
 const starStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: scaleW(6) },
+  row: { flexDirection: 'row', gap: hs(6) },
 });
 
 // ─── Rating Label ─────────────────────────────────────────────────────────────
@@ -247,8 +236,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -270,9 +259,9 @@ const styles = StyleSheet.create({
   // ── Scroll ──
   scrollView: { flex: 1 },
   scrollContent: {
-    padding: scaleW(16),
-    paddingBottom: scaleH(24),
-    gap: scaleH(16),
+    padding: hs(16),
+    paddingBottom: vs(24),
+    gap: vs(16),
   },
 
   // ── Reward Banner ──
@@ -284,7 +273,7 @@ const styles = StyleSheet.create({
     borderColor: '#FDE68A',
     borderRadius: ms(12),
     padding: ms(14),
-    gap: scaleW(10),
+    gap: hs(10),
   },
   rewardText: {
     fontSize: fs(14),
@@ -312,18 +301,18 @@ const styles = StyleSheet.create({
     fontSize: fs(16),
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   cardSubtitle: {
     fontSize: fs(13),
     color: '#64748B',
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
   },
 
   // ── Stars ──
   starsContainer: {
     alignItems: 'center',
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
   ratingLabelContainer: {
     alignItems: 'center',
@@ -338,14 +327,14 @@ const styles = StyleSheet.create({
   tagsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: scaleW(8),
+    gap: hs(8),
   },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(4),
-    paddingHorizontal: scaleW(14),
-    paddingVertical: scaleH(8),
+    gap: hs(4),
+    paddingHorizontal: hs(14),
+    paddingVertical: vs(8),
     borderRadius: ms(20),
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
@@ -373,21 +362,21 @@ const styles = StyleSheet.create({
     padding: ms(14),
     fontSize: fs(14),
     color: '#0F172A',
-    minHeight: scaleH(120),
+    minHeight: vs(120),
     backgroundColor: '#F8FAFC',
   },
   charCount: {
     fontSize: fs(12),
     color: '#94A3B8',
     textAlign: 'right',
-    marginTop: scaleH(6),
+    marginTop: vs(6),
   },
 
   // ── Footer ──
   footer: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     elevation: 8,
@@ -400,10 +389,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
     backgroundColor: '#3B82F6',
     borderRadius: ms(14),
-    paddingVertical: scaleH(16),
+    paddingVertical: vs(16),
   },
   submitBtnDisabled: { backgroundColor: '#E2E8F0' },
   submitText: {

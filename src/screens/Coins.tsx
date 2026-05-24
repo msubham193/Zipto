@@ -7,8 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,22 +16,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const Coins = () => {
   const navigation =
@@ -401,8 +384,8 @@ const styles = StyleSheet.create({
     flexDirection:     'row',
     alignItems:        'center',
     justifyContent:    'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical:   scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical:   vs(16),
     backgroundColor:   '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -427,20 +410,20 @@ const styles = StyleSheet.create({
 
   // ── Loading ──
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText:      { marginTop: scaleH(12), fontSize: fs(15), color: '#64748B' },
+  loadingText:      { marginTop: vs(12), fontSize: fs(15), color: '#64748B' },
 
   // ── Scroll ──
   scrollView:    { flex: 1 },
-  scrollContent: { paddingBottom: scaleH(100) },
+  scrollContent: { paddingBottom: vs(100) },
 
   // ── Balance Card ──
-  balanceCardContainer: { padding: scaleW(16) },
+  balanceCardContainer: { padding: hs(16) },
   balanceCard: {
     borderRadius:  ms(20),
     padding:       ms(24),
     position:      'relative',
     overflow:      'hidden',
-    minHeight:     scaleH(180),
+    minHeight:     vs(180),
     elevation:     8,
     shadowColor:   '#6366F1',
     shadowOffset:  { width: 0, height: 4 },
@@ -449,33 +432,33 @@ const styles = StyleSheet.create({
   },
   coinsIconContainer: {
     position: 'absolute',
-    right:    scaleW(20),
-    top:      scaleH(20),
+    right:    hs(20),
+    top:      vs(20),
     opacity:  0.3,
   },
   balanceInfo:    { zIndex: 1 },
-  balanceLabel:   { fontSize: fs(14), color: '#E0E7FF', marginBottom: scaleH(8) },
-  balanceAmount:  { fontSize: fs(48), fontWeight: 'bold', color: '#FFFFFF', marginBottom: scaleH(4) },
+  balanceLabel:   { fontSize: fs(14), color: '#E0E7FF', marginBottom: vs(8) },
+  balanceAmount:  { fontSize: fs(48), fontWeight: 'bold', color: '#FFFFFF', marginBottom: vs(4) },
   balanceSubtext: { fontSize: fs(16), color: '#E0E7FF' },
   rateTag: {
     flexDirection:     'row',
     alignItems:        'center',
     backgroundColor:   'rgba(255,255,255,0.15)',
     alignSelf:         'flex-start',
-    paddingHorizontal: scaleW(10),
-    paddingVertical:   scaleH(4),
+    paddingHorizontal: hs(10),
+    paddingVertical:   vs(4),
     borderRadius:      ms(12),
-    marginTop:         scaleH(12),
-    gap:               scaleW(4),
+    marginTop:         vs(12),
+    gap:               hs(4),
     zIndex:            1,
   },
   rateText: { fontSize: fs(12), color: '#E0E7FF', fontWeight: '500' },
 
   // ── Decor circles ──
   decorCircle:  { position: 'absolute', borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)' },
-  decorCircle1: { width: decorCircle1Sz, height: decorCircle1Sz, right: -scaleW(30), bottom: -scaleH(30) },
-  decorCircle2: { width: decorCircle2Sz, height: decorCircle2Sz, right: scaleW(100), top: -scaleH(20) },
-  decorCircle3: { width: decorCircle3Sz, height: decorCircle3Sz, left: -scaleW(20), bottom: scaleH(40) },
+  decorCircle1: { width: decorCircle1Sz, height: decorCircle1Sz, right: -hs(30), bottom: -vs(30) },
+  decorCircle2: { width: decorCircle2Sz, height: decorCircle2Sz, right: hs(100), top: -vs(20) },
+  decorCircle3: { width: decorCircle3Sz, height: decorCircle3Sz, left: -hs(20), bottom: vs(40) },
 
   // ── Transaction History Button style kept for easy re-enable ──
   transactionHistoryButton: {
@@ -484,7 +467,7 @@ const styles = StyleSheet.create({
     backgroundColor:'#FFFFFF',
     padding:        ms(16),
     borderRadius:   ms(12),
-    marginTop:      scaleH(12),
+    marginTop:      vs(12),
     elevation:      2,
     shadowColor:    '#000',
     shadowOffset:   { width: 0, height: 1 },
@@ -496,19 +479,19 @@ const styles = StyleSheet.create({
     fontSize:   fs(15),
     fontWeight: '600',
     color:      '#0F172A',
-    marginLeft: scaleW(12),
+    marginLeft: hs(12),
   },
 
   // ── Section ──
-  section:       { paddingHorizontal: scaleW(16), marginBottom: scaleH(24) },
+  section:       { paddingHorizontal: hs(16), marginBottom: vs(24) },
   sectionHeader: {
     flexDirection:  'row',
     justifyContent: 'space-between',
     alignItems:     'center',
-    marginBottom:   scaleH(16),
+    marginBottom:   vs(16),
   },
-  sectionTitle: { fontSize: fs(18), fontWeight: 'bold', color: '#0F172A', marginBottom: scaleH(16) },
-  seeAllText:   { fontSize: fs(14), fontWeight: '600', color: '#6366F1', marginBottom: scaleH(16) },
+  sectionTitle: { fontSize: fs(18), fontWeight: 'bold', color: '#0F172A', marginBottom: vs(16) },
+  seeAllText:   { fontSize: fs(14), fontWeight: '600', color: '#6366F1', marginBottom: vs(16) },
 
   // ── Transactions Card styles kept for easy re-enable ──
   transactionsCard: {
@@ -532,24 +515,24 @@ const styles = StyleSheet.create({
     borderRadius:  txIconSize / 2,
     justifyContent:'center',
     alignItems:    'center',
-    marginRight:   scaleW(12),
+    marginRight:   hs(12),
   },
   txInfo:        { flex: 1 },
-  txDescription: { fontSize: fs(14), fontWeight: '500', color: '#1E293B', marginBottom: scaleH(4) },
-  txMeta:        { flexDirection: 'row', alignItems: 'center', gap: scaleW(8) },
+  txDescription: { fontSize: fs(14), fontWeight: '500', color: '#1E293B', marginBottom: vs(4) },
+  txMeta:        { flexDirection: 'row', alignItems: 'center', gap: hs(8) },
   txDate:        { fontSize: fs(12), color: '#94A3B8' },
   multiplierTag: {
     backgroundColor:   '#FEF3C7',
-    paddingHorizontal: scaleW(6),
-    paddingVertical:   scaleH(2),
+    paddingHorizontal: hs(6),
+    paddingVertical:   vs(2),
     borderRadius:      ms(6),
   },
   multiplierText: { fontSize: fs(10), fontWeight: 'bold', color: '#D97706' },
-  txCoins:        { fontSize: fs(16), fontWeight: 'bold', marginLeft: scaleW(8) },
-  txDivider:      { height: 1, backgroundColor: '#F1F5F9', marginLeft: txIconSize + scaleW(12) },
+  txCoins:        { fontSize: fs(16), fontWeight: 'bold', marginLeft: hs(8) },
+  txDivider:      { height: 1, backgroundColor: '#F1F5F9', marginLeft: txIconSize + hs(12) },
 
   // ── Options Grid styles kept for easy re-enable ──
-  optionsGrid: { gap: scaleH(12) },
+  optionsGrid: { gap: vs(12) },
   optionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius:    ms(16),
@@ -563,11 +546,11 @@ const styles = StyleSheet.create({
   },
   badge: {
     position:          'absolute',
-    top:               scaleH(12),
-    right:             scaleW(12),
+    top:               vs(12),
+    right:             hs(12),
     backgroundColor:   '#10B981',
-    paddingHorizontal: scaleW(10),
-    paddingVertical:   scaleH(4),
+    paddingHorizontal: hs(10),
+    paddingVertical:   vs(4),
     borderRadius:      ms(12),
   },
   badgeNew:          { backgroundColor: '#F59E0B' },
@@ -578,11 +561,11 @@ const styles = StyleSheet.create({
     borderRadius:   optionIconSize / 2,
     justifyContent: 'center',
     alignItems:     'center',
-    marginBottom:   scaleH(16),
+    marginBottom:   vs(16),
   },
-  optionTitle:       { fontSize: fs(16), fontWeight: '600', color: '#0F172A', marginBottom: scaleH(6) },
-  optionDescription: { fontSize: fs(13), color: '#64748B', marginBottom: scaleH(12) },
-  optionArrow:       { position: 'absolute', bottom: scaleH(20), right: scaleW(20) },
+  optionTitle:       { fontSize: fs(16), fontWeight: '600', color: '#0F172A', marginBottom: vs(6) },
+  optionDescription: { fontSize: fs(13), color: '#64748B', marginBottom: vs(12) },
+  optionArrow:       { position: 'absolute', bottom: vs(20), right: hs(20) },
 
   // ── Earn Card ──
   earnCard: {
@@ -598,7 +581,7 @@ const styles = StyleSheet.create({
   earnItem: {
     flexDirection:   'row',
     alignItems:      'center',
-    paddingVertical: scaleH(12),
+    paddingVertical: vs(12),
   },
   earnIconContainer: {
     width:           earnIconSize,
@@ -607,13 +590,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF2FF',
     justifyContent:  'center',
     alignItems:      'center',
-    marginRight:     scaleW(12),
+    marginRight:     hs(12),
   },
   earnText:     { flex: 1, fontSize: fs(15), color: '#0F172A', fontWeight: '500' },
   earnCoinsTag: {
     backgroundColor:   '#DCFCE7',
-    paddingHorizontal: scaleW(12),
-    paddingVertical:   scaleH(6),
+    paddingHorizontal: hs(12),
+    paddingVertical:   vs(6),
     borderRadius:      ms(12),
   },
   earnCoinsText: { fontSize: fs(14), fontWeight: 'bold', color: '#16A34A' },
@@ -625,17 +608,17 @@ const styles = StyleSheet.create({
     backgroundColor:  '#EFF6FF',
     padding:          ms(16),
     borderRadius:     ms(12),
-    marginHorizontal: scaleW(16),
+    marginHorizontal: hs(16),
     alignItems:       'center',
     borderWidth:      1,
     borderColor:      '#DBEAFE',
-    marginBottom:     scaleH(20),
+    marginBottom:     vs(20),
   },
   infoBannerText: {
     flex:       1,
     fontSize:   fs(13),
     color:      '#1E40AF',
-    marginLeft: scaleW(12),
+    marginLeft: hs(12),
     lineHeight: fs(13) * 1.4,
   },
 });

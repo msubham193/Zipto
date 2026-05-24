@@ -7,8 +7,6 @@ import {
   ScrollView,
   Linking,
   Alert,
-  Dimensions,
-  PixelRatio,
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,16 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const COLORS = {
@@ -82,8 +71,8 @@ const Badge = ({ label, color }: { label: string; color: string }) => (
 const badgeStyle = StyleSheet.create({
   wrap: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: scaleW(10), paddingVertical: scaleH(4),
-    borderRadius: 999, gap: scaleW(5),
+    paddingHorizontal: hs(10), paddingVertical: vs(4),
+    borderRadius: 999, gap: hs(5),
   },
   dot:  { width: ms(6), height: ms(6), borderRadius: 99 },
   text: { fontSize: fs(11), fontFamily: 'Poppins-SemiBold', letterSpacing: 0.3 },
@@ -198,7 +187,7 @@ const Support = () => {
                 </View>
                 <View style={styles.contactRight}>
                   <Badge label={opt.badge} color={opt.badgeColor} />
-                  <MaterialIcons name="chevron-right" size={ms(18)} color={COLORS.inkLight} style={{ marginTop: scaleH(6) }} />
+                  <MaterialIcons name="chevron-right" size={ms(18)} color={COLORS.inkLight} style={{ marginTop: vs(6) }} />
                 </View>
               </TouchableOpacity>
             </FadeInView>
@@ -249,7 +238,7 @@ const Support = () => {
 
           {/* ── Address ── */}
           <FadeInView delay={500}>
-            <View style={[styles.card, { marginBottom: scaleH(32) }]}>
+            <View style={[styles.card, { marginBottom: vs(32) }]}>
               <View style={styles.cardHeader}>
                 <View style={[styles.cardIconSmall, { backgroundColor: COLORS.roseLight }]}>
                   <MaterialIcons name="location-on" size={ms(16)} color={COLORS.rose} />
@@ -290,8 +279,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(20),
-    paddingVertical: scaleH(14),
+    paddingHorizontal: hs(20),
+    paddingVertical: vs(14),
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -314,19 +303,19 @@ const styles = StyleSheet.create({
 
   // ── Scroll ──────────────────────────────────────────────────────────────────
   scroll:        { flex: 1 },
-  scrollContent: { paddingHorizontal: scaleW(20), paddingTop: scaleH(28) },
+  scrollContent: { paddingHorizontal: hs(20), paddingTop: vs(28) },
 
   // ── Hero ────────────────────────────────────────────────────────────────────
   hero: {
     alignItems: 'center',
-    marginBottom: scaleH(32),
+    marginBottom: vs(32),
   },
   heroIconRing: {
     width: HERO_RING, height: HERO_RING,
     borderRadius: HERO_RING / 2,
     borderWidth: 1.5, borderColor: COLORS.border,
     justifyContent: 'center', alignItems: 'center',
-    marginBottom: scaleH(20),
+    marginBottom: vs(20),
     backgroundColor: COLORS.surface,
     shadowColor: COLORS.accent,
     shadowOffset: { width: 0, height: 4 },
@@ -344,7 +333,7 @@ const styles = StyleSheet.create({
     fontSize: fs(26),
     fontFamily: 'Poppins-Bold',
     color: COLORS.ink,
-    marginBottom: scaleH(10),
+    marginBottom: vs(10),
     letterSpacing: -0.4,
   },
   heroSub: {
@@ -353,13 +342,13 @@ const styles = StyleSheet.create({
     color: COLORS.inkMid,
     textAlign: 'center',
     lineHeight: fs(14) * 1.65,
-    marginBottom: scaleH(18),
-    paddingHorizontal: scaleW(12),
+    marginBottom: vs(18),
+    paddingHorizontal: hs(12),
   },
 
   // ── Section label ────────────────────────────────────────────────────────────
   sectionHeader: {
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
   sectionLabel: {
     fontSize: fs(10),
@@ -374,9 +363,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderRadius: ms(14),
-    paddingVertical: scaleH(14),
-    paddingHorizontal: scaleW(14),
-    marginBottom: scaleH(10),
+    paddingVertical: vs(14),
+    paddingHorizontal: hs(14),
+    marginBottom: vs(10),
     borderWidth: 1,
     borderColor: COLORS.border,
     shadowColor: '#0F172A',
@@ -389,7 +378,7 @@ const styles = StyleSheet.create({
     width: CONTACT_ICON, height: CONTACT_ICON,
     borderRadius: ms(12),
     justifyContent: 'center', alignItems: 'center',
-    marginRight: scaleW(14),
+    marginRight: hs(14),
     flexShrink: 0,
   },
   contactBody:  { flex: 1 },
@@ -397,7 +386,7 @@ const styles = StyleSheet.create({
     fontSize: fs(15),
     fontFamily: 'Poppins-SemiBold',
     color: COLORS.ink,
-    marginBottom: scaleH(2),
+    marginBottom: vs(2),
   },
   contactDesc: {
     fontSize: fs(12),
@@ -406,14 +395,14 @@ const styles = StyleSheet.create({
   },
   contactRight: {
     alignItems: 'flex-end',
-    marginLeft: scaleW(8),
+    marginLeft: hs(8),
   },
 
   // ── Quick help styles — kept for easy re-enable ───────────────────────────────
   quickRow: {
     flexDirection: 'row',
-    gap: scaleW(10),
-    marginBottom: scaleH(24),
+    gap: hs(10),
+    marginBottom: vs(24),
   },
   quickCard: {
     flex: 1,
@@ -433,14 +422,14 @@ const styles = StyleSheet.create({
     width: QUICK_ICON, height: QUICK_ICON,
     borderRadius: ms(13),
     justifyContent: 'center', alignItems: 'center',
-    marginBottom: scaleH(10),
+    marginBottom: vs(10),
   },
   quickTitle: {
     fontSize: fs(12),
     fontFamily: 'Poppins-SemiBold',
     color: COLORS.ink,
     textAlign: 'center',
-    marginBottom: scaleH(3),
+    marginBottom: vs(3),
   },
   quickDesc: {
     fontSize: fs(10),
@@ -454,7 +443,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: ms(14),
     padding: ms(18),
-    marginBottom: scaleH(14),
+    marginBottom: vs(14),
     borderWidth: 1,
     borderColor: COLORS.border,
     shadowColor: '#0F172A',
@@ -466,8 +455,8 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(10),
-    marginBottom: scaleH(16),
+    gap: hs(10),
+    marginBottom: vs(16),
   },
   cardIconSmall: {
     width: CARD_ICON_SM, height: CARD_ICON_SM,
@@ -485,7 +474,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: scaleH(11),
+    paddingVertical: vs(11),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
@@ -502,14 +491,14 @@ const styles = StyleSheet.create({
 
   // ── Address ──────────────────────────────────────────────────────────────────
   addressBlock: {
-    marginBottom: scaleH(16),
-    paddingLeft: scaleW(2),
+    marginBottom: vs(16),
+    paddingLeft: hs(2),
   },
   addressLine: {
     fontSize: fs(14),
     fontFamily: 'Poppins-SemiBold',
     color: COLORS.ink,
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   addressSub: {
     fontSize: fs(13),
@@ -521,8 +510,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleW(6),
-    paddingVertical: scaleH(11),
+    gap: hs(6),
+    paddingVertical: vs(11),
     backgroundColor: COLORS.accentLight,
     borderRadius: ms(10),
     borderWidth: 1,

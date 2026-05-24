@@ -5,30 +5,13 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const SavedAddresses = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -136,8 +119,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -159,14 +142,14 @@ const styles = StyleSheet.create({
   placeholder: { width: backBtnSize },
 
   scrollView:    { flex: 1 },
-  scrollContent: { padding: scaleW(16) },
+  scrollContent: { padding: hs(16) },
 
   // ── Address card ──
   addressCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: ms(12),
     padding: ms(16),
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -177,12 +160,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: scaleH(10),
+    marginBottom: vs(10),
   },
   addressTypeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
     flex: 1,
   },
   iconContainer: {
@@ -202,8 +185,8 @@ const styles = StyleSheet.create({
   },
   defaultBadge: {
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: scaleW(8),
-    paddingVertical: scaleH(3),
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(3),
     borderRadius: ms(6),
   },
   defaultBadgeText: {
@@ -227,7 +210,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     lineHeight: fs(14) * 1.6,
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
 
   // ── Action row ──
@@ -235,16 +218,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: scaleH(12),
+    paddingTop: vs(12),
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
   addressActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(6),
-    paddingVertical: scaleH(6),
-    paddingHorizontal: scaleW(12),
+    gap: hs(6),
+    paddingVertical: vs(6),
+    paddingHorizontal: hs(12),
     backgroundColor: '#EFF6FF',
     borderRadius: ms(8),
   },
@@ -268,14 +251,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
     backgroundColor: '#FFFFFF',
-    paddingVertical: scaleH(18),
+    paddingVertical: vs(18),
     borderRadius: ms(12),
     borderWidth: 1.5,
     borderColor: '#3B82F6',
     borderStyle: 'dashed',
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
   },
   addButtonText: {
     fontSize: fs(15),
@@ -290,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     padding: ms(14),
     borderRadius: ms(10),
-    gap: scaleW(10),
+    gap: hs(10),
     alignItems: 'flex-start',
   },
   infoText: {

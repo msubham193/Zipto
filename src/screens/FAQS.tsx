@@ -6,30 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const FAQs = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -335,7 +318,7 @@ const FAQs = () => {
 const backBtnSize       = ms(40);
 const questionIconSize  = ms(36);
 const helpIconSize      = ms(72);
-const answerPaddingLeft = questionIconSize + scaleW(10);
+const answerPaddingLeft = questionIconSize + hs(10);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
@@ -346,8 +329,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -369,18 +352,18 @@ const styles = StyleSheet.create({
   placeholder: { width: backBtnSize },
 
   scrollView: { flex: 1 },
-  scrollContent: { padding: scaleW(16) },
+  scrollContent: { padding: hs(16) },
 
   // ── Search ──
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(12),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(12),
     borderRadius: ms(12),
-    marginBottom: scaleH(20),
-    gap: scaleW(10),
+    marginBottom: vs(20),
+    gap: hs(10),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -395,13 +378,13 @@ const styles = StyleSheet.create({
   },
 
   // ── FAQ Header ──
-  faqHeaderSection: { marginBottom: scaleH(24) },
+  faqHeaderSection: { marginBottom: vs(24) },
   faqMainTitle: {
     fontSize: fs(22),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   faqSubtitle: {
     fontSize: fs(14),
@@ -411,13 +394,13 @@ const styles = StyleSheet.create({
   },
 
   // ── Categories ──
-  categorySection: { marginBottom: scaleH(24) },
+  categorySection: { marginBottom: vs(24) },
   categoryTitle: {
     fontSize: fs(16),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
 
   // ── FAQ Card ──
@@ -425,7 +408,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: ms(12),
     padding: ms(16),
-    marginBottom: scaleH(10),
+    marginBottom: vs(10),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -443,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: scaleW(10),
+    marginRight: hs(10),
   },
   faqQuestionText: {
     flex: 1,
@@ -451,11 +434,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginRight: scaleW(8),
+    marginRight: hs(8),
   },
   faqAnswerContainer: {
-    marginTop: scaleH(12),
-    paddingTop: scaleH(12),
+    marginTop: vs(12),
+    paddingTop: vs(12),
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
@@ -470,20 +453,20 @@ const styles = StyleSheet.create({
   // ── No Results ──
   noResultsContainer: {
     alignItems: 'center',
-    paddingVertical: scaleH(40),
+    paddingVertical: vs(40),
   },
   noResultsText: {
     fontSize: fs(16),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#94A3B8',
-    marginTop: scaleH(12),
+    marginTop: vs(12),
   },
   noResultsSubText: {
     fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#CBD5E1',
-    marginTop: scaleH(4),
+    marginTop: vs(4),
   },
 
   // ── Help Card ──
@@ -492,8 +475,8 @@ const styles = StyleSheet.create({
     padding: ms(24),
     borderRadius: ms(16),
     alignItems: 'center',
-    marginTop: scaleH(8),
-    marginBottom: scaleH(16),
+    marginTop: vs(8),
+    marginBottom: vs(16),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -507,29 +490,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: scaleH(16),
+    marginBottom: vs(16),
   },
   helpCardTitle: {
     fontSize: fs(18),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   helpCardDesc: {
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: scaleH(20),
+    marginBottom: vs(20),
   },
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scaleW(8),
+    gap: hs(8),
     backgroundColor: '#3B82F6',
-    paddingHorizontal: scaleW(24),
-    paddingVertical: scaleH(12),
+    paddingHorizontal: hs(24),
+    paddingVertical: vs(12),
     borderRadius: ms(10),
     elevation: 2,
     shadowColor: '#3B82F6',

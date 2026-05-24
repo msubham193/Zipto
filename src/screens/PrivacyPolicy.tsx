@@ -5,30 +5,13 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const PrivacyPolicy = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -266,8 +249,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -290,8 +273,8 @@ const styles = StyleSheet.create({
 
   // ── Scroll ──
   scrollView:    { flex: 1 },
-  scrollContent: { paddingBottom: scaleH(24) },
-  legalContent:  { padding: scaleW(20) },
+  scrollContent: { paddingBottom: vs(24) },
+  legalContent:  { padding: hs(20) },
 
   // ── Title block ──
   legalTitle: {
@@ -299,20 +282,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   legalUpdate: {
     fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    marginBottom: scaleH(20),
+    marginBottom: vs(20),
   },
   welcomeText: {
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     lineHeight: fs(14) * 1.6,
-    marginBottom: scaleH(24),
+    marginBottom: vs(24),
     padding: ms(16),
     backgroundColor: '#EFF6FF',
     borderRadius: ms(10),
@@ -321,43 +304,43 @@ const styles = StyleSheet.create({
   },
 
   // ── Sections ──
-  section: { marginBottom: scaleH(24) },
+  section: { marginBottom: vs(24) },
   sectionTitle: {
     fontSize: fs(17),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
   subSectionTitle: {
     fontSize: fs(15),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#1E40AF',
-    marginBottom: scaleH(8),
-    marginTop: scaleH(8),
+    marginBottom: vs(8),
+    marginTop: vs(8),
   },
   sectionText: {
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     lineHeight: fs(14) * 1.7,
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
   bulletText: {
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     lineHeight: fs(14) * 1.7,
-    marginBottom: scaleH(8),
-    paddingLeft: scaleW(8),
+    marginBottom: vs(8),
+    paddingLeft: hs(8),
   },
   importantNote: {
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
     color: '#16A34A',
     lineHeight: fs(14) * 1.6,
-    marginTop: scaleH(12),
+    marginTop: vs(12),
     padding: ms(12),
     backgroundColor: '#F0FDF4',
     borderRadius: ms(8),
@@ -369,7 +352,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
     lineHeight: fs(14) * 1.7,
-    marginBottom: scaleH(6),
+    marginBottom: vs(6),
   },
 
   // ── Acknowledgement card ──
@@ -378,8 +361,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#DBEAFE',
     padding: ms(16),
     borderRadius: ms(12),
-    gap: scaleW(12),
-    marginTop: scaleH(8),
+    gap: hs(12),
+    marginTop: vs(8),
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
     alignItems: 'flex-start',

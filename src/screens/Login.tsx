@@ -11,26 +11,14 @@ import {
   Image,
   Keyboard,
   ScrollView,
-  Dimensions,
-  PixelRatio,
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-
-const HERO_HEIGHT_OPEN   = scaleH(250);
-const HERO_HEIGHT_CLOSED = scaleH(120);
+const HERO_HEIGHT_OPEN   = vs(250);
+const HERO_HEIGHT_CLOSED = vs(120);
 
 const Login = () => {
   const navigation = useNavigation<any>();
@@ -174,10 +162,10 @@ const styles = StyleSheet.create({
   container:        { flex: 1, backgroundColor: '#FFFFFF' },
   keyboardView:     { flex: 1 },
   scrollContent:    { flexGrow: 1 },
-  contentWrapper:   { flex: 1, paddingHorizontal: scaleW(20) },
+  contentWrapper:   { flex: 1, paddingHorizontal: hs(20) },
   heroContainer: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(10),
+    paddingHorizontal: hs(20),
+    paddingTop: vs(10),
   },
   heroCard: {
     borderRadius: ms(16),
@@ -191,33 +179,33 @@ const styles = StyleSheet.create({
     height: '110%',
     position: 'absolute',
   },
-  content:     { flex: 1, paddingTop: scaleH(20), paddingBottom: scaleH(20) },
+  content:     { flex: 1, paddingTop: vs(20), paddingBottom: vs(20) },
   formSection: { flex: 1 },
   title: {
     fontSize: fs(28),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   subtitle: {
     fontSize: fs(16),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
-    marginBottom: scaleH(32),
+    marginBottom: vs(32),
   },
   label: {
     fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#475569',
     fontWeight: '600',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   inputContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderRadius: ms(12),
-    paddingHorizontal: scaleW(14),
+    paddingHorizontal: hs(14),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -225,28 +213,28 @@ const styles = StyleSheet.create({
   inputIcon: {
     width: phoneIconSize,
     height: phoneIconSize,
-    marginRight: scaleW(8),
+    marginRight: hs(8),
   },
   input: {
     flex: 1,
     color: '#0F172A',
     fontSize: fs(15),
-    paddingVertical: scaleH(16),
+    paddingVertical: vs(16),
   },
   inputError: { borderColor: '#EF4444' },
   errorText: {
     color: '#EF4444',
     fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: scaleH(6),
-    marginBottom: scaleH(4),
+    marginTop: vs(6),
+    marginBottom: vs(4),
   },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: scaleH(18),
-    marginBottom: scaleH(4),
-    gap: scaleW(10),
+    marginTop: vs(18),
+    marginBottom: vs(4),
+    gap: hs(10),
   },
   checkbox: {
     width: checkboxSize,
@@ -257,7 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: scaleH(1),
+    marginTop: vs(1),
     flexShrink: 0,
   },
   checkboxChecked: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
@@ -278,12 +266,12 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: '#2563EB',
     borderRadius: ms(12),
-    paddingVertical: scaleH(16),
+    paddingVertical: vs(16),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: scaleH(20),
-    marginBottom: scaleH(12),
+    marginTop: vs(20),
+    marginBottom: vs(12),
   },
   loginButtonDisabled: { backgroundColor: '#93C5FD' },
   loginButtonText: {
@@ -291,7 +279,7 @@ const styles = StyleSheet.create({
     fontSize: fs(16),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
-    marginRight: scaleW(8),
+    marginRight: hs(8),
   },
   arrowIcon: {
     width: arrowIconSize,

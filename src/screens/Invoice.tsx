@@ -5,25 +5,13 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
 import { THEME } from '../theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive Utilities ────────────────────────────────────────────────────
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const BASE_WIDTH = 393;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const nf = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-const sp = (size: number) => Math.round(scaleW(size));
-
+import { horizontalScale as hs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
+const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 const isLargeScreen = SCREEN_WIDTH >= 428;
 
@@ -131,7 +119,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   headerTitle: {
-    fontSize: nf(isSmallScreen ? 17 : isLargeScreen ? 22 : 20),
+    fontSize: fs(isSmallScreen ? 17 : isLargeScreen ? 22 : 20),
     fontWeight: 'bold',
     color: THEME.colors.black,
     flexShrink: 1,
@@ -165,13 +153,13 @@ const styles = StyleSheet.create({
     gap: sp(8),
   },
   label: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 14),
     color: THEME.colors.textSecondary,
     flex: 1,
     flexShrink: 1,
   },
   value: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 14),
     color: THEME.colors.text,
     fontWeight: '500',
     flexShrink: 0,
@@ -180,13 +168,13 @@ const styles = StyleSheet.create({
 
   // ── Total row ────────────────────────────────────────────────────────────────
   totalLabel: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: fs(isSmallScreen ? 14 : 16),
     fontWeight: 'bold',
     color: THEME.colors.black,
     flex: 1,
   },
   totalValue: {
-    fontSize: nf(isSmallScreen ? 16 : 18),
+    fontSize: fs(isSmallScreen ? 16 : 18),
     fontWeight: 'bold',
     color: THEME.colors.black,
     flexShrink: 0,
@@ -204,20 +192,20 @@ const styles = StyleSheet.create({
     paddingVertical: sp(4),
   },
   locationLabel: {
-    fontSize: nf(isSmallScreen ? 9 : 10),
+    fontSize: fs(isSmallScreen ? 9 : 10),
     color: THEME.colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   locationValue: {
-    fontSize: nf(isSmallScreen ? 13 : 15),
+    fontSize: fs(isSmallScreen ? 13 : 15),
     color: THEME.colors.text,
     marginTop: sp(2),
   },
 
   // ── Section title ─────────────────────────────────────────────────────────────
   sectionTitle: {
-    fontSize: nf(isSmallScreen ? 14 : 16),
+    fontSize: fs(isSmallScreen ? 14 : 16),
     fontWeight: 'bold',
     color: THEME.colors.text,
     marginBottom: sp(isSmallScreen ? 10 : 14),

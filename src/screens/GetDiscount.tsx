@@ -5,8 +5,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,20 +12,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-
-// ─── Responsive Utilities ────────────────────────────────────────────────────
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH = 393;
-const BASE_HEIGHT = 852;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
-const nf = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-const sp = (size: number) => Math.round(scaleW(size));
-
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
+const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 const isLargeScreen = SCREEN_WIDTH >= 428;
 
@@ -177,7 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: nf(isSmallScreen ? 17 : 20),
+    fontSize: fs(isSmallScreen ? 17 : 20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
@@ -200,7 +186,7 @@ const styles = StyleSheet.create({
     padding: sp(isSmallScreen ? 18 : 24),
     position: 'relative',
     overflow: 'hidden',
-    minHeight: scaleH(isSmallScreen ? 120 : 140),
+    minHeight: vs(isSmallScreen ? 120 : 140),
     elevation: 8,
     shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
@@ -211,13 +197,13 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   balanceLabel: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 14),
     fontFamily: 'Poppins-Regular',
     color: '#D1FAE5',
     marginBottom: sp(6),
   },
   balanceAmount: {
-    fontSize: nf(isSmallScreen ? 38 : isLargeScreen ? 52 : 48),
+    fontSize: fs(isSmallScreen ? 38 : isLargeScreen ? 52 : 48),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
@@ -234,7 +220,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: sp(16),
   },
   sectionTitle: {
-    fontSize: nf(isSmallScreen ? 16 : 18),
+    fontSize: fs(isSmallScreen ? 16 : 18),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
@@ -275,14 +261,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   discountTitle: {
-    fontSize: nf(isSmallScreen ? 17 : 20),
+    fontSize: fs(isSmallScreen ? 17 : 20),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     marginBottom: sp(3),
   },
   discountDescription: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 14),
     fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     opacity: 0.9,
@@ -306,7 +292,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   coinsRequiredText: {
-    fontSize: nf(isSmallScreen ? 13 : 15),
+    fontSize: fs(isSmallScreen ? 13 : 15),
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
@@ -326,7 +312,7 @@ const styles = StyleSheet.create({
   },
   redeemButtonText: {
     color: '#FFFFFF',
-    fontSize: nf(isSmallScreen ? 13 : 15),
+    fontSize: fs(isSmallScreen ? 13 : 15),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
   },
@@ -346,10 +332,10 @@ const styles = StyleSheet.create({
   },
   infoBannerText: {
     flex: 1,
-    fontSize: nf(isSmallScreen ? 11 : 13),
+    fontSize: fs(isSmallScreen ? 11 : 13),
     fontFamily: 'Poppins-Regular',
     color: '#065F46',
-    lineHeight: nf(isSmallScreen ? 16 : 18),
+    lineHeight: fs(isSmallScreen ? 16 : 18),
   },
 });
 

@@ -5,28 +5,11 @@ import {
   StyleSheet,
   FlatList,
   SafeAreaView,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { THEME } from '../theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const HISTORY_DATA = [
   {
@@ -59,7 +42,7 @@ const BookingHistory = () => {
           name="history"
           size={ms(24)}
           color={THEME.colors.black}
-          style={{ marginRight: scaleW(10) }}
+          style={{ marginRight: hs(10) }}
         />
         <Text style={styles.headerTitle}>Your Bookings</Text>
       </View>
@@ -138,7 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.white,
     borderRadius: ms(8),
     padding: ms(THEME.spacing.m),
-    marginBottom: scaleH(THEME.spacing.m),
+    marginBottom: vs(THEME.spacing.m),
     elevation: 1,
   },
   row: {
@@ -157,18 +140,18 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: THEME.colors.border,
-    marginVertical: scaleH(THEME.spacing.s),
+    marginVertical: vs(THEME.spacing.s),
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: scaleH(4),
+    marginVertical: vs(4),
   },
   dot: {
     width: dotSize,
     height: dotSize,
     borderRadius: dotSize / 2,
-    marginRight: scaleW(8),
+    marginRight: hs(8),
   },
   locationText: {
     fontSize: fs(THEME.sizes.body1),

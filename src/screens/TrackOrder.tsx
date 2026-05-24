@@ -5,10 +5,8 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   Image,
   Linking,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -16,22 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_HEIGHT } from '../utils/metrics';
 
 type TrackOrderRouteProp = RouteProp<AppStackParamList, 'TrackOrder'>;
 
@@ -296,9 +279,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#3B82F6',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(12),
-    paddingTop: scaleH(8),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(12),
+    paddingTop: vs(8),
   },
   backButton:    { padding: ms(8) },
   shareButton:   { padding: ms(8) },
@@ -312,7 +295,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: fs(13),
     color: 'rgba(255,255,255,0.8)',
-    marginTop: scaleH(2),
+    marginTop: vs(2),
   },
 
   // ── Map ──
@@ -343,9 +326,9 @@ const styles = StyleSheet.create({
   // ETA overlay
   etaCard: {
     position: 'absolute',
-    top: scaleH(12),
-    left: scaleW(12),
-    right: scaleW(12),
+    top: vs(12),
+    left: hs(12),
+    right: hs(12),
     backgroundColor: '#FFFFFF',
     borderRadius: ms(16),
     padding: ms(14),
@@ -358,27 +341,27 @@ const styles = StyleSheet.create({
   etaContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaleH(10),
+    marginBottom: vs(10),
   },
-  etaText:  { marginLeft: scaleW(12), flex: 1 },
-  etaLabel: { fontSize: fs(13), color: '#64748B', marginBottom: scaleH(2) },
+  etaText:  { marginLeft: hs(12), flex: 1 },
+  etaLabel: { fontSize: fs(13), color: '#64748B', marginBottom: vs(2) },
   etaTime:  { fontSize: fs(20), fontWeight: 'bold', fontFamily: 'Poppins-Regular', color: '#1E293B' },
-  etaDivider: { height: 1, backgroundColor: '#E2E8F0', marginBottom: scaleH(10) },
+  etaDivider: { height: 1, backgroundColor: '#E2E8F0', marginBottom: vs(10) },
   etaStatus:  { flexDirection: 'row', alignItems: 'center' },
   statusDot: {
     width: ms(8),
     height: ms(8),
     borderRadius: ms(4),
     backgroundColor: '#10B981',
-    marginRight: scaleW(8),
+    marginRight: hs(8),
   },
   statusText: { fontSize: fs(14), fontWeight: '600', color: '#1E293B' },
 
   // ── Bottom sheet ──
   bottomSheet: { flex: 1, backgroundColor: '#F8FAFC' },
   bottomSheetContent: {
-    padding: scaleW(16),
-    paddingBottom: scaleH(32),
+    padding: hs(16),
+    paddingBottom: vs(32),
   },
 
   // Driver card
@@ -386,7 +369,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: ms(16),
     padding: ms(16),
-    marginBottom: scaleH(14),
+    marginBottom: vs(14),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -401,7 +384,7 @@ const styles = StyleSheet.create({
     width: driverPhotoSize,
     height: driverPhotoSize,
     borderRadius: driverPhotoSize / 2,
-    marginRight: scaleW(12),
+    marginRight: hs(12),
     flexShrink: 0,
   },
   driverDetails: { flex: 1 },
@@ -410,12 +393,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#1E293B',
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   driverRating: { flexDirection: 'row', alignItems: 'center' },
-  ratingText:   { fontSize: fs(14), fontWeight: '600', color: '#1E293B', marginLeft: scaleW(4) },
-  vehicleText:  { fontSize: fs(12), color: '#64748B', marginLeft: scaleW(4), flex: 1 },
-  driverActions: { flexDirection: 'row', gap: scaleW(8), flexShrink: 0 },
+  ratingText:   { fontSize: fs(14), fontWeight: '600', color: '#1E293B', marginLeft: hs(4) },
+  vehicleText:  { fontSize: fs(12), color: '#64748B', marginLeft: hs(4), flex: 1 },
+  driverActions: { flexDirection: 'row', gap: hs(8), flexShrink: 0 },
   actionButton: {
     width: actionBtnSize,
     height: actionBtnSize,
@@ -430,7 +413,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: ms(16),
     padding: ms(16),
-    marginBottom: scaleH(14),
+    marginBottom: vs(14),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -443,19 +426,19 @@ const styles = StyleSheet.create({
     height: locationDotSize,
     borderRadius: locationDotSize / 2,
     backgroundColor: '#3B82F6',
-    marginTop: scaleH(4),
-    marginRight: scaleW(12),
+    marginTop: vs(4),
+    marginRight: hs(12),
     flexShrink: 0,
   },
   locationLine: {
     width: 2,
-    height: scaleH(24),
+    height: vs(24),
     backgroundColor: '#E2E8F0',
-    marginLeft: scaleW(5),
-    marginVertical: scaleH(6),
+    marginLeft: hs(5),
+    marginVertical: vs(6),
   },
   locationDetails: { flex: 1 },
-  locationLabel:   { fontSize: fs(12), color: '#64748B', marginBottom: scaleH(4) },
+  locationLabel:   { fontSize: fs(12), color: '#64748B', marginBottom: vs(4) },
   locationText:    { fontSize: fs(14), fontWeight: '500', color: '#1E293B' },
 
   // Timeline card
@@ -463,7 +446,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: ms(16),
     padding: ms(16),
-    marginBottom: scaleH(14),
+    marginBottom: vs(14),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -475,10 +458,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#1E293B',
-    marginBottom: scaleH(14),
+    marginBottom: vs(14),
   },
-  timelineItem:  { flexDirection: 'row', marginBottom: scaleH(6) },
-  timelineLeft:  { alignItems: 'center', marginRight: scaleW(12) },
+  timelineItem:  { flexDirection: 'row', marginBottom: vs(6) },
+  timelineLeft:  { alignItems: 'center', marginRight: hs(12) },
   timelineIcon: {
     width: timelineIconSize,
     height: timelineIconSize,
@@ -493,15 +476,15 @@ const styles = StyleSheet.create({
     width: 2,
     flex: 1,
     backgroundColor: '#E2E8F0',
-    marginVertical: scaleH(4),
+    marginVertical: vs(4),
   },
   timelineLineCompleted: { backgroundColor: '#10B981' },
-  timelineContent: { flex: 1, paddingBottom: scaleH(14) },
+  timelineContent: { flex: 1, paddingBottom: vs(14) },
   timelineHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   timelineStepTitle:       { fontSize: fs(14), fontWeight: '600', color: '#64748B' },
   timelineStepTitleActive: { color: '#1E293B' },
@@ -513,7 +496,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: ms(16),
     padding: ms(16),
-    marginBottom: scaleH(14),
+    marginBottom: vs(14),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -525,17 +508,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
     color: '#1E293B',
-    marginBottom: scaleH(12),
+    marginBottom: vs(12),
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: scaleH(8),
+    marginBottom: vs(8),
   },
   summaryLabel:   { fontSize: fs(14), color: '#64748B' },
   summaryValue:   { fontSize: fs(14), fontWeight: '500', color: '#1E293B' },
-  summaryDivider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: scaleH(10) },
+  summaryDivider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: vs(10) },
   summaryTotal:   { fontSize: fs(16), fontWeight: '600', color: '#1E293B' },
   summaryAmount: {
     fontSize: fs(18),
@@ -550,11 +533,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: scaleH(14),
+    paddingVertical: vs(14),
     borderRadius: ms(12),
     borderWidth: 1,
     borderColor: '#3B82F6',
-    gap: scaleW(8),
+    gap: hs(8),
   },
   supportButtonText: {
     fontSize: fs(15),

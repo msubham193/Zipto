@@ -7,8 +7,6 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
-  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -16,22 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
-
-// ─── Responsive helpers ───────────────────────────────────────────────────────
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
-const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
-const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const TransactionHistoryScreen = () => {
   const navigation =
@@ -253,8 +236,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(16),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -271,25 +254,25 @@ const styles = StyleSheet.create({
 
   // ── Loading ──
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: scaleH(12), fontSize: fs(15), color: '#64748B' },
+  loadingText: { marginTop: vs(12), fontSize: fs(15), color: '#64748B' },
 
   // ── Summary bar ──
   summaryBar: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: scaleH(14),
-    paddingHorizontal: scaleW(24),
+    paddingVertical: vs(14),
+    paddingHorizontal: hs(24),
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   summaryItem:    { flex: 1, alignItems: 'center' },
-  summaryLabel:   { fontSize: fs(12), color: '#94A3B8', marginBottom: scaleH(4) },
+  summaryLabel:   { fontSize: fs(12), color: '#94A3B8', marginBottom: vs(4) },
   summaryValue:   { fontSize: fs(18), fontWeight: 'bold' },
   summaryDivider: { width: 1, backgroundColor: '#E2E8F0' },
 
   // ── List ──
   listContent: {
-    padding: scaleW(16),
+    padding: hs(16),
     flexGrow: 1,
   },
 
@@ -300,7 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: ms(16),
     borderRadius: ms(12),
-    marginBottom: scaleH(10),
+    marginBottom: vs(10),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -313,7 +296,7 @@ const styles = StyleSheet.create({
     borderRadius: txIconSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: scaleW(12),
+    marginRight: hs(12),
     flexShrink: 0,
   },
   transactionInfo: { flex: 1 },
@@ -321,37 +304,37 @@ const styles = StyleSheet.create({
     fontSize: fs(15),
     fontWeight: '600',
     color: '#0F172A',
-    marginBottom: scaleH(4),
+    marginBottom: vs(4),
   },
   transactionDate: { fontSize: fs(12), color: '#94A3B8' },
   multiplierTag: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: scaleW(8),
-    paddingVertical: scaleH(3),
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(3),
     borderRadius: ms(8),
     alignSelf: 'flex-start',
-    marginTop: scaleH(6),
-    gap: scaleW(3),
+    marginTop: vs(6),
+    gap: hs(3),
   },
   multiplierText: { fontSize: fs(11), fontWeight: 'bold', color: '#D97706' },
 
   coinsColumn: {
     alignItems: 'flex-end',
-    marginLeft: scaleW(8),
+    marginLeft: hs(8),
     flexShrink: 0,
   },
   transactionAmount: { fontSize: fs(18), fontWeight: 'bold' },
-  coinsLabel: { fontSize: fs(11), color: '#94A3B8', marginTop: scaleH(2) },
+  coinsLabel: { fontSize: fs(11), color: '#94A3B8', marginTop: vs(2) },
 
   // ── Footer loader ──
   footerLoader: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: scaleH(16),
-    gap: scaleW(8),
+    paddingVertical: vs(16),
+    gap: hs(8),
   },
   footerText: { fontSize: fs(13), color: '#64748B' },
 
@@ -360,25 +343,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: scaleH(80),
+    paddingTop: vs(80),
   },
   emptyTitle: {
     fontSize: fs(18),
     fontWeight: 'bold',
     color: '#0F172A',
-    marginTop: scaleH(16),
+    marginTop: vs(16),
   },
   emptySubtitle: {
     fontSize: fs(14),
     color: '#64748B',
-    marginTop: scaleH(8),
+    marginTop: vs(8),
     textAlign: 'center',
   },
   emptyButton: {
-    marginTop: scaleH(24),
+    marginTop: vs(24),
     backgroundColor: '#6366F1',
-    paddingVertical: scaleH(12),
-    paddingHorizontal: scaleW(32),
+    paddingVertical: vs(12),
+    paddingHorizontal: hs(32),
     borderRadius: ms(12),
   },
   emptyButtonText: { color: '#FFFFFF', fontSize: fs(15), fontWeight: '600' },
