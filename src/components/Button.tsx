@@ -86,8 +86,8 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: 48,
-    borderRadius: 8,
+    height: THEME.responsive.ms(48),
+    borderRadius: THEME.responsive.ms(8),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: THEME.fonts.medium,
-    fontSize: THEME.sizes.body1,
+    fontSize: THEME.responsive.fs(THEME.sizes.body1),
     fontWeight: '600',
   },
 });

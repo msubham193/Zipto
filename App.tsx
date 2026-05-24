@@ -1,12 +1,13 @@
-import React, {useEffect, useState, useCallback} from 'react';
-import {Provider} from 'react-redux';
-import {store} from './src/store';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Platform, Text, TextInput } from 'react-native';
+import { Provider } from 'react-redux';
+import { store } from './src/store';
 import './src/i18n';
 import RootNavigator from './src/navigation';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {useAuthStore} from './src/store/useAuthStore';
-import {notificationApi} from './src/api/client';
-import {navigationRef} from './src/navigation/navigationRef';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuthStore } from './src/store/useAuthStore';
+import { notificationApi } from './src/api/client';
+import { navigationRef } from './src/navigation/navigationRef';
 import {
   InAppNotificationBanner,
   NotificationPayload,
@@ -20,12 +21,23 @@ import {
   onTokenRefresh,
 } from './src/services/fcmService';
 
+const defaultFontFamily =
+  Platform.select({ ios: 'Poppins', android: 'Poppins-Regular' }) ||
+  'Poppins-Regular';
+
+const textInputDefaultProps = ((TextInput as any).defaultProps ?? {}) as any;
+textInputDefaultProps.style = [
+  textInputDefaultProps.style,
+  { fontFamily: defaultFontFamily },
+];
+(TextInput as any).defaultProps = textInputDefaultProps;
+
 // Register background handler at module level (before app boots)
 registerBackgroundHandler();
 
 function navigateFromNotification(data?: Record<string, string>) {
   if (!data || !navigationRef.isReady()) return;
-  const {type, bookingId} = data;
+  const { type, bookingId } = data;
 
   switch (type) {
     case 'booking_accepted':
@@ -38,7 +50,7 @@ function navigateFromNotification(data?: Record<string, string>) {
       }
       break;
     case 'trip_completed':
-      navigationRef.navigate('MyOrders', {filter: 'completed'});
+      navigationRef.navigate('MyOrders', { filter: 'completed' });
       break;
     default:
       navigationRef.navigate('Notifications');
@@ -50,15 +62,15 @@ interface FcmInitializerProps {
   onNotification: (n: NotificationPayload) => void;
 }
 
-function FcmInitializer({onNotification}: FcmInitializerProps) {
-  const {isAuthenticated} = useAuthStore();
+function FcmInitializer({ onNotification }: FcmInitializerProps) {
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    let unsubForeground: () => void = () => {};
-    let unsubTokenRefresh: () => void = () => {};
-    let unsubOpenedApp: () => void = () => {};
+    let unsubForeground: () => void = () => { };
+    let unsubTokenRefresh: () => void = () => { };
+    let unsubOpenedApp: () => void = () => { };
 
     const init = async () => {
       const token = await requestPermissionAndGetToken();
@@ -90,7 +102,7 @@ function FcmInitializer({onNotification}: FcmInitializerProps) {
 
       // Token refresh
       unsubTokenRefresh = onTokenRefresh((newToken: string) => {
-        notificationApi.registerFcmToken(newToken).catch(() => {});
+        notificationApi.registerFcmToken(newToken).catch(() => { });
       });
 
       // Background tap

@@ -9,70 +9,62 @@ import {
   ActivityIndicator,
   Dimensions,
   PixelRatio,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/useAuthStore';
 import BottomTabBar from './BottomTabBar';
-import { walletApi } from '../api/client';
 import { vehicleApi } from '../api/vehicle';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const BASE_WIDTH  = 390;
 const BASE_HEIGHT = 844;
-
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
+const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
-
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  bg:         '#F8FAFC',
+  surface:    '#FFFFFF',
+  surfaceAlt: '#F1F5F9',
+  primary:    '#2563EB',
+  text:       '#0F172A',
+  textSub:    '#475569',
+  textMuted:  '#94A3B8',
+  border:     '#E2E8F0',
+  red:        '#EF4444',
+  shadow:     '#000000',
+};
 
 const Profile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [orderCount, setOrderCount] = useState<number | null>(null);
+  const [loggingOut, setLoggingOut]   = useState(false);
+  const [orderCount, setOrderCount]   = useState<number | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
+  // wallet state & walletApi removed — wallet option removed from this screen
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const [walletRes, ordersRes] = await Promise.allSettled([
-        walletApi.getWallet(),
-        vehicleApi.getCustomerHistory(1, 1),
-      ]);
-
-      if (walletRes.status === 'fulfilled') {
-        const data = walletRes.value?.data;
-        if (typeof data?.balance === 'number') {
-          setWalletBalance(data.balance);
-        }
-      }
-      if (ordersRes.status === 'fulfilled') {
-        const data = ordersRes.value?.data;
-        if (typeof data?.total === 'number') {
-          setOrderCount(data.total);
-        }
-      }
+      const ordersRes = await vehicleApi.getCustomerHistory(1, 1).catch(() => null);
+      const data = ordersRes?.data;
+      if (typeof data?.total === 'number') setOrderCount(data.total);
     } finally {
       setStatsLoading(false);
     }
   }, []);
 
   useFocusEffect(
-    useCallback(() => {
-      fetchStats();
-    }, [fetchStats]),
+    useCallback(() => { fetchStats(); }, [fetchStats]),
   );
 
   const handleLogout = () => {
@@ -94,385 +86,426 @@ const Profile = () => {
     ]);
   };
 
+  // Wallet item removed from Account section
   const menuSections = [
     {
       title: 'Account',
       items: [
-        { id: 1,  title: 'Edit Profile',       icon: 'person-outline',           color: '#3B82F6', onPress: () => navigation.navigate('EditProfile') },
-        { id: 2,  title: 'Saved Addresses',     icon: 'location-on',              color: '#10B981', onPress: () => navigation.navigate('SavedAddresses') },
-        { id: 3,  title: 'Wallet',              icon: 'account-balance-wallet',   color: '#8B5CF6', onPress: () => navigation.navigate('Wallet') },
-        { id: 12, title: 'My Orders',           icon: 'local-shipping',           color: '#F97316', onPress: () => navigation.navigate('MyOrders') },
+        { id: 1,  title: 'Edit Profile',      icon: 'person-outline',  color: '#3B82F6', onPress: () => navigation.navigate('EditProfile') },
+        { id: 2,  title: 'Saved Addresses',   icon: 'location-on',     color: '#10B981', onPress: () => navigation.navigate('SavedAddresses') },
+        { id: 12, title: 'My Orders',         icon: 'local-shipping',  color: '#F97316', onPress: () => navigation.navigate('MyOrders') },
       ],
     },
     {
       title: 'Support & Help',
       items: [
-        { id: 4,  title: 'Support',             icon: 'support-agent',            color: '#F59E0B', onPress: () => navigation.navigate('Support') },
-        { id: 5,  title: 'FAQs',                icon: 'help-outline',             color: '#06B6D4', onPress: () => navigation.navigate('FAQs') },
+        { id: 4, title: 'Support', icon: 'support-agent', color: '#F59E0B', onPress: () => navigation.navigate('Support') },
+        { id: 5, title: 'FAQs',    icon: 'help-outline',  color: '#06B6D4', onPress: () => navigation.navigate('FAQs') },
       ],
     },
     {
       title: 'Preferences',
       items: [
-        { id: 6,  title: 'Settings',            icon: 'settings',                 color: '#64748B', onPress: () => navigation.navigate('Settings') },
+        { id: 6, title: 'Settings', icon: 'settings', color: '#64748B', onPress: () => navigation.navigate('Settings') },
       ],
     },
     {
       title: 'Legal',
       items: [
-        { id: 8,  title: 'Terms & Conditions',  icon: 'description',              color: '#0EA5E9', onPress: () => navigation.navigate('TermsAndConditions') },
-        { id: 9,  title: 'Privacy Policy',      icon: 'privacy-tip',              color: '#14B8A6', onPress: () => navigation.navigate('PrivacyPolicy') },
+        { id: 8, title: 'Terms & Conditions', icon: 'description',  color: '#0EA5E9', onPress: () => navigation.navigate('TermsAndConditions') },
+        { id: 9, title: 'Privacy Policy',     icon: 'privacy-tip',  color: '#14B8A6', onPress: () => navigation.navigate('PrivacyPolicy') },
       ],
     },
     {
       title: 'About',
       items: [
-        { id: 10, title: 'About Us',            icon: 'info',                     color: '#6366F1', onPress: () => navigation.navigate('AboutUs') },
-        { id: 11, title: 'Rate Our App',        icon: 'star',                     color: '#F59E0B', onPress: () => Alert.alert('Rate Us', 'Thank you for your interest! This feature will redirect to the app store.') },
+        { id: 10, title: 'About Us',     icon: 'info', color: '#6366F1', onPress: () => navigation.navigate('AboutUs') },
+        { id: 11, title: 'Rate Our App', icon: 'star', color: '#F59E0B', onPress: () => Alert.alert('Rate Us', 'Thank you for your interest! This feature will redirect to the app store.') },
       ],
     },
   ];
 
+  // Get initials for avatar
+  const initials = (user?.name || 'U')
+    .split(' ')
+    .map((w: string) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <View style={styles.placeholder} />
-        </View>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.surface} translucent />
 
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.6}
         >
-          {/* Profile Card */}
-          <View style={styles.profileCard}>
-            {/* Avatar */}
-            <View style={styles.avatarContainer}>
-              <MaterialIcons name="person" size={ms(50)} color="#FFFFFF" />
-            </View>
+          <MaterialIcons name="arrow-back" size={ms(20)} color={C.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-            {/* User info */}
-            <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{user?.name || 'User'}</Text>
-              {user?.email && <Text style={styles.userEmail}>{user.email}</Text>}
-              <Text style={styles.userPhone}>{user?.phone || 'No phone'}</Text>
-            </View>
-
-            {/* Stats row */}
-            <View style={styles.statsRow}>
-              <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Wallet')} activeOpacity={0.7}>
-                <MaterialIcons name="account-balance-wallet" size={ms(24)} color="#3B82F6" />
-                {statsLoading ? (
-                  <ActivityIndicator size="small" color="#3B82F6" style={{ marginTop: scaleH(8) }} />
-                ) : (
-                  <Text style={styles.statValue}>
-                    {walletBalance !== null
-                      ? `₹${walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                      : '₹0'}
-                  </Text>
-                )}
-                <Text style={styles.statLabel}>Wallet</Text>
-              </TouchableOpacity>
-              <View style={styles.statDivider} />
-              <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('MyOrders')} activeOpacity={0.7}>
-                <MaterialIcons name="local-shipping" size={ms(24)} color="#10B981" />
-                {statsLoading ? (
-                  <ActivityIndicator size="small" color="#10B981" style={{ marginTop: scaleH(8) }} />
-                ) : (
-                  <Text style={styles.statValue}>{orderCount ?? 0}</Text>
-                )}
-                <Text style={styles.statLabel}>Orders</Text>
-              </TouchableOpacity>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, scaleH(16)) + scaleH(80) }]}
+      >
+        {/* ── Hero Profile Card ── */}
+        <View style={styles.heroCard}>
+          {/* Gradient-style avatar with initials */}
+          <View style={styles.avatarRing}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitials}>{initials}</Text>
             </View>
           </View>
 
-          {/* Menu Sections */}
-          {menuSections.map((section, sectionIndex) => (
-            <View key={sectionIndex} style={styles.menuSection}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <View style={styles.menuCard}>
-                {section.items.map((item, index) => (
-                  <React.Fragment key={item.id}>
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={item.onPress}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.menuIconContainer, { backgroundColor: `${item.color}15` }]}>
-                        <MaterialIcons name={item.icon} size={ms(22)} color={item.color} />
-                      </View>
-                      <Text style={styles.menuItemText}>{item.title}</Text>
-                      <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
-                    </TouchableOpacity>
-                    {index < section.items.length - 1 && (
-                      <View style={styles.menuDivider} />
-                    )}
-                  </React.Fragment>
-                ))}
-              </View>
-            </View>
-          ))}
+          <Text style={styles.heroName}>{user?.name || 'User'}</Text>
+          {user?.email ? <Text style={styles.heroEmail}>{user.email}</Text> : null}
+          <Text style={styles.heroPhone}>{user?.phone || 'No phone'}</Text>
 
-          {/* Logout */}
-          <View style={styles.logoutSection}>
+          {/* Edit profile pill */}
+          <TouchableOpacity
+            style={styles.editPill}
+            onPress={() => navigation.navigate('EditProfile')}
+            activeOpacity={0.75}
+          >
+            <MaterialIcons name="edit" size={ms(13)} color={C.primary} />
+            <Text style={styles.editPillText}>Edit Profile</Text>
+          </TouchableOpacity>
+
+          {/* ── Single stat — Orders only (wallet removed) ── */}
+          <View style={styles.statStrip}>
             <TouchableOpacity
-              style={[styles.logoutButton, loggingOut && styles.logoutButtonDisabled]}
-              onPress={handleLogout}
-              activeOpacity={0.8}
-              disabled={loggingOut}
+              style={styles.statItem}
+              onPress={() => navigation.navigate('MyOrders')}
+              activeOpacity={0.7}
             >
-              {loggingOut ? (
-                <ActivityIndicator size="small" color="#EF4444" />
+              <View style={styles.statIconBox}>
+                <MaterialIcons name="local-shipping" size={ms(22)} color="#F97316" />
+              </View>
+              {statsLoading ? (
+                <ActivityIndicator size="small" color="#F97316" style={{ marginTop: scaleH(6) }} />
               ) : (
-                <MaterialIcons name="logout" size={ms(22)} color="#EF4444" />
+                <Text style={styles.statValue}>{orderCount ?? 0}</Text>
               )}
-              <Text style={styles.logoutText}>
-                {loggingOut ? 'Logging out...' : 'Logout'}
-              </Text>
+              <Text style={styles.statLabel}>My Orders</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          {/* App version */}
-          <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>Zipto v1.0.0</Text>
-            <Text style={styles.copyrightText}>© 2025 Zipto. All rights reserved.</Text>
+        {/* ── Menu Sections ── */}
+        {menuSections.map((section, si) => (
+          <View key={si} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <View style={styles.menuCard}>
+              {section.items.map((item, idx) => (
+                <React.Fragment key={item.id}>
+                  <TouchableOpacity
+                    style={styles.menuRow}
+                    onPress={item.onPress}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: item.color + '18' }]}>
+                      <MaterialIcons name={item.icon as any} size={ms(20)} color={item.color} />
+                    </View>
+                    <Text style={styles.menuLabel}>{item.title}</Text>
+                    <MaterialIcons name="chevron-right" size={ms(22)} color={C.textMuted} />
+                  </TouchableOpacity>
+                  {idx < section.items.length - 1 && <View style={styles.menuDivider} />}
+                </React.Fragment>
+              ))}
+            </View>
           </View>
-        </ScrollView>
-      </SafeAreaView>
+        ))}
+
+        {/* ── Logout ── */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.logoutBtn, loggingOut && { opacity: 0.6 }]}
+            onPress={handleLogout}
+            activeOpacity={0.8}
+            disabled={loggingOut}
+          >
+            {loggingOut
+              ? <ActivityIndicator size="small" color={C.red} />
+              : <MaterialIcons name="logout" size={ms(20)} color={C.red} />
+            }
+            <Text style={styles.logoutText}>
+              {loggingOut ? 'Logging out...' : 'Logout'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Version ── */}
+        <View style={styles.versionBlock}>
+          <Text style={styles.versionText}>Zipto v1.0.0</Text>
+          <Text style={styles.copyright}>© 2025 Zipto. All rights reserved.</Text>
+        </View>
+      </ScrollView>
 
       <BottomTabBar />
     </View>
   );
 };
 
-// ─── Derived responsive values ────────────────────────────────────────────────
-const backBtnSize      = ms(40);
-const avatarSize       = ms(100);
-const editAvatarSize   = ms(32);
-const menuIconContSize = ms(44);
-// menuDivider indent = icon container + marginRight
-const menuDividerLeft  = menuIconContSize + scaleW(14) + scaleW(16); // container + gap + card padding
+// ─── Sizes ────────────────────────────────────────────────────────────────────
+const GUTTER       = scaleW(16);
+const AVATAR_SIZE  = ms(88);
+const RING_SIZE    = AVATAR_SIZE + ms(8);
+const BACK_SIZE    = ms(38);
+const ICON_BOX     = ms(42);
+const MENU_DIVIDER = ICON_BOX + scaleW(14) + GUTTER;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  safeArea:  { flex: 1 },
-
-  // ── Header ──
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+  root: {
+    flex:            1,
+    backgroundColor: C.surface, // white behind translucent status bar
   },
-  backButton: {
-    width: backBtnSize,
-    height: backBtnSize,
-    borderRadius: backBtnSize / 2,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  header: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: GUTTER,
+    paddingTop:        scaleH(14),
+    paddingBottom:     scaleH(14),
+    backgroundColor:   C.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    gap:               scaleW(10),
+    shadowColor:       C.shadow,
+    shadowOffset:      { width: 0, height: 1 },
+    shadowOpacity:     0.05,
+    shadowRadius:      4,
+    elevation:         3,
+  },
+  backBtn: {
+    width:           BACK_SIZE,
+    height:          BACK_SIZE,
+    borderRadius:    BACK_SIZE / 2,
+    backgroundColor: C.surfaceAlt,
+    justifyContent:  'center',
+    alignItems:      'center',
+    borderWidth:     1,
+    borderColor:     C.border,
+    flexShrink:      0,
   },
   headerTitle: {
-    fontSize: fs(20),
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
+    flex:          1,
+    fontSize:      fs(20),
+    fontWeight:    '800',
+    color:         C.text,
+    letterSpacing: -0.3,
   },
-  placeholder: { width: backBtnSize },
+  headerSpacer: { width: BACK_SIZE },
 
-  scrollView: { flex: 1 },
-  scrollContent: { paddingBottom: scaleH(100) },
+  // ── Scroll ────────────────────────────────────────────────────────────────
+  scroll:        { flex: 1, backgroundColor: C.bg },
+  scrollContent: { paddingHorizontal: GUTTER, paddingTop: scaleH(20) },
 
-  // ── Profile card ──
-  profileCard: {
-    backgroundColor: '#FFFFFF',
-    margin: scaleW(16),
-    marginBottom: scaleH(12),
-    padding: ms(20),
-    borderRadius: ms(16),
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+  // ── Hero card ─────────────────────────────────────────────────────────────
+  heroCard: {
+    backgroundColor: C.surface,
+    borderRadius:    ms(20),
+    alignItems:      'center',
+    paddingTop:      scaleH(28),
+    paddingBottom:   scaleH(20),
+    paddingHorizontal: GUTTER,
+    marginBottom:    scaleH(20),
+    borderWidth:     1,
+    borderColor:     C.border,
+    shadowColor:     C.shadow,
+    shadowOffset:    { width: 0, height: 2 },
+    shadowOpacity:   0.07,
+    shadowRadius:    8,
+    elevation:       3,
   },
-  avatarContainer: {
-    width: avatarSize,
-    height: avatarSize,
-    borderRadius: avatarSize / 2,
-    backgroundColor: '#3B82F6',
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarRing: {
+    width:           RING_SIZE,
+    height:          RING_SIZE,
+    borderRadius:    RING_SIZE / 2,
+    borderWidth:     3,
+    borderColor:     '#BFDBFE',
+    justifyContent:  'center',
+    alignItems:      'center',
+    marginBottom:    scaleH(14),
+  },
+  avatar: {
+    width:           AVATAR_SIZE,
+    height:          AVATAR_SIZE,
+    borderRadius:    AVATAR_SIZE / 2,
+    backgroundColor: C.primary,
+    justifyContent:  'center',
+    alignItems:      'center',
+  },
+  avatarInitials: {
+    fontSize:   fs(28),
+    fontWeight: '800',
+    color:      '#FFFFFF',
+    letterSpacing: 1,
+  },
+  heroName: {
+    fontSize:      fs(22),
+    fontWeight:    '800',
+    color:         C.text,
+    letterSpacing: -0.3,
+    marginBottom:  scaleH(4),
+    textAlign:     'center',
+  },
+  heroEmail: {
+    fontSize:     fs(13),
+    color:        C.textSub,
+    marginBottom: scaleH(2),
+    textAlign:    'center',
+  },
+  heroPhone: {
+    fontSize:     fs(13),
+    color:        C.textMuted,
     marginBottom: scaleH(16),
-    borderWidth: 3,
-    borderColor: '#60A5FA',
+    textAlign:    'center',
   },
-  editAvatarButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: editAvatarSize,
-    height: editAvatarSize,
-    borderRadius: editAvatarSize / 2,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+  editPill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               scaleW(5),
+    borderRadius:      ms(20),
+    borderWidth:       1.5,
+    borderColor:       C.primary,
+    paddingHorizontal: scaleW(16),
+    paddingVertical:   scaleH(7),
+    marginBottom:      scaleH(20),
   },
-  profileInfo: {
-    alignItems: 'center',
-    marginBottom: scaleH(20),
-  },
-  userName: {
-    fontSize: fs(24),
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-    marginBottom: scaleH(6),
-  },
-  userEmail: {
-    fontSize: fs(14),
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-    marginBottom: scaleH(4),
-  },
-  userPhone: {
-    fontSize: fs(14),
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
+  editPillText: {
+    fontSize:   fs(13),
+    fontWeight: '700',
+    color:      C.primary,
   },
 
-  // Stats row
-  statsRow: {
-    flexDirection: 'row',
-    width: '100%',
-    paddingTop: scaleH(20),
+  // Single stat strip (orders only)
+  statStrip: {
+    width:         '100%',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: C.border,
+    paddingTop:    scaleH(16),
+    alignItems:    'center',
   },
-  statBox:     { flex: 1, alignItems: 'center' },
-  statDivider: { width: 1, backgroundColor: '#E2E8F0' },
+  statItem: { alignItems: 'center' },
+  statIconBox: {
+    width:           ms(48),
+    height:          ms(48),
+    borderRadius:    ms(14),
+    backgroundColor: '#FFF7ED',
+    justifyContent:  'center',
+    alignItems:      'center',
+    marginBottom:    scaleH(6),
+  },
   statValue: {
-    fontSize: fs(18),
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginTop: scaleH(8),
+    fontSize:   fs(20),
+    fontWeight: '800',
+    color:      C.text,
+    marginTop:  scaleH(2),
   },
   statLabel: {
-    fontSize: fs(12),
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-    marginTop: scaleH(4),
+    fontSize:   fs(12),
+    fontWeight: '500',
+    color:      C.textMuted,
+    marginTop:  scaleH(2),
   },
 
-  // ── Menu sections ──
-  menuSection: {
-    marginBottom: scaleH(16),
-    paddingHorizontal: scaleW(16),
-  },
+  // ── Menu sections ─────────────────────────────────────────────────────────
+  section: { marginBottom: scaleH(16) },
   sectionTitle: {
-    fontSize: fs(14),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-    marginBottom: scaleH(10),
-    marginLeft: scaleW(4),
+    fontSize:     fs(12),
+    fontWeight:   '700',
+    color:        C.textMuted,
+    marginBottom: scaleH(8),
+    marginLeft:   scaleW(4),
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   menuCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: ms(12),
-    overflow: 'hidden',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    backgroundColor: C.surface,
+    borderRadius:    ms(14),
+    overflow:        'hidden',
+    borderWidth:     1,
+    borderColor:     C.border,
+    shadowColor:     C.shadow,
+    shadowOffset:    { width: 0, height: 1 },
+    shadowOpacity:   0.04,
+    shadowRadius:    4,
+    elevation:       2,
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: scaleH(14),
-    paddingHorizontal: scaleW(16),
+  menuRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingVertical:   scaleH(14),
+    paddingHorizontal: GUTTER,
+    gap:               scaleW(14),
   },
-  menuIconContainer: {
-    width: menuIconContSize,
-    height: menuIconContSize,
-    borderRadius: menuIconContSize / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(14),
-    flexShrink: 0,
+  menuIconBox: {
+    width:           ICON_BOX,
+    height:          ICON_BOX,
+    borderRadius:    ICON_BOX / 2,
+    justifyContent:  'center',
+    alignItems:      'center',
+    flexShrink:      0,
   },
-  menuItemText: {
-    flex: 1,
-    fontFamily: 'Poppins-Regular',
-    fontSize: fs(15),
-    color: '#0F172A',
+  menuLabel: {
+    flex:       1,
+    fontSize:   fs(15),
     fontWeight: '500',
+    color:      C.text,
   },
   menuDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginLeft: menuDividerLeft,
+    height:          1,
+    backgroundColor: C.surfaceAlt,
+    marginLeft:      MENU_DIVIDER,
   },
 
-  // ── Logout ──
-  logoutSection: {
-    paddingHorizontal: scaleW(16),
-    marginTop: scaleH(8),
-    marginBottom: scaleH(16),
+  // ── Logout ────────────────────────────────────────────────────────────────
+  logoutBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               scaleW(8),
+    backgroundColor:   C.surface,
+    paddingVertical:   scaleH(16),
+    borderRadius:      ms(14),
+    borderWidth:       1.5,
+    borderColor:       C.red,
+    shadowColor:       C.shadow,
+    shadowOffset:      { width: 0, height: 1 },
+    shadowOpacity:     0.04,
+    shadowRadius:      4,
+    elevation:         2,
   },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: scaleW(8),
-    backgroundColor: '#FFFFFF',
-    paddingVertical: scaleH(16),
-    borderRadius: ms(12),
-    borderWidth: 1.5,
-    borderColor: '#EF4444',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  logoutButtonDisabled: { opacity: 0.6 },
   logoutText: {
-    fontSize: fs(16),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#EF4444',
+    fontSize:   fs(16),
+    fontWeight: '700',
+    color:      C.red,
   },
 
-  // ── Version ──
-  versionContainer: {
+  // ── Version ───────────────────────────────────────────────────────────────
+  versionBlock: {
+    alignItems:     'center',
     paddingVertical: scaleH(24),
-    alignItems: 'center',
   },
   versionText: {
-    fontSize: fs(13),
-    fontWeight: '500',
-    color: '#94A3B8',
+    fontSize:     fs(12),
+    fontWeight:   '500',
+    color:        C.textMuted,
     marginBottom: scaleH(4),
   },
-  copyrightText: {
-    fontSize: fs(11),
+  copyright: {
+    fontSize:   fs(11),
     fontWeight: '400',
-    color: '#CBD5E1',
+    color:      C.border,
   },
 });
 

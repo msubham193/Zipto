@@ -2,68 +2,93 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-import { View, StatusBar } from 'react-native';
-import { useAuthStore } from '../store/useAuthStore';
+import { View, ActivityIndicator } from 'react-native';
 import { navigationRef } from './navigationRef';
+import { useAuthStore } from '../store/useAuthStore';
+import Splash from '../screens/Splash';
 
-// Matches the JS splash + Android windowBackground — zero visible flash
-const SplashPlaceholder = () => (
-  <View style={{ flex: 1, backgroundColor: '#1E22AD' }}>
-    <StatusBar barStyle="light-content" backgroundColor="#1E22AD" translucent={false} />
-  </View>
-);
+const MIN_SPLASH_DURATION = 2800;
 
 const RootNavigator = () => {
+    const [showSplash, setShowSplash] = useState(true);
     const [isHydrated, setIsHydrated] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
-    const [shouldVerifyToken, setShouldVerifyToken] = useState(false);
     const { isAuthenticated, fetchProfile } = useAuthStore();
 
     useEffect(() => {
-        // Wait for Zustand to rehydrate from AsyncStorage
-        const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
-            setIsHydrated(true);
-            // Only verify token if user was already authenticated from storage
-            // This means app was reopened, not a fresh login
-            const state = useAuthStore.getState();
-            if (state.isAuthenticated && state.token) {
-                setShouldVerifyToken(true);
-            }
-        });
+        let splashTimer: ReturnType<typeof setTimeout> | null = null;
+        let isMounted = true;
 
-        // Check if already hydrated
-        if (useAuthStore.persist.hasHydrated()) {
-            setIsHydrated(true);
-            const state = useAuthStore.getState();
-            if (state.isAuthenticated && state.token) {
-                setShouldVerifyToken(true);
+        const startSplash = async () => {
+            // Start the splash timer immediately
+            splashTimer = setTimeout(() => {
+                if (isMounted) {
+                    setShowSplash(false);
+                }
+            }, MIN_SPLASH_DURATION);
+
+            // Handle hydration and profile fetch in parallel
+            try {
+                // Wait for hydration if not already done
+                if (!useAuthStore.persist.hasHydrated()) {
+                    await new Promise<void>(resolve => {
+                        const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+                            unsubscribe();
+                            resolve();
+                        });
+                    });
+                }
+
+                if (!isMounted) return;
+                setIsHydrated(true);
+
+                // If authenticated, verify token
+                const state = useAuthStore.getState();
+                if (state.isAuthenticated && state.token) {
+                    setIsVerifying(true);
+                    try {
+                        await fetchProfile();
+                    } catch (err) {
+                        console.warn('Profile fetch error:', err);
+                    } finally {
+                        if (isMounted) {
+                            setIsVerifying(false);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Hydration error:', err);
+                if (isMounted) {
+                    setIsHydrated(true);
+                }
             }
-        }
+        };
+
+        startSplash();
 
         return () => {
-            unsubscribe();
-        };
-    }, []);
-
-    // Verify token only on app rehydration (not after fresh login)
-    useEffect(() => {
-        const verifyAndFetchProfile = async () => {
-            if (shouldVerifyToken) {
-                setIsVerifying(true);
-                await fetchProfile();
-                setIsVerifying(false);
-                setShouldVerifyToken(false);
+            isMounted = false;
+            if (splashTimer) {
+                clearTimeout(splashTimer);
             }
         };
+    }, [fetchProfile]);
 
-        verifyAndFetchProfile();
-    }, [fetchProfile, shouldVerifyToken]);
-
-    // Show seamless blue screen while hydrating/verifying — matches native windowBackground
-    if (!isHydrated || isVerifying) {
-        return <SplashPlaceholder />;
+    // Always show splash while showSplash is true
+    if (showSplash) {
+        return <Splash />;
     }
 
+    // Show loading while hydrating or verifying
+    if (!isHydrated || isVerifying) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+                <ActivityIndicator size="large" color="#2563EB" />
+            </View>
+        );
+    }
+
+    // Finally show the navigation
     return (
         <NavigationContainer ref={navigationRef}>
             {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}

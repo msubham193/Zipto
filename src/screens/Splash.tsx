@@ -6,14 +6,13 @@ import {
   Animated,
   Dimensions,
   PixelRatio,
+  StatusBar,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BASE_WIDTH  = 390;
+const BASE_WIDTH = 390;
 const BASE_HEIGHT = 844;
 
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
@@ -36,8 +35,8 @@ const LetterPop = ({
   letter: string;
   delay: number;
 }) => {
-  const scale   = useRef(new Animated.Value(0.1)).current;
-  const rotate  = useRef(new Animated.Value(-20)).current;
+  const scale = useRef(new Animated.Value(0.1)).current;
+  const rotate = useRef(new Animated.Value(-20)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -87,27 +86,17 @@ const LetterPop = ({
 };
 
 const Splash = () => {
-  const navigation = useNavigation<any>();
-  const { isAuthenticated, token } = useAuthStore();
-
   const taglineOpacity = useRef(new Animated.Value(0)).current;
-  const taglineSlideY  = useRef(new Animated.Value(10)).current;
+  const taglineSlideY = useRef(new Animated.Value(10)).current;
   const poweredOpacity = useRef(new Animated.Value(0)).current;
 
   // Last letter delay + a small buffer before tagline shows
-  const LETTER_STAGGER  = 110;
+  const LETTER_STAGGER = 110;
   const LAST_LETTER_DELAY = (ZIPTO_LETTERS.length - 1) * LETTER_STAGGER;
-  const TAGLINE_DELAY   = LAST_LETTER_DELAY + 250;
-  const POWERED_DELAY   = LAST_LETTER_DELAY + 520;
-
-  // Always wait the full splash duration so animations play completely
-  const SPLASH_DURATION = 2800;
+  const TAGLINE_DELAY = LAST_LETTER_DELAY + 250;
+  const POWERED_DELAY = LAST_LETTER_DELAY + 520;
 
   useEffect(() => {
-    if (isAuthenticated && token) {
-      console.log('👤 Already authenticated! Bearer Token:', token);
-    }
-
     // Tagline slides up after letters finish
     Animated.parallel([
       Animated.timing(taglineOpacity, {
@@ -131,23 +120,11 @@ const Splash = () => {
       delay: POWERED_DELAY,
       useNativeDriver: true,
     }).start();
-
-    // Always wait the full duration before deciding where to navigate.
-    // This ensures the splash animation plays fully on every app open,
-    // whether the user is authenticated or not.
-    const timer = setTimeout(() => {
-      if (isAuthenticated && token) {
-        navigation.replace('MainTabs');   // ← go straight to app if logged in
-      } else {
-        navigation.replace('Login');
-      }
-    }, SPLASH_DURATION);
-
-    return () => clearTimeout(timer);
-  }, [navigation, isAuthenticated, token]);
+  }, []);
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1E22AD" />
       {/* ── Letter row ── */}
       <View style={styles.content}>
         <View style={styles.lettersRow}>
