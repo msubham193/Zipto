@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -11,24 +10,31 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
-import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
+import {
+  horizontalScale as hs,
+  verticalScale as vs,
+  moderateScale as ms,
+  fontScale as fs,
+} from '../utils/metrics';
 
 const RESEND_COOLDOWN = 30;
+const CARD_RADIUS     = ms(28);
 
 const OTPVerification = () => {
   const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const route      = useRoute<any>();
   const { mobile } = route.params ?? {};
 
   const { verifyOtp, login, isLoading, error: authError, clearError } = useAuthStore();
 
-  const [otp, setOtp]             = useState('');
-  const [error, setError]         = useState('');
+  const [otp, setOtp]                 = useState('');
+  const [error, setError]             = useState('');
   const [resendTimer, setResendTimer] = useState(RESEND_COOLDOWN);
-  const [resending, setResending] = useState(false);
+  const [resending, setResending]     = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -68,134 +74,130 @@ const OTPVerification = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#1E22AD" translucent={false} />
+
+      {/* Hero image — full width, no border or card */}
+      <Image
+        source={require('../assets/images/OTP.png')}
+        style={styles.heroImage}
+        resizeMode="cover"
+      />
+
+      {/* White form card with curved top corners */}
+      <View style={styles.formCard}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.kav}
         >
-          {/* HERO SECTION */}
-          <View style={styles.heroContainer}>
-            <View style={styles.heroCard}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
               <Image
-                source={require('../assets/images/OTP.png')}
-                style={styles.heroImage}
-                resizeMode="cover"
+                source={require('../assets/images/back.png')}
+                style={styles.backIcon}
               />
+              <Text style={styles.backText}>Back</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.title}>Verify OTP</Text>
+            <Text style={styles.subtitle}>
+              We sent a 6-digit OTP to{'\n'}
+              <Text style={styles.phoneText}>{mobile}</Text>
+            </Text>
+
+            <Text style={styles.label}>Enter OTP</Text>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => inputRef.current?.focus()}
+              style={[styles.inputContainer, otp.length > 0 && styles.inputFocused]}
+            >
+              <TextInput
+                ref={inputRef}
+                style={styles.otpInput}
+                placeholder="------"
+                placeholderTextColor="#CBD5E1"
+                keyboardType="number-pad"
+                maxLength={6}
+                value={otp}
+                onChangeText={t => { setOtp(t); setError(''); }}
+                autoFocus
+              />
+            </TouchableOpacity>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.verifyButton, otp.length !== 6 && styles.verifyButtonDisabled]}
+              onPress={handleVerify}
+              activeOpacity={otp.length === 6 ? 0.8 : 1}
+              disabled={otp.length !== 6 || isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.verifyButtonText}>Verify OTP</Text>
+                  <Image
+                    source={require('../assets/images/arrow.png')}
+                    style={styles.arrowIcon}
+                  />
+                </>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.resendRow}>
+              <Text style={styles.resendLabel}>Didn't receive the OTP? </Text>
+              {resendTimer > 0 ? (
+                <Text style={styles.resendTimer}>Resend in {resendTimer}s</Text>
+              ) : (
+                <TouchableOpacity onPress={handleResend} disabled={resending}>
+                  <Text style={styles.resendLink}>
+                    {resending ? 'Sending...' : 'Resend OTP'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
-
-          <View style={styles.contentWrapper}>
-            <View style={styles.content}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Image
-                  source={require('../assets/images/back.png')}
-                  style={styles.backIcon}
-                />
-                <Text style={styles.backText}>Back</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.title}>Verify OTP</Text>
-              <Text style={styles.subtitle}>
-                We sent a 6-digit OTP to{'\n'}
-                <Text style={styles.phoneText}>{mobile}</Text>
-              </Text>
-
-              {/* OTP Input */}
-              <Text style={styles.label}>Enter OTP</Text>
-              <TouchableOpacity
-                activeOpacity={1}
-                onPress={() => inputRef.current?.focus()}
-                style={[styles.inputContainer, otp.length > 0 && styles.inputFocused]}
-              >
-                <TextInput
-                  ref={inputRef}
-                  style={styles.otpInput}
-                  placeholder="------"
-                  placeholderTextColor="#CBD5E1"
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  value={otp}
-                  onChangeText={t => { setOtp(t); setError(''); }}
-                  autoFocus
-                />
-              </TouchableOpacity>
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-              {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
-
-              <TouchableOpacity
-                style={[styles.verifyButton, otp.length !== 6 && styles.verifyButtonDisabled]}
-                onPress={handleVerify}
-                activeOpacity={otp.length === 6 ? 0.8 : 1}
-                disabled={otp.length !== 6 || isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.verifyButtonText}>Verify OTP</Text>
-                    <Image
-                      source={require('../assets/images/arrow.png')}
-                      style={styles.arrowIcon}
-                    />
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Resend */}
-              <View style={styles.resendRow}>
-                <Text style={styles.resendLabel}>Didn't receive the OTP? </Text>
-                {resendTimer > 0 ? (
-                  <Text style={styles.resendTimer}>Resend in {resendTimer}s</Text>
-                ) : (
-                  <TouchableOpacity onPress={handleResend} disabled={resending}>
-                    <Text style={styles.resendLink}>
-                      {resending ? 'Sending...' : 'Resend OTP'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 };
 
 const arrowIconSize = ms(22);
 
 const styles = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: '#FFFFFF' },
-  keyboardView:     { flex: 1 },
-  scrollContent:    { flexGrow: 1 },
-  contentWrapper:   { flex: 1, paddingHorizontal: hs(20) },
-  heroContainer: {
-    paddingHorizontal: hs(20),
-    paddingTop: vs(10),
-  },
-  heroCard: {
-    height: vs(200),
-    borderRadius: ms(16),
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+  root: {
+    flex: 1,
+    backgroundColor: '#1E22AD',
   },
   heroImage: {
     width: '100%',
-    height: '110%',
-    position: 'absolute',
+    height: vs(280),
   },
-  content: { flex: 1, paddingTop: vs(20), paddingBottom: vs(20) },
+  formCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: CARD_RADIUS,
+    borderTopRightRadius: CARD_RADIUS,
+    marginTop: -CARD_RADIUS,
+    overflow: 'hidden',
+  },
+  kav: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: hs(24),
+    paddingTop: vs(24),
+    paddingBottom: vs(32),
+  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -215,17 +217,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   title: {
-    fontSize: fs(28),
+    fontSize: fs(26),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: vs(8),
+    marginBottom: vs(6),
   },
   subtitle: {
-    fontSize: fs(15),
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
-    color: '#475569',
-    marginBottom: vs(32),
+    color: '#64748B',
+    marginBottom: vs(28),
     lineHeight: fs(22),
   },
   phoneText: {
@@ -240,7 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: vs(8),
   },
   inputContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderRadius: ms(12),
     paddingHorizontal: hs(14),
     borderWidth: 1,

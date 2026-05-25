@@ -90,7 +90,27 @@
       "Bash(xcrun simctl *)",
       "Bash(open -a Simulator)",
       "Bash(pod install *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(~/Library/Android/sdk/emulator/emulator -avd Pixel_10_Pro_XL -no-snapshot-load)",
+      "Bash(adb wait-for-device *)",
+      "Bash(mkdir -p /Users/sandeepnayak/Desktop/zipto_rider/src/utils)",
+      "Bash(grep -v \"^$\")",
+      "Bash(./gradlew clean *)",
+      "Bash(awk '/07:44:55/,/07:44:57/')",
+      "Bash(pkill -f \"metro\")",
+      "Bash(pkill -f \"react-native start\")",
+      "Bash(adb root *)",
+      "Read(//private/var/run/**)",
+      "Bash(scutil --dns)",
+      "Bash(nslookup maps.googleapis.com)",
+      "Bash(adb emu *)",
+      "Bash(kill -9 99858)",
+      "Bash(/Users/sandeepnayak/Library/Android/sdk/emulator/emulator -avd Pixel_10_Pro_XL -dns-server 8.8.8.8,8.8.4.4 -no-snapshot-load)",
+      "Bash(curl -s \"https://maps.googleapis.com/maps/api/place/autocomplete/json?input=Bhubaneswar&key=AIzaSyBk3embTThBzPAZBmSlIYue_JFHk2iBe9A&components=country:in&language=en\")",
+      "Bash(python3 -m json.tool)"
+    ],
+    "additionalDirectories": [
+      "/Users/sandeepnayak/Desktop/zipto_rider/src"
     ]
   }
 }

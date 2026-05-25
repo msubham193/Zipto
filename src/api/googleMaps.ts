@@ -119,7 +119,12 @@ export const googleMapsApi = {
         key: GOOGLE_MAPS_API_KEY,
         components: 'country:in',
         language: 'en',
+        types: 'geocode|establishment',
       };
+
+      if (_sessionToken) {
+        params.sessiontoken = _sessionToken;
+      }
 
       if (proximity) {
         params.location = `${proximity.lat},${proximity.lng}`;
@@ -131,7 +136,16 @@ export const googleMapsApi = {
         { params, timeout: SEARCH_TIMEOUT, cancelToken: searchCancelToken.token },
       );
 
+      if (response.data.status === 'ZERO_RESULTS') {
+        return [];
+      }
+
       if (response.data.status !== 'OK' || !response.data.predictions) {
+        console.warn(
+          '[Places API] Autocomplete error:',
+          response.data.status,
+          response.data.error_message || '',
+        );
         return [];
       }
 

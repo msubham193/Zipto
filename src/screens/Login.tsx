@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -12,29 +11,45 @@ import {
   Keyboard,
   ScrollView,
   Alert,
+  StatusBar,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
-import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
+import {
+  horizontalScale as hs,
+  verticalScale as vs,
+  moderateScale as ms,
+  fontScale as fs,
+} from '../utils/metrics';
 
-const HERO_HEIGHT_OPEN   = vs(250);
-const HERO_HEIGHT_CLOSED = vs(120);
+const HERO_H_OPEN   = vs(300);
+const HERO_H_CLOSED = vs(130);
+const CARD_RADIUS   = ms(28);
 
 const Login = () => {
   const navigation = useNavigation<any>();
-  const [phone, setPhone]           = useState('');
-  const [error, setError]           = useState('');
-  const [heroHeight, setHeroHeight] = useState(HERO_HEIGHT_OPEN);
+  const [phone, setPhone]         = useState('');
+  const [error, setError]         = useState('');
   const [termsAgreed, setTermsAgreed] = useState(false);
+  const heroHeight = useRef(new Animated.Value(HERO_H_OPEN)).current;
 
   const { login, isLoading, error: authError, clearError } = useAuthStore();
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
-      setHeroHeight(HERO_HEIGHT_CLOSED);
+      Animated.timing(heroHeight, {
+        toValue: HERO_H_CLOSED,
+        duration: 220,
+        useNativeDriver: false,
+      }).start();
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      setHeroHeight(HERO_HEIGHT_OPEN);
+      Animated.timing(heroHeight, {
+        toValue: HERO_H_OPEN,
+        duration: 220,
+        useNativeDriver: false,
+      }).start();
     });
     return () => { showSub.remove(); hideSub.remove(); };
   }, []);
@@ -59,98 +74,95 @@ const Login = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#1E22AD" translucent={false} />
+
+      {/* Hero image — full width, no border or card */}
+      <Animated.Image
+        source={require('../assets/images/number.png')}
+        style={[styles.heroImage, { height: heroHeight }]}
+        resizeMode="cover"
+      />
+
+      {/* White form card with curved top corners */}
+      <View style={styles.formCard}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.kav}
         >
-          {/* HERO SECTION */}
-          <View style={styles.heroContainer}>
-            <View style={[styles.heroCard, { height: heroHeight }]}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.title}>Welcome to Zipto</Text>
+            <Text style={styles.subtitle}>Enter your mobile number to get started.</Text>
+
+            <Text style={styles.label}>Mobile Number</Text>
+            <View style={[styles.inputContainer, !!error && !phone && styles.inputError]}>
               <Image
-                source={require('../assets/images/number.png')}
-                style={styles.heroImage}
-                resizeMode="cover"
+                source={require('../assets/images/cell-phone.png')}
+                style={styles.inputIcon}
+                resizeMode="contain"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="10-digit mobile number"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                maxLength={10}
+                value={phone}
+                onChangeText={t => { setPhone(t); setError(''); }}
               />
             </View>
-          </View>
 
-          <View style={styles.contentWrapper}>
-            <View style={styles.content}>
-              <View style={styles.formSection}>
-                <Text style={styles.title}>Welcome to Zipto</Text>
-                <Text style={styles.subtitle}>
-                  Enter your mobile number to get started.
-                </Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
 
-                {/* Phone Number */}
-                <Text style={styles.label}>Mobile Number</Text>
-                <View style={[styles.inputContainer, !!error && !phone && styles.inputError]}>
-                  <Image
-                    source={require('../assets/images/cell-phone.png')}
-                    style={styles.inputIcon}
-                    resizeMode="contain"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="10-digit mobile number"
-                    placeholderTextColor="#6B7280"
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                    value={phone}
-                    onChangeText={t => { setPhone(t); setError(''); }}
-                  />
-                </View>
-
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
-
-                {/* Terms checkbox */}
-                <TouchableOpacity
-                  style={styles.checkboxRow}
-                  onPress={() => setTermsAgreed(prev => !prev)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.checkbox, termsAgreed && styles.checkboxChecked]}>
-                    {termsAgreed && <Text style={styles.checkmark}>✓</Text>}
-                  </View>
-                  <Text style={styles.checkboxLabel}>
-                    I agree to the{' '}
-                    <Text style={styles.checkboxLink} onPress={() => Alert.alert('Terms of Service', 'Terms content here.')}>
-                      Terms of Service
-                    </Text>
-                    {' '}and{' '}
-                    <Text style={styles.checkboxLink} onPress={() => Alert.alert('Privacy Policy', 'Privacy policy content here.')}>
-                      Privacy Policy
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.loginButton, !isButtonEnabled && styles.loginButtonDisabled]}
-                  onPress={handleGetOTP}
-                  activeOpacity={isButtonEnabled ? 0.8 : 1}
-                  disabled={!isButtonEnabled || isLoading}
-                >
-                  <Text style={styles.loginButtonText}>
-                    {isLoading ? 'Sending OTP...' : 'Get OTP'}
-                  </Text>
-                  <Image
-                    source={require('../assets/images/arrow.png')}
-                    style={styles.arrowIcon}
-                  />
-                </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setTermsAgreed(prev => !prev)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, termsAgreed && styles.checkboxChecked]}>
+                {termsAgreed && <Text style={styles.checkmark}>✓</Text>}
               </View>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <Text style={styles.checkboxLabel}>
+                I agree to the{' '}
+                <Text
+                  style={styles.checkboxLink}
+                  onPress={() => Alert.alert('Terms of Service', 'Terms content here.')}
+                >
+                  Terms of Service
+                </Text>
+                {' '}and{' '}
+                <Text
+                  style={styles.checkboxLink}
+                  onPress={() => Alert.alert('Privacy Policy', 'Privacy policy content here.')}
+                >
+                  Privacy Policy
+                </Text>
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.loginButton, !isButtonEnabled && styles.loginButtonDisabled]}
+              onPress={handleGetOTP}
+              activeOpacity={isButtonEnabled ? 0.8 : 1}
+              disabled={!isButtonEnabled || isLoading}
+            >
+              <Text style={styles.loginButtonText}>
+                {isLoading ? 'Sending OTP...' : 'Get OTP'}
+              </Text>
+              <Image
+                source={require('../assets/images/arrow.png')}
+                style={styles.arrowIcon}
+              />
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 };
 
@@ -159,40 +171,40 @@ const arrowIconSize = ms(22);
 const checkboxSize  = ms(20);
 
 const styles = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: '#FFFFFF' },
-  keyboardView:     { flex: 1 },
-  scrollContent:    { flexGrow: 1 },
-  contentWrapper:   { flex: 1, paddingHorizontal: hs(20) },
-  heroContainer: {
-    paddingHorizontal: hs(20),
-    paddingTop: vs(10),
-  },
-  heroCard: {
-    borderRadius: ms(16),
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+  root: {
+    flex: 1,
+    backgroundColor: '#1E22AD',
   },
   heroImage: {
     width: '100%',
-    height: '110%',
-    position: 'absolute',
   },
-  content:     { flex: 1, paddingTop: vs(20), paddingBottom: vs(20) },
-  formSection: { flex: 1 },
+  formCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: CARD_RADIUS,
+    borderTopRightRadius: CARD_RADIUS,
+    marginTop: -CARD_RADIUS,
+    overflow: 'hidden',
+  },
+  kav: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: hs(24),
+    paddingTop: vs(28),
+    paddingBottom: vs(32),
+  },
   title: {
-    fontSize: fs(28),
+    fontSize: fs(26),
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: vs(8),
+    marginBottom: vs(6),
   },
   subtitle: {
-    fontSize: fs(16),
+    fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
-    color: '#475569',
-    marginBottom: vs(32),
+    color: '#64748B',
+    marginBottom: vs(28),
   },
   label: {
     fontSize: fs(13),
@@ -203,7 +215,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderRadius: ms(12),
     paddingHorizontal: hs(14),
     alignItems: 'center',
@@ -245,7 +257,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: vs(1),
+    marginTop: vs(2),
     flexShrink: 0,
   },
   checkboxChecked: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
@@ -262,7 +274,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     lineHeight: fs(20),
   },
-  checkboxLink:    { color: '#2563EB', fontWeight: '600' },
+  checkboxLink: { color: '#2563EB', fontWeight: '600' },
   loginButton: {
     backgroundColor: '#2563EB',
     borderRadius: ms(12),

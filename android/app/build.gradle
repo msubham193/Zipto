@@ -70,6 +70,9 @@ dependencies {
         implementation jscFlavor
     }
 
+    // Splash screen — handles Android 12+ system splash dismissal
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
     implementation("com.google.firebase:firebase-messaging")

@@ -55,7 +55,7 @@ async function resolveSharedLink(input: string): Promise<{ lat: number; lon: num
   // If it looks like a URL, follow redirects (short links like maps.app.goo.gl)
   if (/^https?:\/\//i.test(text)) {
     try {
-      const response = await fetch(text, { method: 'GET', redirect: 'follow' });
+      const response = await fetch(text, { method: 'GET', redirect: 'follow' } as RequestInit);
       const finalUrl = response.url || text;
       const fromFinal = extractCoordsFromText(finalUrl);
       if (fromFinal) return fromFinal;

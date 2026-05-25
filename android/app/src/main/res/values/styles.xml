@@ -1,8 +1,18 @@
 <resources>
 
-    <!-- Base application theme. -->
+    <!-- Launch theme: shown by Android while the app cold-starts.
+         installSplashScreen() in MainActivity switches to AppTheme immediately
+         after the first frame, so this is only visible for ~100ms. -->
+    <style name="BootTheme" parent="Theme.SplashScreen">
+        <!-- Exact same blue as Splash.tsx background — no visible transition -->
+        <item name="windowSplashScreenBackground">@color/zipto_splash_bg</item>
+        <!-- Transparent icon: system splash shows only the blue, matching JS splash frame 1 -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_transparent</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+
+    <!-- Base application theme used after the splash screen. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Match the JS splash background so there's zero flash on startup -->
         <item name="android:windowBackground">@color/zipto_splash_bg</item>
         <item name="android:statusBarColor">@color/zipto_splash_bg</item>
         <item name="android:windowIsTranslucent">false</item>
