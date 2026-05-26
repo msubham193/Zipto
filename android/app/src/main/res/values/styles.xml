@@ -4,9 +4,8 @@
          installSplashScreen() in MainActivity switches to AppTheme immediately
          after the first frame, so this is only visible for ~100ms. -->
     <style name="BootTheme" parent="Theme.SplashScreen">
-        <!-- Exact same blue as Splash.tsx background — no visible transition -->
         <item name="windowSplashScreenBackground">@color/zipto_splash_bg</item>
-        <!-- Transparent icon: system splash shows only the blue, matching JS splash frame 1 -->
+        <!-- Transparent icon: system splash shows only the blue background -->
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_transparent</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
