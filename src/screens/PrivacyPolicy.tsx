@@ -35,193 +35,168 @@ const PrivacyPolicy = () => {
         >
           <View style={styles.legalContent}>
             <Text style={styles.legalTitle}>Privacy Policy</Text>
-            <Text style={styles.legalUpdate}>Effective: 11 April 2026 · Last updated: 11 April 2026</Text>
+            <Text style={styles.legalUpdate}>Last Updated: May 2026</Text>
 
-            {/* 1. Introduction */}
+            {/* Intro */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>1. INTRODUCTION</Text>
               <Text style={styles.sectionText}>
-                This Privacy Policy describes how Zipto Hyperlogistics Private Limited (“Zipto”, “Company”, “We”, “Us”) collects, uses, and protects your information when you use the Zipto customer application, website, and related services.{'\n\n'}
-                Zipto acts solely as a logistics facilitator and does not sell or own any products.{'\n\n'}
-                By using Zipto, you consent to the practices described in this policy.
+                This Privacy Policy describes how ZIPTO HYPERLOGISTICS PRIVATE LIMITED ("Zipto", "Company", "we", "our", or "us") collects, processes, stores, uses, and protects user information through the Zipto mobile application, website, and related services ("Platform").{'\n\n'}
+                By accessing or using the Platform, users agree to the practices described in this Privacy Policy.
               </Text>
             </View>
 
-            {/* 2. Company Details */}
+            {/* 1. Information We Collect */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>2. COMPANY DETAILS</Text>
-              <Text style={styles.sectionText}>
-                Company Name: Zipto Hyperlogistics Private Limited{'\n'}
-                Registered Office: 781, Saheed Nagar, Maharishi College Road, Bhubaneswar, Khordha, Odisha – 751007, India{'\n'}
-                Operating Location: Bhubaneswar, Odisha, India
-              </Text>
-            </View>
+              <Text style={styles.sectionTitle}>1. INFORMATION WE COLLECT</Text>
+              <Text style={styles.sectionText}>We may collect the following categories of information:</Text>
 
-            {/* 3. Information We Collect */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>3. INFORMATION WE COLLECT</Text>
-
-              <Text style={styles.subSectionTitle}>A. Personal Information</Text>
+              <Text style={styles.subSectionTitle}>a) Personal Information</Text>
               <Text style={styles.bulletText}>• Full Name</Text>
               <Text style={styles.bulletText}>• Mobile Number</Text>
-              <Text style={styles.bulletText}>• Email Address</Text>
+              <Text style={styles.bulletText}>• Email Address (if required)</Text>
+              <Text style={styles.bulletText}>• Government-issued identification details where required</Text>
 
-              <Text style={styles.subSectionTitle}>B. Location Data</Text>
-              <Text style={styles.sectionText}>We collect location data to:</Text>
-              <Text style={styles.bulletText}>• Enable pickup and delivery</Text>
-              <Text style={styles.bulletText}>• Provide live tracking</Text>
-              <Text style={styles.bulletText}>• Improve service efficiency</Text>
-              <Text style={styles.importantNote}>📍 Location is collected only when required for active services.</Text>
+              <Text style={styles.subSectionTitle}>b) Location Information</Text>
+              <Text style={styles.bulletText}>• Precise GPS location</Text>
+              <Text style={styles.bulletText}>• Pickup and drop locations</Text>
+              <Text style={styles.bulletText}>• Saved addresses</Text>
+              <Text style={styles.bulletText}>• Route and navigation information</Text>
 
-              <Text style={styles.subSectionTitle}>C. Order & Transaction Data</Text>
-              <Text style={styles.bulletText}>• Pickup & drop addresses</Text>
-              <Text style={styles.bulletText}>• Delivery instructions</Text>
-              <Text style={styles.bulletText}>• Order details</Text>
-              <Text style={styles.bulletText}>• Payment method (UPI / COD / etc.)</Text>
-
-              <Text style={styles.subSectionTitle}>D. Device Information</Text>
-              <Text style={styles.bulletText}>• Device type</Text>
+              <Text style={styles.subSectionTitle}>c) Device & Technical Information</Text>
+              <Text style={styles.bulletText}>• Device type and model</Text>
+              <Text style={styles.bulletText}>• Operating system version</Text>
               <Text style={styles.bulletText}>• IP address</Text>
-              <Text style={styles.bulletText}>• App usage data</Text>
+              <Text style={styles.bulletText}>• Device identifiers</Text>
+              <Text style={styles.bulletText}>• App version</Text>
+              <Text style={styles.bulletText}>• Mobile network information</Text>
+
+              <Text style={styles.subSectionTitle}>d) Payment Information</Text>
+              <Text style={styles.bulletText}>• UPI details</Text>
+              <Text style={styles.bulletText}>• Transaction history</Text>
+              <Text style={styles.bulletText}>• Payment status</Text>
+              <Text style={styles.importantNote}>⚠️ Zipto does not store debit or credit card details on its own servers.</Text>
+
+              <Text style={styles.subSectionTitle}>e) Usage Information</Text>
+              <Text style={styles.bulletText}>• Ride and booking history</Text>
+              <Text style={styles.bulletText}>• Delivery activity</Text>
+              <Text style={styles.bulletText}>• Search preferences</Text>
+              <Text style={styles.bulletText}>• Customer support interactions</Text>
+              <Text style={styles.bulletText}>• App usage analytics</Text>
             </View>
 
-            {/* 4. How We Use Your Information */}
+            {/* 2. Purpose of Data Collection */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>4. HOW WE USE YOUR INFORMATION</Text>
-              <Text style={styles.sectionText}>We use your data to:</Text>
-              <Text style={styles.bulletText}>• Provide delivery services</Text>
-              <Text style={styles.bulletText}>• Assign delivery partners</Text>
-              <Text style={styles.bulletText}>• Process orders and payments</Text>
-              <Text style={styles.bulletText}>• Send notifications and updates</Text>
-              <Text style={styles.bulletText}>• Improve platform performance</Text>
+              <Text style={styles.sectionTitle}>2. PURPOSE OF DATA COLLECTION</Text>
+              <Text style={styles.sectionText}>User information may be collected and processed for the following purposes:</Text>
+              <Text style={styles.bulletText}>• Providing transportation and delivery services</Text>
+              <Text style={styles.bulletText}>• Connecting users with nearby rider or delivery partners</Text>
+              <Text style={styles.bulletText}>• Processing bookings and payments</Text>
+              <Text style={styles.bulletText}>• Improving platform functionality and customer experience</Text>
+              <Text style={styles.bulletText}>• Fraud detection and prevention</Text>
+              <Text style={styles.bulletText}>• Customer support and dispute resolution</Text>
+              <Text style={styles.bulletText}>• Sending OTPs, alerts, notifications, and service updates</Text>
+              <Text style={styles.bulletText}>• Compliance with applicable legal obligations</Text>
             </View>
 
-            {/* 5. Nature of Service */}
+            {/* 3. Location Data Usage */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>5. NATURE OF SERVICE (IMPORTANT)</Text>
+              <Text style={styles.sectionTitle}>3. LOCATION DATA USAGE</Text>
+              <Text style={styles.sectionText}>Zipto collects and processes precise location data to:</Text>
+              <Text style={styles.bulletText}>• Enable ride and delivery booking functionality</Text>
+              <Text style={styles.bulletText}>• Match nearby rider and delivery partners</Text>
+              <Text style={styles.bulletText}>• Provide real-time tracking</Text>
+              <Text style={styles.bulletText}>• Calculate fares and estimated arrival times</Text>
+              <Text style={styles.bulletText}>• Improve service availability and operational efficiency</Text>
+              <Text style={styles.importantNote}>📍 Location access may continue while the application is running in foreground for active service tracking purposes.</Text>
+            </View>
+
+            {/* 4. Camera, Storage & Media Access */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>4. CAMERA, STORAGE & MEDIA ACCESS</Text>
+              <Text style={styles.sectionText}>The Platform may request access to:</Text>
+              <Text style={styles.bulletText}>• Gallery or storage for image uploads</Text>
+              <Text style={styles.bulletText}>• Documents for customer support or verification purposes</Text>
+              <Text style={styles.bulletText}>• Delivery proof uploads</Text>
+            </View>
+
+            {/* 5. Information Sharing */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>5. INFORMATION SHARING</Text>
+              <Text style={styles.sectionText}>Zipto may share limited information with:</Text>
+              <Text style={styles.bulletText}>• Independent rider and delivery partners</Text>
+              <Text style={styles.bulletText}>• Payment gateway providers</Text>
+              <Text style={styles.bulletText}>• Cloud communication and storage providers</Text>
+              <Text style={styles.bulletText}>• Government authorities or regulatory bodies where legally required</Text>
+              <Text style={styles.bulletText}>• Customer support and operational teams</Text>
+              <Text style={styles.importantNote}>⚠️ Zipto does not sell user personal information to third parties.</Text>
+            </View>
+
+            {/* 6. Data Retention */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>6. DATA RETENTION</Text>
+              <Text style={styles.sectionText}>User information may be retained for as long as necessary to:</Text>
+              <Text style={styles.bulletText}>• Provide services</Text>
+              <Text style={styles.bulletText}>• Maintain legal compliance</Text>
+              <Text style={styles.bulletText}>• Resolve disputes</Text>
+              <Text style={styles.bulletText}>• Prevent fraudulent activities</Text>
+              <Text style={styles.bulletText}>• Enforce company policies</Text>
+            </View>
+
+            {/* 7. Data Security */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>7. DATA SECURITY</Text>
               <Text style={styles.sectionText}>
-                Zipto is a logistics platform that facilitates pickup and delivery services.
-              </Text>
-              <Text style={styles.bulletText}>• Zipto does not sell, manufacture, or own any products</Text>
-              <Text style={styles.bulletText}>• Zipto only enables movement of items</Text>
-              <Text style={styles.importantNote}>👉 Product quality, accuracy, and legality are the responsibility of:{'\n'}• Sender{'\n'}• Seller{'\n'}• Third-party provider</Text>
-            </View>
-
-            {/* 6. Data Sharing */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>6. DATA SHARING</Text>
-              <Text style={styles.sectionText}>We may share limited data with:</Text>
-              <Text style={styles.bulletText}>• Delivery partners (for order execution)</Text>
-              <Text style={styles.bulletText}>• Payment gateways</Text>
-              <Text style={styles.bulletText}>• Service providers (analytics/support)</Text>
-              <Text style={styles.bulletText}>• Authorities (if legally required)</Text>
-              <Text style={styles.importantNote}>⚠️ We do not sell your personal data</Text>
-            </View>
-
-            {/* 7. Payment Security */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>7. PAYMENT SECURITY</Text>
-              <Text style={styles.sectionText}>
-                All payments are handled by secure third-party providers. Zipto does not store:
-              </Text>
-              <Text style={styles.bulletText}>• Card details</Text>
-              <Text style={styles.bulletText}>• UPI PIN</Text>
-              <Text style={styles.bulletText}>• OTP</Text>
-            </View>
-
-            {/* 8. Data Retention */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>8. DATA RETENTION</Text>
-              <Text style={styles.sectionText}>We retain data:</Text>
-              <Text style={styles.bulletText}>• While your account is active</Text>
-              <Text style={styles.bulletText}>• As required by applicable laws</Text>
-            </View>
-
-            {/* 9. User Responsibility */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>9. USER RESPONSIBILITY</Text>
-              <Text style={styles.sectionText}>Users must ensure:</Text>
-              <Text style={styles.bulletText}>• Accurate pickup & delivery details</Text>
-              <Text style={styles.bulletText}>• Correct item description</Text>
-              <Text style={styles.bulletText}>• Items are legal and safe for transport</Text>
-              <Text style={styles.importantNote}>Zipto reserves the right to refuse unsafe or restricted items.</Text>
-            </View>
-
-            {/* 10. Limitation of Liability */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>10. LIMITATION OF LIABILITY</Text>
-              <Text style={styles.sectionText}>Zipto shall not be responsible for:</Text>
-              <Text style={styles.bulletText}>• Product quality or condition</Text>
-              <Text style={styles.bulletText}>• Wrong or incomplete items from sellers</Text>
-              <Text style={styles.bulletText}>• Expired or damaged goods (including food or medicine)</Text>
-              <Text style={styles.bulletText}>• Indirect or consequential losses</Text>
-              <Text style={styles.importantNote}>👉 Zipto’s responsibility is limited strictly to pickup and delivery</Text>
-            </View>
-
-            {/* 11. Disputes & Claims */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>11. DISPUTES & CLAIMS</Text>
-              <Text style={styles.sectionText}>
-                Any disputes related to product quality must be resolved between:{'\n'}👉 User and seller/provider{'\n\n'}
-                Zipto will assist only in delivery-related issues.
+                Zipto implements commercially reasonable technical, administrative, and organizational security measures to protect user information from unauthorized access, misuse, alteration, disclosure, or destruction.{'\n\n'}
+                However, no digital platform can guarantee complete security.
               </Text>
             </View>
 
-            {/* 12. User Rights */}
+            {/* 8. User Rights */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>12. USER RIGHTS</Text>
-              <Text style={styles.sectionText}>You may:</Text>
-              <Text style={styles.bulletText}>• Access your data</Text>
-              <Text style={styles.bulletText}>• Update your information</Text>
+              <Text style={styles.sectionTitle}>8. USER RIGHTS</Text>
+              <Text style={styles.sectionText}>Users may:</Text>
+              <Text style={styles.bulletText}>• Access and update profile information</Text>
               <Text style={styles.bulletText}>• Request account deletion</Text>
-              <Text style={styles.contactText}>📩 Email: support@ridezipto.com</Text>
+              <Text style={styles.bulletText}>• Contact customer support regarding privacy concerns</Text>
+              <Text style={styles.importantNote}>👉 Zipto reserves the right to retain certain information where legally required.</Text>
             </View>
 
-            {/* 13. Account Deletion */}
+            {/* 9. Third-Party Services */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>13. ACCOUNT DELETION</Text>
+              <Text style={styles.sectionTitle}>9. THIRD-PARTY SERVICES</Text>
+              <Text style={styles.sectionText}>The Platform may integrate with third-party services including:</Text>
+              <Text style={styles.bulletText}>• Payment gateways</Text>
+              <Text style={styles.bulletText}>• Maps and navigation providers</Text>
+              <Text style={styles.bulletText}>• Analytics providers</Text>
+              <Text style={styles.bulletText}>• Communication service providers</Text>
+              <Text style={styles.sectionText}>Such third-party services may operate under their own privacy policies.</Text>
+            </View>
+
+            {/* 10. Children's Privacy */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>10. CHILDREN'S PRIVACY</Text>
               <Text style={styles.sectionText}>
-                Users may request deletion via email.{'\n'}
-                Data will be removed within a reasonable timeframe, subject to legal obligations.
+                The Platform is intended only for individuals above 18 years of age.{'\n\n'}
+                Zipto does not knowingly collect personal information from minors.
               </Text>
             </View>
 
-            {/* 14. Cookies */}
+            {/* 11. Policy Modifications */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>14. COOKIES</Text>
+              <Text style={styles.sectionTitle}>11. POLICY MODIFICATIONS</Text>
               <Text style={styles.sectionText}>
-                We may use cookies to improve user experience and performance.
+                Zipto reserves the right to modify or update this Privacy Policy at any time without prior notice.{'\n\n'}
+                Continued use of the Platform after such updates constitutes acceptance of the revised Privacy Policy.
               </Text>
             </View>
 
-            {/* 15. Children's Privacy */}
+            {/* 12. Contact Information */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>15. CHILDREN’S PRIVACY</Text>
-              <Text style={styles.sectionText}>
-                Zipto is not intended for users under 18 years.
-              </Text>
-            </View>
-
-            {/* 16. Changes to Policy */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>16. CHANGES TO POLICY</Text>
-              <Text style={styles.sectionText}>
-                We may update this policy from time to time.
-              </Text>
-            </View>
-
-            {/* 17. Contact */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>17. CONTACT</Text>
+              <Text style={styles.sectionTitle}>12. CONTACT INFORMATION</Text>
+              <Text style={styles.sectionText}>ZIPTO HYPERLOGISTICS PRIVATE LIMITED</Text>
+              <Text style={styles.sectionText}>Registered Office:</Text>
+              <Text style={styles.contactText}>📍 781, Saheed Nagar, Maharishi College Road,{'\n'}    Bhubaneswar, Khordha – 751007, Odisha, India</Text>
               <Text style={styles.contactText}>📧 support@ridezipto.com</Text>
-              <Text style={styles.contactText}>📍 Bhubaneswar, Odisha, India</Text>
-            </View>
-
-            {/* 18. Grievance Officer */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>18. GRIEVANCE OFFICER</Text>
-              <Text style={styles.contactText}>Zipto Support Team</Text>
-              <Text style={styles.contactText}>Response Time: Within 48 hours.</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>
@@ -289,18 +264,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginBottom: vs(20),
-  },
-  welcomeText: {
-    fontSize: fs(14),
-    fontFamily: 'Poppins-Regular',
-    color: '#475569',
-    lineHeight: fs(14) * 1.6,
-    marginBottom: vs(24),
-    padding: ms(16),
-    backgroundColor: '#EFF6FF',
-    borderRadius: ms(10),
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
   },
 
   // ── Sections ──
