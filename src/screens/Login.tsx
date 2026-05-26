@@ -111,7 +111,7 @@ const Login = () => {
 
             <Text style={styles.label}>Mobile Number</Text>
             <View style={[styles.inputContainer, !!error && !phone && styles.inputError]}>
-              <Text style={styles.countryCode}>🇮🇳 +91</Text>
+              <Text style={styles.countryCode}>+91</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter your mobile number"
@@ -318,6 +318,7 @@ const styles = StyleSheet.create({
   countryCode: {
     color: '#334155',
     fontSize: fs(13),
+    fontWeight: '700',
     marginRight: hs(10),
     fontFamily: 'Poppins-Regular',
   },

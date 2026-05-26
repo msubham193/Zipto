@@ -89,6 +89,11 @@ const FareEstimate = () => {
   } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
+  // GSTIN
+  const [showGstInput, setShowGstInput] = useState(false);
+  const [gstinNumber, setGstinNumber] = useState('');
+  const [confirmedGstin, setConfirmedGstin] = useState('');
+
   // Restricted items modal
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
 
@@ -601,6 +606,90 @@ const FareEstimate = () => {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* ── GSTIN ── */}
+        <View style={styles.gstCard}>
+          <View style={styles.gstRow}>
+            <View style={styles.gstLabelWrap}>
+              <Icon name="receipt" size={sp(16)} color="#2563EB" />
+              <Text style={styles.gstLabel}>Have a GST number?</Text>
+            </View>
+            {!confirmedGstin && (
+              <TouchableOpacity
+                style={[styles.gstBtn, showGstInput && styles.gstBtnActive]}
+                onPress={() => {
+                  setShowGstInput(prev => !prev);
+                  if (showGstInput) setGstinNumber('');
+                }}
+                activeOpacity={0.75}
+              >
+                <Icon
+                  name={showGstInput ? 'close' : 'add'}
+                  size={sp(14)}
+                  color={showGstInput ? '#6B7280' : '#2563EB'}
+                />
+                <Text style={[styles.gstBtnText, showGstInput && styles.gstBtnTextActive]}>
+                  {showGstInput ? 'Remove' : 'Add GSTIN'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Input row — shown when not yet confirmed */}
+          {showGstInput && !confirmedGstin && (
+            <View style={styles.gstInputWrap}>
+              <View style={styles.gstInputRow}>
+                <TextInput
+                  style={styles.gstInput}
+                  placeholder="Enter GSTIN (e.g. 22AAAAA0000A1Z5)"
+                  placeholderTextColor="#9CA3AF"
+                  value={gstinNumber}
+                  onChangeText={t => setGstinNumber(t.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                  autoCapitalize="characters"
+                  maxLength={15}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.gstConfirmBtn,
+                    gstinNumber.length !== 15 && styles.gstConfirmBtnDisabled,
+                  ]}
+                  activeOpacity={gstinNumber.length === 15 ? 0.8 : 1}
+                  disabled={gstinNumber.length !== 15}
+                  onPress={() => {
+                    setConfirmedGstin(gstinNumber);
+                    setShowGstInput(false);
+                  }}
+                >
+                  <Text style={styles.gstConfirmBtnText}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+              {gstinNumber.length > 0 && gstinNumber.length < 15 && (
+                <Text style={styles.gstHint}>{15 - gstinNumber.length} characters remaining</Text>
+              )}
+            </View>
+          )}
+
+          {/* Confirmed state */}
+          {confirmedGstin ? (
+            <View style={styles.gstConfirmedRow}>
+              <Icon name="check-circle" size={sp(16)} color="#16A34A" />
+              <Text style={styles.gstConfirmedText} numberOfLines={1}>
+                {confirmedGstin}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setConfirmedGstin('');
+                  setGstinNumber('');
+                  setShowGstInput(false);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Icon name="close" size={sp(16)} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
 
         {/* ── NEW: Do Not Send Restricted Items highlight card ── */}
         <TouchableOpacity
@@ -1306,6 +1395,121 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: sp(4),
     marginBottom: sp(2),
+  },
+
+  // ── GSTIN ──
+  gstCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(14),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: sp(14),
+    paddingVertical: vs(13),
+    marginBottom: vs(4),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  gstRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gstLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    flex: 1,
+  },
+  gstLabel: {
+    fontSize: fs(isSmallScreen ? 13 : 14),
+    fontWeight: '500',
+    color: '#374151',
+  },
+  gstBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(4),
+    backgroundColor: '#EFF6FF',
+    borderRadius: sp(8),
+    paddingHorizontal: sp(12),
+    paddingVertical: sp(7),
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  gstBtnActive: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#D1D5DB',
+  },
+  gstBtnText: {
+    fontSize: fs(isSmallScreen ? 12 : 13),
+    fontWeight: '600',
+    color: '#2563EB',
+  },
+  gstBtnTextActive: {
+    color: '#6B7280',
+  },
+  gstInputWrap: {
+    marginTop: vs(12),
+  },
+  gstInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+  },
+  gstInput: {
+    flex: 1,
+    height: vs(46),
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    borderRadius: sp(10),
+    paddingHorizontal: sp(14),
+    fontSize: fs(isSmallScreen ? 13 : 14),
+    color: '#111827',
+    backgroundColor: '#F8FAFF',
+    letterSpacing: 1,
+  },
+  gstConfirmBtn: {
+    height: vs(46),
+    paddingHorizontal: sp(16),
+    backgroundColor: '#2563EB',
+    borderRadius: sp(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gstConfirmBtnDisabled: {
+    backgroundColor: '#93C5FD',
+  },
+  gstConfirmBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: fs(13),
+  },
+  gstHint: {
+    fontSize: fs(11),
+    color: '#9CA3AF',
+    marginTop: vs(5),
+  },
+  gstConfirmedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(8),
+    marginTop: vs(12),
+    backgroundColor: '#F0FDF4',
+    borderRadius: sp(10),
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    paddingHorizontal: sp(12),
+    paddingVertical: vs(10),
+  },
+  gstConfirmedText: {
+    flex: 1,
+    fontSize: fs(isSmallScreen ? 12 : 13),
+    fontWeight: '600',
+    color: '#15803D',
+    letterSpacing: 1,
   },
 
   // ── Note check icon ──
