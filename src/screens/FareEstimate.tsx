@@ -434,7 +434,7 @@ const FareEstimate = () => {
                 <View style={[styles.rowIconBox, { backgroundColor: '#F5F3FF' }]}>
                   <Icon name="verified-user" size={sp(13)} color="#7C3AED" />
                 </View>
-                <Text style={styles.rowLabel}>Platform Fee (incl. GST)</Text>
+                <Text style={styles.rowLabel}>Platform Fee</Text>
               </View>
               <Text style={styles.rowValue}>
                 ₹{((breakdown?.platform_fee || 0) + (breakdown?.platform_fee_gst || 0)).toFixed(0)}

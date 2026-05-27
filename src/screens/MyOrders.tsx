@@ -17,7 +17,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
+import { OrderCardSkeleton } from '../components/Skeleton';
 import { vehicleApi, BookingDetails } from '../api/vehicle';
 import { paymentApi } from '../api/client';
 import { Alert } from 'react-native';
@@ -60,8 +62,21 @@ const MyOrders = () => {
   const [ratingModal, setRatingModal] = useState<BookingDetails | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
+  const [ratingTags, setRatingTags] = useState<string[]>([]);
   const [submittingRating, setSubmittingRating] = useState(false);
   const [ratedBookings, setRatedBookings] = useState<Record<string, number>>({});
+
+  const RATING_CONFIG: Record<number, { label: string; emoji: string; color: string; bg: string }> = {
+    1: { label: 'Poor',          emoji: '😞', color: '#EF4444', bg: '#FEF2F2' },
+    2: { label: 'Below Average', emoji: '😐', color: '#F97316', bg: '#FFF7ED' },
+    3: { label: 'Average',       emoji: '🙂', color: '#EAB308', bg: '#FEFCE8' },
+    4: { label: 'Good',          emoji: '😊', color: '#22C55E', bg: '#F0FDF4' },
+    5: { label: 'Excellent!',    emoji: '🤩', color: '#10B981', bg: '#ECFDF5' },
+  };
+  const RATING_TAGS = ['Fast delivery', 'Careful handling', 'Friendly driver', 'On time', 'Professional', 'Great service'];
+
+  const toggleRatingTag = (tag: string) =>
+    setRatingTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
 
   const successScale = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
@@ -343,6 +358,7 @@ const MyOrders = () => {
       setRatingModal(null);
       setRatingValue(0);
       setRatingComment('');
+      setRatingTags([]);
       Alert.alert('Thank you!', 'Your rating has been submitted successfully.');
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to submit rating';
@@ -355,6 +371,7 @@ const MyOrders = () => {
   const openRatingModal = (booking: BookingDetails) => {
     setRatingValue(0);
     setRatingComment('');
+    setRatingTags([]);
     setRatingModal(booking);
   };
 
@@ -625,10 +642,13 @@ const MyOrders = () => {
 
         {/* Content */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#3B82F6" />
-            <Text style={styles.loadingText}>Loading orders...</Text>
-          </View>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, { paddingTop: vs(12) }]}
+            scrollEnabled={false}
+          >
+            {[1, 2, 3, 4].map(i => <OrderCardSkeleton key={i} />)}
+          </ScrollView>
         ) : error ? (
           <View style={styles.emptyState}>
             <MaterialIcons name="error-outline" size={ms(64)} color="#EF4444" />
@@ -761,81 +781,119 @@ const MyOrders = () => {
       <Modal visible={!!ratingModal} transparent animationType="slide" onRequestClose={() => !submittingRating && setRatingModal(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.ratingModalContainer}>
+            {/* Drag handle */}
+            <View style={styles.ratingDragHandle} />
+
             <ScrollView
               contentContainerStyle={styles.ratingModalContent}
               keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
               {ratingModal && (<>
-                {/* Header */}
-                <View style={styles.ratingModalHeader}>
-                  <View style={styles.ratingModalIconWrap}>
-                    <MaterialIcons name="star" size={ms(32)} color="#F59E0B" />
+
+                {/* ── Gradient Header ── */}
+                <LinearGradient
+                  colors={['#FFF7ED', '#FFFBEB', '#FFFFFF']}
+                  style={styles.ratingGradientHeader}
+                >
+                  <View style={styles.ratingHeaderIconRing}>
+                    <Text style={styles.ratingHeaderEmoji}>
+                      {ratingValue > 0 ? RATING_CONFIG[ratingValue].emoji : '⭐'}
+                    </Text>
                   </View>
                   <Text style={styles.ratingModalTitle}>Rate Your Delivery</Text>
-                  <Text style={styles.ratingModalSubtitle}>Order #{ratingModal.id?.slice(0, 8)}</Text>
-                </View>
+                  <Text style={styles.ratingModalSubtitle}>Order #{ratingModal.id?.slice(0, 8)?.toUpperCase()}</Text>
+                </LinearGradient>
 
-                {/* Driver info */}
+                {/* ── Driver card ── */}
                 {ratingModal.driver && (
-                  <View style={styles.ratingDriverInfo}>
-                    <View style={styles.ratingDriverAvatar}>
-                      <MaterialIcons name="person" size={ms(24)} color="#FFFFFF" />
+                  <View style={styles.ratingDriverCard}>
+                    <View style={styles.ratingDriverAvatarWrap}>
+                      <View style={styles.ratingDriverAvatar}>
+                        <MaterialIcons name="person" size={ms(22)} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.ratingDriverOnlineDot} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.ratingDriverName}>{ratingModal.driver.name || 'Driver'}</Text>
+                      <Text style={styles.ratingDriverName}>{ratingModal.driver.name || 'Delivery Partner'}</Text>
                       <Text style={styles.ratingDriverVehicle}>{ratingModal.vehicle_type || 'Delivery Partner'}</Text>
+                    </View>
+                    <View style={styles.ratingFareChip}>
+                      <Text style={styles.ratingFareText}>
+                        ₹{parseFloat(ratingModal.final_fare || ratingModal.estimated_fare || '0').toFixed(0)}
+                      </Text>
                     </View>
                   </View>
                 )}
 
-                {/* Order summary */}
-                <View style={styles.ratingOrderSummary}>
-                  <View style={styles.ratingOrderRow}>
-                    <MaterialIcons name="circle" size={ms(8)} color="#3B82F6" />
-                    <Text style={styles.ratingOrderText} numberOfLines={1}>{getPickupAddress(ratingModal)}</Text>
+                {/* ── Route summary ── */}
+                <View style={styles.ratingRouteSummary}>
+                  <View style={styles.ratingRouteRow}>
+                    <View style={[styles.ratingRouteDot, { backgroundColor: '#3B82F6' }]} />
+                    <Text style={styles.ratingRouteText} numberOfLines={1}>{getPickupAddress(ratingModal)}</Text>
                   </View>
-                  <View style={styles.ratingOrderRow}>
-                    <MaterialIcons name="circle" size={ms(8)} color="#10B981" />
-                    <Text style={styles.ratingOrderText} numberOfLines={1}>{getDropAddress(ratingModal)}</Text>
-                  </View>
-                  <View style={styles.ratingOrderRow}>
-                    <MaterialIcons name="payments" size={ms(14)} color="#64748B" />
-                    <Text style={styles.ratingOrderText}>
-                      ₹{parseFloat(ratingModal.final_fare || ratingModal.estimated_fare || '0').toFixed(0)}
-                    </Text>
+                  <View style={styles.ratingRouteLine} />
+                  <View style={styles.ratingRouteRow}>
+                    <View style={[styles.ratingRouteDot, { backgroundColor: '#10B981' }]} />
+                    <Text style={styles.ratingRouteText} numberOfLines={1}>{getDropAddress(ratingModal)}</Text>
                   </View>
                 </View>
 
-                {/* Star rating */}
-                <Text style={styles.ratingLabel}>How was your experience?</Text>
-                <View style={styles.starContainer}>
+                {/* ── Stars ── */}
+                <Text style={styles.ratingAskLabel}>How was your experience?</Text>
+                <View style={styles.starRow}>
                   {[1, 2, 3, 4, 5].map(star => (
                     <TouchableOpacity
                       key={star}
                       onPress={() => setRatingValue(star)}
-                      activeOpacity={0.7}
-                      style={styles.starButton}
+                      activeOpacity={0.65}
+                      style={styles.starBtn}
                     >
                       <MaterialIcons
-                        name={star <= ratingValue ? 'star' : 'star-border'}
-                        size={ms(44)}
-                        color={star <= ratingValue ? '#F59E0B' : '#CBD5E1'}
+                        name={star <= ratingValue ? 'star' : 'star-outline'}
+                        size={ms(48)}
+                        color={star <= ratingValue
+                          ? (RATING_CONFIG[ratingValue]?.color ?? '#F59E0B')
+                          : '#D1D5DB'}
                       />
                     </TouchableOpacity>
                   ))}
                 </View>
-                <Text style={styles.ratingHint}>
-                  {ratingValue === 0 ? 'Tap to rate' :
-                    ratingValue === 1 ? 'Poor' :
-                      ratingValue === 2 ? 'Below Average' :
-                        ratingValue === 3 ? 'Average' :
-                          ratingValue === 4 ? 'Good' : 'Excellent'}
-                </Text>
 
-                {/* Comment */}
+                {/* Rating feedback pill */}
+                {ratingValue > 0 ? (
+                  <View style={[styles.ratingFeedbackPill, { backgroundColor: RATING_CONFIG[ratingValue].bg, borderColor: RATING_CONFIG[ratingValue].color + '40' }]}>
+                    <Text style={[styles.ratingFeedbackText, { color: RATING_CONFIG[ratingValue].color }]}>
+                      {RATING_CONFIG[ratingValue].emoji}  {RATING_CONFIG[ratingValue].label}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.ratingTapHint}>Tap a star to rate</Text>
+                )}
+
+                {/* ── Quick tags ── */}
+                <Text style={styles.ratingTagsLabel}>What went well?</Text>
+                <View style={styles.ratingTagsWrap}>
+                  {RATING_TAGS.map(tag => {
+                    const active = ratingTags.includes(tag);
+                    return (
+                      <TouchableOpacity
+                        key={tag}
+                        style={[styles.ratingTag, active && styles.ratingTagActive]}
+                        onPress={() => toggleRatingTag(tag)}
+                        activeOpacity={0.75}
+                      >
+                        {active && <MaterialIcons name="check" size={ms(12)} color="#F59E0B" />}
+                        <Text style={[styles.ratingTagText, active && styles.ratingTagTextActive]}>{tag}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* ── Comment ── */}
                 <TextInput
                   style={styles.ratingCommentInput}
-                  placeholder="Add a comment (optional)"
+                  placeholder="Share more about your experience... (optional)"
                   placeholderTextColor="#94A3B8"
                   value={ratingComment}
                   onChangeText={setRatingComment}
@@ -844,32 +902,35 @@ const MyOrders = () => {
                   textAlignVertical="top"
                 />
 
-                {/* Actions */}
-                <View style={styles.ratingModalActions}>
-                  <TouchableOpacity
-                    style={styles.ratingSkipBtn}
-                    onPress={() => setRatingModal(null)}
-                    disabled={submittingRating}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.ratingSkipText}>Skip</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.ratingSubmitBtn, ratingValue === 0 && styles.ratingSubmitDisabled]}
-                    onPress={handleSubmitRating}
-                    disabled={submittingRating || ratingValue === 0}
-                    activeOpacity={0.7}
-                  >
-                    {submittingRating ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <MaterialIcons name="send" size={ms(18)} color="#FFFFFF" />
-                        <Text style={styles.ratingSubmitText}>Submit</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
+                {/* ── Submit button ── */}
+                <TouchableOpacity
+                  style={[styles.ratingSubmitBtn, ratingValue === 0 && styles.ratingSubmitDisabled]}
+                  onPress={handleSubmitRating}
+                  disabled={submittingRating || ratingValue === 0}
+                  activeOpacity={0.8}
+                >
+                  {submittingRating ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <MaterialIcons name="star" size={ms(18)} color={ratingValue > 0 ? '#FFFFFF' : '#9CA3AF'} />
+                      <Text style={[styles.ratingSubmitText, ratingValue === 0 && { color: '#9CA3AF' }]}>
+                        Submit Rating
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Skip link */}
+                <TouchableOpacity
+                  style={styles.ratingSkipLink}
+                  onPress={() => { setRatingModal(null); setRatingTags([]); }}
+                  disabled={submittingRating}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.ratingSkipText}>Maybe later</Text>
+                </TouchableOpacity>
+
               </>)}
             </ScrollView>
           </View>
@@ -1361,89 +1422,185 @@ const styles = StyleSheet.create({
   // ── Rating Modal ──
   ratingModalContainer: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: ms(24),
-    borderTopRightRadius: ms(24),
-    maxHeight: '85%',
+    borderTopLeftRadius: ms(28),
+    borderTopRightRadius: ms(28),
+    maxHeight: '92%',
     overflow: 'hidden',
   },
-  ratingModalContent: { paddingHorizontal: hs(20), paddingTop: vs(20), paddingBottom: vs(34) },
-  ratingModalHeader: { alignItems: 'center', marginBottom: vs(16) },
-  ratingModalIconWrap: {
-    width: ms(56),
-    height: ms(56),
-    borderRadius: ms(28),
-    backgroundColor: '#FEF3C7',
+  ratingDragHandle: {
+    width: ms(36),
+    height: vs(4),
+    borderRadius: ms(2),
+    backgroundColor: '#D1D5DB',
+    alignSelf: 'center',
+    marginTop: vs(10),
+    marginBottom: vs(4),
+  },
+  ratingModalContent: { paddingHorizontal: hs(20), paddingBottom: vs(32) },
+  ratingGradientHeader: {
+    alignItems: 'center',
+    paddingTop: vs(20),
+    paddingBottom: vs(24),
+    marginHorizontal: -hs(20),
+    marginBottom: vs(16),
+    paddingHorizontal: hs(20),
+  },
+  ratingHeaderIconRing: {
+    width: ms(72),
+    height: ms(72),
+    borderRadius: ms(36),
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: vs(12),
+    shadowColor: '#F59E0B',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
-  ratingModalTitle: { fontSize: fs(20), fontWeight: 'bold', color: '#1E293B', marginBottom: vs(4) },
-  ratingModalSubtitle: { fontSize: fs(14), color: '#64748B' },
-  ratingDriverInfo: {
+  ratingHeaderEmoji: { fontSize: ms(36) },
+  ratingModalTitle: { fontSize: fs(20), fontWeight: '800', color: '#1E293B', marginBottom: vs(4), letterSpacing: -0.3 },
+  ratingModalSubtitle: { fontSize: fs(13), color: '#94A3B8', fontWeight: '500' },
+
+  // Driver card
+  ratingDriverCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: hs(12),
-    padding: ms(12),
     backgroundColor: '#F8FAFC',
-    borderRadius: ms(12),
+    borderRadius: ms(16),
+    padding: ms(14),
     marginBottom: vs(12),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
+  ratingDriverAvatarWrap: { position: 'relative' },
   ratingDriverAvatar: {
-    width: ms(44),
-    height: ms(44),
-    borderRadius: ms(22),
+    width: ms(46),
+    height: ms(46),
+    borderRadius: ms(23),
     backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  ratingDriverName: { fontSize: fs(15), fontWeight: '600', color: '#1E293B' },
-  ratingDriverVehicle: { fontSize: fs(12), color: '#64748B', textTransform: 'capitalize' },
-  ratingOrderSummary: {
-    padding: ms(12),
-    backgroundColor: '#F8FAFC',
-    borderRadius: ms(12),
-    marginBottom: vs(16),
-    gap: vs(8),
+  ratingDriverOnlineDot: {
+    position: 'absolute',
+    bottom: 1,
+    right: 1,
+    width: ms(11),
+    height: ms(11),
+    borderRadius: ms(6),
+    backgroundColor: '#22C55E',
+    borderWidth: 2,
+    borderColor: '#F8FAFC',
   },
-  ratingOrderRow: { flexDirection: 'row', alignItems: 'center', gap: hs(8) },
-  ratingOrderText: { fontSize: fs(13), color: '#475569', flex: 1 },
-  ratingLabel: { fontSize: fs(15), fontWeight: '600', color: '#1E293B', textAlign: 'center', marginBottom: vs(12) },
-  starContainer: { flexDirection: 'row', justifyContent: 'center', gap: hs(8), marginBottom: vs(4) },
-  starButton: { padding: hs(4) },
-  ratingHint: { fontSize: fs(13), color: '#64748B', textAlign: 'center', marginBottom: vs(16) },
+  ratingDriverName: { fontSize: fs(15), fontWeight: '700', color: '#1E293B' },
+  ratingDriverVehicle: { fontSize: fs(12), color: '#64748B', textTransform: 'capitalize', marginTop: vs(2) },
+  ratingFareChip: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: ms(10),
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(5),
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  ratingFareText: { fontSize: fs(13), fontWeight: '700', color: '#059669' },
+
+  // Route summary
+  ratingRouteSummary: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: ms(14),
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(12),
+    marginBottom: vs(20),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  ratingRouteRow: { flexDirection: 'row', alignItems: 'center', gap: hs(10) },
+  ratingRouteDot: { width: ms(9), height: ms(9), borderRadius: ms(5), flexShrink: 0 },
+  ratingRouteLine: { width: 1, height: vs(14), backgroundColor: '#CBD5E1', marginLeft: ms(4), marginVertical: vs(3) },
+  ratingRouteText: { fontSize: fs(13), color: '#475569', flex: 1 },
+
+  // Stars
+  ratingAskLabel: {
+    fontSize: fs(15),
+    fontWeight: '700',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: vs(14),
+  },
+  starRow: { flexDirection: 'row', justifyContent: 'center', gap: hs(6), marginBottom: vs(12) },
+  starBtn: { padding: hs(4) },
+  ratingFeedbackPill: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: hs(18),
+    paddingVertical: vs(8),
+    borderRadius: ms(20),
+    borderWidth: 1,
+    marginBottom: vs(20),
+  },
+  ratingFeedbackText: { fontSize: fs(15), fontWeight: '700', letterSpacing: 0.2 },
+  ratingTapHint: { fontSize: fs(13), color: '#94A3B8', textAlign: 'center', marginBottom: vs(20) },
+
+  // Quick tags
+  ratingTagsLabel: { fontSize: fs(13), fontWeight: '600', color: '#64748B', marginBottom: vs(10) },
+  ratingTagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: hs(8), marginBottom: vs(16) },
+  ratingTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(4),
+    paddingHorizontal: hs(14),
+    paddingVertical: vs(7),
+    borderRadius: ms(20),
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  ratingTagActive: { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' },
+  ratingTagText: { fontSize: fs(12), color: '#64748B', fontWeight: '500' },
+  ratingTagTextActive: { color: '#B45309', fontWeight: '700' },
+
+  // Comment input
   ratingCommentInput: {
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: ms(12),
-    padding: ms(12),
+    borderRadius: ms(14),
+    padding: ms(14),
     fontSize: fs(14),
     color: '#1E293B',
     backgroundColor: '#F8FAFC',
     minHeight: vs(80),
     marginBottom: vs(16),
+    textAlignVertical: 'top',
   },
-  ratingModalActions: { flexDirection: 'row', gap: hs(10) },
-  ratingSkipBtn: {
-    flex: 1,
-    paddingVertical: vs(14),
-    borderRadius: ms(12),
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ratingSkipText: { fontSize: fs(15), fontWeight: '600', color: '#475569' },
+
+  // Submit button
   ratingSubmitBtn: {
-    flex: 1.5,
     flexDirection: 'row',
-    paddingVertical: vs(14),
-    borderRadius: ms(12),
-    backgroundColor: '#F59E0B',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: hs(6),
+    gap: hs(8),
+    paddingVertical: vs(16),
+    borderRadius: ms(14),
+    backgroundColor: '#F59E0B',
+    shadowColor: '#F59E0B',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    marginBottom: vs(4),
   },
-  ratingSubmitDisabled: { opacity: 0.5 },
-  ratingSubmitText: { fontSize: fs(15), fontWeight: '600', color: '#FFFFFF' },
+  ratingSubmitDisabled: {
+    backgroundColor: '#E5E7EB',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  ratingSubmitText: { fontSize: fs(16), fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.2 },
+  ratingSkipLink: { alignItems: 'center', paddingVertical: vs(12) },
+  ratingSkipText: { fontSize: fs(14), color: '#94A3B8', fontWeight: '500' },
 
   // ── Delivery OTP ──
   otpContainer: {

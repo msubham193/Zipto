@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
@@ -15,6 +16,7 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
+import { TransactionRowSkeleton } from '../components/Skeleton';
 
 const TransactionHistoryScreen = () => {
   const navigation =
@@ -164,10 +166,9 @@ const TransactionHistoryScreen = () => {
             <Text style={styles.headerTitle}>Transaction History</Text>
             <View style={{ width: ms(40) }} />
           </View>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6366F1" />
-            <Text style={styles.loadingText}>Loading transactions...</Text>
-          </View>
+          <ScrollView scrollEnabled={false} style={{ marginTop: vs(8) }}>
+            {[1, 2, 3, 4, 5, 6].map(i => <TransactionRowSkeleton key={i} />)}
+          </ScrollView>
         </SafeAreaView>
       </View>
     );
