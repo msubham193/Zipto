@@ -14,7 +14,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
+
+const REVIEW_SUBMITTED_KEY = 'zipto_review_submitted';
 
 // ─── Derived responsive values ────────────────────────────────────────────────
 const backBtnSize = ms(40);
@@ -93,6 +96,7 @@ const WriteReview = () => {
       // TODO: call your review API here
       // await vehicleApi.submitReview({ rating, review: reviewText, tags: selectedTags });
       await new Promise<void>(resolve => setTimeout(resolve, 1000)); // mock delay
+      await AsyncStorage.setItem(REVIEW_SUBMITTED_KEY, 'true');
       Alert.alert(
         'Review Submitted! 🎉',
         `You earned +5 coins for writing a review. Thank you for your feedback!`,

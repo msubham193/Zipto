@@ -20,6 +20,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
 import { OrderCardSkeleton } from '../components/Skeleton';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { vehicleApi, BookingDetails } from '../api/vehicle';
 import { paymentApi } from '../api/client';
 import { Alert } from 'react-native';
@@ -29,6 +30,7 @@ import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontSc
 const ACTIVE_STATUSES = ['pending', 'searching', 'accepted', 'assigned', 'driver_assigned', 'driver_arriving', 'arriving', 'in_progress', 'ongoing', 'picked_up'];
 const COMPLETED_STATUSES = ['completed', 'delivered'];
 const CANCELLED_STATUSES = ['cancelled'];
+const RATED_BOOKINGS_KEY = 'zipto_rated_bookings';
 
 type PaymentFilter = 'all' | 'paid' | 'unpaid';
 
@@ -111,6 +113,19 @@ const MyOrders = () => {
   }, []);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  // Seed ratedBookings from AsyncStorage on mount so the modal never reappears
+  // even if the API fetch fails on re-entry.
+  useEffect(() => {
+    AsyncStorage.getItem(RATED_BOOKINGS_KEY)
+      .then(raw => {
+        if (raw) {
+          const persisted = JSON.parse(raw) as Record<string, number>;
+          setRatedBookings(prev => ({ ...persisted, ...prev }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const onRefresh = () => { setRefreshing(true); fetchBookings(true); };
 
@@ -354,7 +369,11 @@ const MyOrders = () => {
         rating: ratingValue,
         comment: ratingComment.trim() || undefined,
       });
-      setRatedBookings(prev => ({ ...prev, [ratingModal.id]: ratingValue }));
+      setRatedBookings(prev => {
+        const updated = { ...prev, [ratingModal.id]: ratingValue };
+        AsyncStorage.setItem(RATED_BOOKINGS_KEY, JSON.stringify(updated)).catch(() => {});
+        return updated;
+      });
       setRatingModal(null);
       setRatingValue(0);
       setRatingComment('');
