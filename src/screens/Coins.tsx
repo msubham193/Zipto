@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -15,8 +16,11 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
+
+const REVIEW_SUBMITTED_KEY = 'zipto_review_submitted';
 
 const Coins = () => {
   const navigation =
@@ -29,6 +33,7 @@ const Coins = () => {
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [balanceError, setBalanceError] = useState(false);
+  const [reviewDone, setReviewDone]     = useState(false);
 
   const fetchData = useCallback(async (isRefresh = false) => {
     try {
@@ -61,6 +66,12 @@ const Coins = () => {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(REVIEW_SUBMITTED_KEY)
+      .then(val => { if (val) setReviewDone(true); })
+      .catch(() => {});
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -115,12 +126,18 @@ const Coins = () => {
       icon: 'local-shipping',
       text: 'Complete deliveries',
       coins: 'Per order',
+      done: false,
+      coinsColor: undefined,
+      coinsBg: undefined,
       onPress: () => navigation.navigate('MyOrders', { filter: 'completed' }),
     },
     {
       icon: 'share',
       text: 'Refer friends',
       coins: '+50',
+      done: false,
+      coinsColor: undefined,
+      coinsBg: undefined,
       onPress: () => {
         const { Share } = require('react-native');
         Share.share({
@@ -132,8 +149,13 @@ const Coins = () => {
     {
       icon: 'star',
       text: 'Write reviews',
-      coins: '+5',
-      onPress: () => navigation.navigate('WriteReview'),
+      coins: reviewDone ? 'Done' : '+5',
+      coinsColor: reviewDone ? '#10B981' : undefined,
+      coinsBg: reviewDone ? '#DCFCE7' : undefined,
+      done: reviewDone,
+      onPress: reviewDone
+        ? () => Alert.alert('Already Reviewed', 'You have already submitted a review. Thank you!')
+        : () => navigation.navigate('WriteReview'),
     },
     // Transaction history row — commented out, re-enable when TransactionHistory screen is ready
     /*
@@ -335,15 +357,28 @@ const Coins = () => {
             <View style={styles.earnCard}>
               {earnCoinsWays.map((way, index) => (
                 <React.Fragment key={index}>
-                  <TouchableOpacity style={styles.earnItem} onPress={way.onPress} activeOpacity={0.7}>
-                    <View style={styles.earnIconContainer}>
-                      <MaterialIcons name={way.icon} size={ms(24)} color="#6366F1" />
+                  <TouchableOpacity
+                    style={[styles.earnItem, way.done && styles.earnItemDone]}
+                    onPress={way.onPress}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.earnIconContainer, way.done && styles.earnIconDone]}>
+                      <MaterialIcons
+                        name={way.done ? 'check-circle' : way.icon}
+                        size={ms(24)}
+                        color={way.done ? '#10B981' : '#6366F1'}
+                      />
                     </View>
-                    <Text style={styles.earnText}>{way.text}</Text>
-                    <View style={styles.earnCoinsTag}>
-                      <Text style={styles.earnCoinsText}>{way.coins}</Text>
+                    <Text style={[styles.earnText, way.done && styles.earnTextDone]}>{way.text}</Text>
+                    <View style={[styles.earnCoinsTag, way.coinsBg ? { backgroundColor: way.coinsBg } : null]}>
+                      <Text style={[styles.earnCoinsText, way.coinsColor ? { color: way.coinsColor } : null]}>
+                        {way.coins}
+                      </Text>
                     </View>
-                    <MaterialIcons name="chevron-right" size={ms(20)} color="#94A3B8" />
+                    {way.done
+                      ? <MaterialIcons name="check" size={ms(20)} color="#10B981" />
+                      : <MaterialIcons name="chevron-right" size={ms(20)} color="#94A3B8" />
+                    }
                   </TouchableOpacity>
                   {index < earnCoinsWays.length - 1 && <View style={styles.earnDivider} />}
                 </React.Fragment>
@@ -592,7 +627,10 @@ const styles = StyleSheet.create({
     alignItems:      'center',
     marginRight:     hs(12),
   },
+  earnItemDone: { opacity: 0.75 },
+  earnIconDone: { backgroundColor: '#DCFCE7' },
   earnText:     { flex: 1, fontSize: fs(15), color: '#0F172A', fontWeight: '500' },
+  earnTextDone: { color: '#64748B' },
   earnCoinsTag: {
     backgroundColor:   '#DCFCE7',
     paddingHorizontal: hs(12),

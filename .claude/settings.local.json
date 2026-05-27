@@ -107,10 +107,18 @@
       "Bash(kill -9 99858)",
       "Bash(/Users/sandeepnayak/Library/Android/sdk/emulator/emulator -avd Pixel_10_Pro_XL -dns-server 8.8.8.8,8.8.4.4 -no-snapshot-load)",
       "Bash(curl -s \"https://maps.googleapis.com/maps/api/place/autocomplete/json?input=Bhubaneswar&key=AIzaSyBk3embTThBzPAZBmSlIYue_JFHk2iBe9A&components=country:in&language=en\")",
-      "Bash(python3 -m json.tool)"
+      "Bash(python3 -m json.tool)",
+      "Bash(emulator -list-avds)",
+      "Bash(emulator -avd Pixel_10_Pro_XL -dns-server 8.8.8.8,8.8.4.4 -no-snapshot-load)",
+      "Bash(npx react-native start --reset-cache --port 8081 > /tmp/metro.log 2>&1 & *)",
+      "Bash(xargs kill -9)",
+      "Bash(node -e \"const pkg = require\\('./package.json'\\); console.log\\('RN:', pkg.dependencies['react-native']\\); console.log\\('LinearGradient:', pkg.dependencies['react-native-linear-gradient']\\);\")",
+      "Bash(./gradlew assembleRelease)",
+      "Bash(keytool -genkeypair -v -storetype PKCS12 -keystore /Users/sandeepnayak/Desktop/Zipto/android/app/my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass msubham193 -keypass msubham193 -dname 'CN=Zipto, OU=Mobile, O=Zipto, L=India, ST=India, C=IN')"
     ],
     "additionalDirectories": [
-      "/Users/sandeepnayak/Desktop/zipto_rider/src"
+      "/Users/sandeepnayak/Desktop/zipto_rider/src",
+      "/tmp"
     ]
   }
 }

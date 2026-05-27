@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,15 +8,15 @@ import {
   Alert,
   ActivityIndicator,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/useAuthStore';
 import BottomTabBar from './BottomTabBar';
-import { vehicleApi } from '../api/vehicle';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -37,25 +37,7 @@ const Profile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
-  const [loggingOut, setLoggingOut]   = useState(false);
-  const [orderCount, setOrderCount]   = useState<number | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  // wallet state & walletApi removed — wallet option removed from this screen
-  const fetchStats = useCallback(async () => {
-    setStatsLoading(true);
-    try {
-      const ordersRes = await vehicleApi.getCustomerHistory(1, 1).catch(() => null);
-      const data = ordersRes?.data;
-      if (typeof data?.total === 'number') setOrderCount(data.total);
-    } finally {
-      setStatsLoading(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => { fetchStats(); }, [fetchStats]),
-  );
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -82,7 +64,6 @@ const Profile = () => {
       title: 'Account',
       items: [
         { id: 1,  title: 'Edit Profile',      icon: 'person-outline',  color: '#3B82F6', onPress: () => navigation.navigate('EditProfile') },
-        { id: 2,  title: 'Saved Addresses',   icon: 'location-on',     color: '#10B981', onPress: () => navigation.navigate('SavedAddresses') },
         { id: 12, title: 'My Orders',         icon: 'local-shipping',  color: '#F97316', onPress: () => navigation.navigate('MyOrders') },
       ],
     },
@@ -110,7 +91,13 @@ const Profile = () => {
       title: 'About',
       items: [
         { id: 10, title: 'About Us',     icon: 'info', color: '#6366F1', onPress: () => navigation.navigate('AboutUs') },
-        { id: 11, title: 'Rate Our App', icon: 'star', color: '#F59E0B', onPress: () => Alert.alert('Rate Us', 'Thank you for your interest! This feature will redirect to the app store.') },
+        { id: 11, title: 'Rate Our App', icon: 'star', color: '#F59E0B', onPress: () => {
+          const url = 'market://details?id=com.ridezipto.customer';
+          const fallback = 'https://play.google.com/store/apps/details?id=com.ridezipto.customer';
+          Linking.canOpenURL(url)
+            .then(supported => Linking.openURL(supported ? url : fallback))
+            .catch(() => Linking.openURL(fallback));
+        }},
       ],
     },
   ];

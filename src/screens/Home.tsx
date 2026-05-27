@@ -19,6 +19,7 @@ import BottomTabBar from './BottomTabBar';
 import { useAuthStore } from '../store/useAuthStore';
 import { notificationApi } from '../api/client';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
+import { HomeLocationSkeleton } from '../components/Skeleton';
 const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 
@@ -28,6 +29,7 @@ const Home = () => {
   const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentLocation, setCurrentLocation] = useState('Locating...');
+  const [locationLoading, setLocationLoading] = useState(true);
 
   const fetchLocation = async () => {
     setCurrentLocation('Locating...');
@@ -45,6 +47,7 @@ const Home = () => {
         );
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
           setCurrentLocation('Location permission denied');
+          setLocationLoading(false);
           return;
         }
       }
@@ -67,17 +70,21 @@ const Home = () => {
           } catch (error) {
             console.log('Reverse geocode error:', error);
             setCurrentLocation('Current Location');
+          } finally {
+            setLocationLoading(false);
           }
         },
         error => {
           console.log('Geolocation error:', error);
           setCurrentLocation('Current Location');
+          setLocationLoading(false);
         },
         { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
       );
     } catch (err) {
       console.warn(err);
       setCurrentLocation('Current Location');
+      setLocationLoading(false);
     }
   };
 
@@ -174,9 +181,10 @@ const Home = () => {
               activeOpacity={0.6}
             >
               <MaterialIcons name="location-on" size={sp(20)} color="#1E3A8A" />
-              <Text style={styles.locationText} numberOfLines={1} ellipsizeMode="tail">
-                {currentLocation}
-              </Text>
+              {locationLoading
+                ? <HomeLocationSkeleton />
+                : <Text style={styles.locationText} numberOfLines={1} ellipsizeMode="tail">{currentLocation}</Text>
+              }
               <MaterialIcons name="keyboard-arrow-down" size={sp(20)} color="#1A1A1A" />
             </TouchableOpacity>
           </View>
@@ -224,6 +232,7 @@ const Home = () => {
               ))}
             </View>
           </View>
+
 
           {/* Info Banner */}
           <View style={styles.infoBanner}>

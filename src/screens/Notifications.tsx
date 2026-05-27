@@ -15,6 +15,7 @@ import {useNavigation} from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {notificationApi} from '../api/client';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
+import { NotificationRowSkeleton } from '../components/Skeleton';
 
 interface CustomerNotification {
   id: string;
@@ -166,9 +167,9 @@ const Notifications = () => {
 
         {/* Body */}
         {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color="#3B82F6" />
-          </View>
+          <ScrollView scrollEnabled={false}>
+            {[1, 2, 3, 4, 5, 6].map(i => <NotificationRowSkeleton key={i} />)}
+          </ScrollView>
         ) : error ? (
           <View style={styles.emptyState}>
             <View style={[styles.emptyIconWrap, {backgroundColor: '#FEF2F2'}]}>

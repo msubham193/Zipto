@@ -5,98 +5,174 @@ import {
   Animated,
   StatusBar,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
-const Splash = () => {
-  const logoScale   = useRef(new Animated.Value(0.6)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const taglineY    = useRef(new Animated.Value(12)).current;
-  const taglineOp   = useRef(new Animated.Value(0)).current;
-  const poweredOp   = useRef(new Animated.Value(0)).current;
+const ZIPTO_LETTERS = ['Z', 'i', 'p', 't', 'o'];
+
+const LetterPop = ({
+  letter,
+  delay,
+}: {
+  letter: string;
+  delay: number;
+}) => {
+  const scale = useRef(new Animated.Value(0.1)).current;
+  const rotate = useRef(new Animated.Value(-20)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          tension: 55,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 420,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.timing(taglineOp, {
-          toValue: 1,
-          duration: 350,
-          useNativeDriver: true,
-        }),
-        Animated.timing(taglineY, {
-          toValue: 0,
-          duration: 350,
-          useNativeDriver: true,
-        }),
-        Animated.timing(poweredOp, {
-          toValue: 1,
-          duration: 350,
-          delay: 150,
-          useNativeDriver: true,
-        }),
-      ]),
+    const anim = Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        tension: 80,
+        friction: 6,
+        useNativeDriver: true,
+        delay,
+      }),
+      Animated.timing(rotate, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+        delay,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+        delay,
+      }),
+    ]);
+    anim.start();
+    return () => anim.stop();
+  }, [delay]);
+
+  const rotateInterpolate = rotate.interpolate({
+    inputRange: [-20, 0],
+    outputRange: ['-20deg', '0deg'],
+  });
+
+  return (
+    <Animated.Text
+      style={[
+        styles.ziptoLetter,
+        {
+          opacity,
+          transform: [{ scale }, { rotate: rotateInterpolate }],
+        },
+      ]}
+    >
+      {letter}
+    </Animated.Text>
+  );
+};
+
+const Splash = () => {
+  const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const taglineSlideY = useRef(new Animated.Value(10)).current;
+  const poweredOpacity = useRef(new Animated.Value(0)).current;
+
+  const LETTER_STAGGER = 110;
+  const LAST_LETTER_DELAY = (ZIPTO_LETTERS.length - 1) * LETTER_STAGGER;
+  const TAGLINE_DELAY = LAST_LETTER_DELAY + 250;
+  const POWERED_DELAY = LAST_LETTER_DELAY + 520;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(taglineOpacity, {
+        toValue: 1,
+        duration: 400,
+        delay: TAGLINE_DELAY,
+        useNativeDriver: true,
+      }),
+      Animated.timing(taglineSlideY, {
+        toValue: 0,
+        duration: 400,
+        delay: TAGLINE_DELAY,
+        useNativeDriver: true,
+      }),
     ]).start();
+
+    Animated.timing(poweredOpacity, {
+      toValue: 1,
+      duration: 400,
+      delay: POWERED_DELAY,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#0C1D6C', '#1E22AD', '#3F60E5']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#1E22AD" />
 
       <View style={styles.content}>
-        <Animated.Image
-          source={require('../assets/images/logo_zipto.png')}
-          style={[styles.logo, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
-          resizeMode="contain"
-        />
+        <View style={styles.lettersRow}>
+          {ZIPTO_LETTERS.map((letter, index) => (
+            <LetterPop
+              key={letter + index}
+              letter={letter}
+              delay={index * LETTER_STAGGER}
+            />
+          ))}
+        </View>
+
         <Animated.Text
-          style={[styles.tagline, { opacity: taglineOp, transform: [{ translateY: taglineY }] }]}
+          style={[
+            styles.tagline,
+            {
+              opacity: taglineOpacity,
+              transform: [{ translateY: taglineSlideY }],
+            },
+          ]}
         >
           Last-Mile Delivery
         </Animated.Text>
       </View>
 
-      <Animated.Text style={[styles.poweredBy, { opacity: poweredOp }]}>
+      <Animated.Text style={[styles.poweredBy, { opacity: poweredOpacity }]}>
         Powered by Zipto Technologies
       </Animated.Text>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1E22AD',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: ms(24),
   },
-  logo: {
-    width: ms(180),
-    height: ms(180),
-    marginBottom: vs(16),
+  lettersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ziptoLetter: {
+    fontSize: fs(92),
+    fontWeight: 'normal',
+    color: '#FFFFFF',
+    fontFamily: 'Cocon-Regular',
+    letterSpacing: ms(0.5),
   },
   tagline: {
-    fontSize: fs(13),
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: fs(12),
+    color: 'rgba(255,255,255,0.82)',
     fontFamily: 'Cocon-Regular',
     letterSpacing: ms(4),
     textTransform: 'uppercase',
+    marginTop: vs(16),
     textAlign: 'center',
   },
   poweredBy: {
