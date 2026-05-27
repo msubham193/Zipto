@@ -58,6 +58,10 @@ export interface FareEstimateResponse {
     distance: number;
     duration: number;
     estimated_fare: number;
+    /** True when at least one driver is online within the search radius at pickup */
+    drivers_available: boolean;
+    /** Number of online drivers found within the search radius */
+    nearby_driver_count: number;
     breakdown: {
       base_fare: number;
       distance_charge: number;

@@ -77,6 +77,7 @@ const FareEstimate = () => {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [driversAvailable, setDriversAvailable] = useState<boolean>(true);
 
   // Zipto Coins
   const [coinsBalance, setCoinsBalance] = useState(0);
@@ -119,6 +120,7 @@ const FareEstimate = () => {
       });
       if (response.success && response.data) {
         setEstimateData(response.data);
+        setDriversAvailable(response.data.drivers_available !== false);
       } else {
         throw new Error('Failed to get fare estimate');
       }
@@ -261,6 +263,61 @@ const FareEstimate = () => {
         <TouchableOpacity style={styles.retryButton} onPress={fetchFareEstimate} activeOpacity={0.8}>
           <Text style={styles.retryButtonText}>Retry Estimation</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ── No Drivers Available state ───────────────────────────────────────────────
+  if (!driversAvailable && estimateData) {
+    const vehicleLabel = selectedVehicleType.replace(/_/g, ' ');
+    return (
+      <View style={[styles.noDriversRoot, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" translucent />
+
+        {/* Back button */}
+        <TouchableOpacity style={styles.noDriversBack} onPress={handleGoBack} activeOpacity={0.7}>
+          <Icon name="arrow-back" size={sp(22)} color="#111827" />
+        </TouchableOpacity>
+
+        {/* Illustration */}
+        <View style={styles.noDriversIllustration}>
+          <View style={styles.noDriversIconRing}>
+            <Icon name="directions-car" size={sp(52)} color="#6B7280" />
+            <View style={styles.noDriversBadge}>
+              <Icon name="close" size={sp(12)} color="#FFFFFF" />
+            </View>
+          </View>
+        </View>
+
+        {/* Text */}
+        <Text style={styles.noDriversTitle}>No Drivers Near You</Text>
+        <Text style={styles.noDriversSub}>
+          No available {vehicleLabel} drivers were found within 4 km of your pickup location right now.
+        </Text>
+
+        {/* Tips */}
+        <View style={styles.noDriversTips}>
+          <View style={styles.noDriversTipRow}>
+            <Icon name="schedule" size={sp(16)} color="#2563EB" style={{ marginTop: vs(1) }} />
+            <Text style={styles.noDriversTipText}>Try again in a few minutes — drivers go online throughout the day.</Text>
+          </View>
+          <View style={styles.noDriversTipRow}>
+            <Icon name="location-on" size={sp(16)} color="#2563EB" style={{ marginTop: vs(1) }} />
+            <Text style={styles.noDriversTipText}>Adjust your pickup point slightly to a nearby road or landmark.</Text>
+          </View>
+        </View>
+
+        {/* Actions */}
+        <View style={styles.noDriversActions}>
+          <TouchableOpacity style={styles.noDriversRetryBtn} onPress={fetchFareEstimate} activeOpacity={0.85}>
+            <Icon name="refresh" size={sp(18)} color="#FFFFFF" />
+            <Text style={styles.noDriversRetryText}>Try Again</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.noDriversChangeBtn} onPress={handleGoBack} activeOpacity={0.85}>
+            <Icon name="edit-location" size={sp(18)} color="#2563EB" />
+            <Text style={styles.noDriversChangeText}>Change Location</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -1478,6 +1535,126 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.2,
+  },
+
+  // ── No Drivers Available ──
+  noDriversRoot: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: hs(24),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noDriversBack: {
+    position: 'absolute',
+    top: vs(56),
+    left: hs(16),
+    width: sp(40),
+    height: sp(40),
+    borderRadius: sp(20),
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  noDriversIllustration: {
+    marginBottom: vs(28),
+  },
+  noDriversIconRing: {
+    width: sp(110),
+    height: sp(110),
+    borderRadius: sp(55),
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDriversBadge: {
+    position: 'absolute',
+    bottom: sp(8),
+    right: sp(8),
+    width: sp(24),
+    height: sp(24),
+    borderRadius: sp(12),
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#F9FAFB',
+  },
+  noDriversTitle: {
+    fontSize: fs(isSmallScreen ? 20 : 22),
+    fontWeight: '800',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: vs(10),
+    letterSpacing: -0.3,
+  },
+  noDriversSub: {
+    fontSize: fs(isSmallScreen ? 13 : 14),
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: fs(20),
+    marginBottom: vs(24),
+    paddingHorizontal: hs(8),
+  },
+  noDriversTips: {
+    width: '100%',
+    backgroundColor: '#EFF6FF',
+    borderRadius: sp(12),
+    padding: sp(14),
+    gap: vs(10),
+    marginBottom: vs(28),
+  },
+  noDriversTipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: hs(8),
+  },
+  noDriversTipText: {
+    flex: 1,
+    fontSize: fs(isSmallScreen ? 12 : 13),
+    color: '#1D4ED8',
+    lineHeight: fs(18),
+  },
+  noDriversActions: {
+    width: '100%',
+    gap: vs(10),
+  },
+  noDriversRetryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: hs(8),
+    backgroundColor: '#2563EB',
+    borderRadius: sp(14),
+    paddingVertical: vs(15),
+  },
+  noDriversRetryText: {
+    fontSize: fs(isSmallScreen ? 14 : 16),
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  noDriversChangeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: hs(8),
+    backgroundColor: '#EFF6FF',
+    borderRadius: sp(14),
+    paddingVertical: vs(15),
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  noDriversChangeText: {
+    fontSize: fs(isSmallScreen ? 14 : 15),
+    fontWeight: '600',
+    color: '#2563EB',
   },
 });
 
