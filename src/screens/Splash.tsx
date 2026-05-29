@@ -135,7 +135,7 @@ const Splash = () => {
       </View>
 
       <Animated.Text style={[styles.poweredBy, { opacity: poweredOpacity }]}>
-        Powered by Zipto Technologies
+        Powered by Zipto Hyperlogistics Pvt. Ltd.
       </Animated.Text>
     </LinearGradient>
   );

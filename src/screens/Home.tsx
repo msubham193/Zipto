@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
@@ -30,6 +31,24 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentLocation, setCurrentLocation] = useState('Locating...');
   const [locationLoading, setLocationLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setLocationLoading(true);
+    await Promise.allSettled([
+      fetchLocation(),
+      isAuthenticated
+        ? notificationApi.getNotifications()
+            .then(res => {
+              const list = Array.isArray(res?.data) ? res.data : [];
+              setUnreadCount(list.filter((n: any) => !n.read).length);
+            })
+            .catch(() => {})
+        : Promise.resolve(),
+    ]);
+    setRefreshing(false);
+  };
 
   const fetchLocation = async () => {
     setCurrentLocation('Locating...');
@@ -190,7 +209,11 @@ const Home = () => {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} tintColor="#2563EB" />}
+        >
           {/* Hero Banner */}
           <View style={styles.heroBanner}>
             <Image
