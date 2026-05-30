@@ -7,91 +7,223 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
+import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Geolocation from 'react-native-geolocation-service';
-import { PermissionsAndroid, Platform } from 'react-native';
-import { googleMapsApi as mapboxApi } from '../api/googleMaps';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import BottomTabBar from './BottomTabBar';
 import { useAuthStore } from '../store/useAuthStore';
+import { useLocationStore } from '../store/useLocationStore';
 import { notificationApi } from '../api/client';
-import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
+import { horizontalScale as hs, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
 import { HomeLocationSkeleton } from '../components/Skeleton';
+
+// WMO weather codes that indicate precipitation (drizzle, rain, snow, showers, thunderstorm)
+const RAIN_CODES = new Set([51,53,55,56,57,61,63,65,66,67,71,73,75,77,80,81,82,85,86,95,96,99]);
+// Re-poll weather on this cadence — weather changes even when the user doesn't move
+const WEATHER_REFRESH_MS = 10 * 60 * 1000; // 10 minutes
+const WEATHER_FETCH_TIMEOUT_MS = 8000;
+
 const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 
+// ─── Animated card wrapper ────────────────────────────────────────────────────
+function ServiceCard({
+  service,
+  delayMs,
+  onPress,
+}: {
+  service: { id: number; title: string; description: string; image: any };
+  delayMs: number;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(0.85);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withDelay(
+      delayMs,
+      withSpring(1, { damping: 14, stiffness: 120, mass: 0.8 }),
+    );
+    opacity.value = withDelay(
+      delayMs,
+      withTiming(1, { duration: 300 }),
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={[styles.serviceCard, animStyle]}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        <View style={[StyleSheet.absoluteFill, { padding: sp(11), justifyContent: 'space-between' }]}>
+          <View style={styles.serviceCardTop}>
+            <View style={styles.serviceImageContainer}>
+              <Image source={service.image} style={styles.serviceImage} resizeMode="contain" />
+            </View>
+            <View style={styles.serviceArrow}>
+              <MaterialIcons name="arrow-forward" size={sp(14)} color="#1A1A1A" />
+            </View>
+          </View>
+          <View style={styles.serviceCardBottom}>
+            <Text style={styles.serviceCardTitle} numberOfLines={1}>{service.title}</Text>
+            <Text style={styles.serviceDescription} numberOfLines={2}>{service.description}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 const Home = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const isFocused = useIsFocused();
   const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [currentLocation, setCurrentLocation] = useState('Locating...');
-  const [locationLoading, setLocationLoading] = useState(true);
 
-  const fetchLocation = async () => {
-    setCurrentLocation('Locating...');
-    try {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message: 'Zipto needs access to your location to show accurate services.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          setCurrentLocation('Location permission denied');
-          setLocationLoading(false);
-          return;
-        }
-      }
+  const { address, latitude, longitude, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
+  const [isRaining, setIsRaining] = useState(false);
+  const [showRider, setShowRider] = useState(true); // rides across screen center once on load
 
-      Geolocation.getCurrentPosition(
-        async position => {
-          try {
-            const { latitude, longitude } = position.coords;
-            const address = await mapboxApi.reverseGeocode(latitude, longitude);
+  // ── Animation shared values ──────────────────────────────────────────────
+  // 1. Header
+  const headerOpacity = useSharedValue(0);
+  const headerY = useSharedValue(-20);
 
-            // Check if address is the lat/lng fallback from googleMapsApi
-            const isFallbackCoords = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(address?.trim());
+  // 2. Hero banner
+  const bannerOpacity = useSharedValue(0);
+  const bannerScale = useSharedValue(0.95);
 
-            if (address && !isFallbackCoords) {
-              const shortAddress = address.split(',').slice(0, 2).join(', ');
-              setCurrentLocation(shortAddress);
-            } else {
-              setCurrentLocation('Current Location');
-            }
-          } catch (error) {
-            console.log('Reverse geocode error:', error);
-            setCurrentLocation('Current Location');
-          } finally {
-            setLocationLoading(false);
-          }
-        },
-        error => {
-          console.log('Geolocation error:', error);
-          setCurrentLocation('Current Location');
-          setLocationLoading(false);
-        },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
-      );
-    } catch (err) {
-      console.warn(err);
-      setCurrentLocation('Current Location');
-      setLocationLoading(false);
-    }
-  };
+  // 3. Section title
+  const titleOpacity = useSharedValue(0);
+  const titleY = useSharedValue(15);
 
+  // ── Trigger entrance on mount ────────────────────────────────────────────
   useEffect(() => {
-    fetchLocation();
+    const ease = Easing.out(Easing.ease);
+    const cubic = Easing.out(Easing.cubic);
+
+    // 1. Header — 0ms
+    headerOpacity.value = withTiming(1, { duration: 400, easing: ease });
+    headerY.value = withTiming(0, { duration: 400, easing: ease });
+
+    // 2. Hero banner — 150ms
+    bannerOpacity.value = withDelay(150, withTiming(1, { duration: 450, easing: cubic }));
+    bannerScale.value = withDelay(150, withTiming(1, { duration: 450, easing: cubic }));
+
+    // 3. Section title — 280ms
+    titleOpacity.value = withDelay(280, withTiming(1, { duration: 350, easing: ease }));
+    titleY.value = withDelay(280, withTiming(0, { duration: 350, easing: ease }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Animated styles ──────────────────────────────────────────────────────
+  const headerAnimStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateY: headerY.value }],
+  }));
+
+  const bannerAnimStyle = useAnimatedStyle(() => ({
+    opacity: bannerOpacity.value,
+    transform: [{ scale: bannerScale.value }],
+  }));
+
+  const titleAnimStyle = useAnimatedStyle(() => ({
+    opacity: titleOpacity.value,
+    transform: [{ translateY: titleY.value }],
+  }));
+
+  // ── Location ─────────────────────────────────────────────────────────────
+  // Wait for AsyncStorage hydration, then fetch only if no cached address or stale
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!address || isStale()) fetchLocation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
+  // Screen focus: silent background refresh only when stale (cached address stays visible)
+  useEffect(() => {
+    if (isFocused && hydrated && address && isStale()) fetchLocation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused]);
+
+  // ── Weather → rain animation ──────────────────────────────────────────────
+  // Driven by the user's real location via Open-Meteo (free, no API key).
+  // Re-checks when coordinates change, when the screen refocuses, and on a
+  // 10-min interval (weather can change while the user stays put).
+  useEffect(() => {
+    if (!latitude || !longitude) return;
+
+    let cancelled = false;
+
+    const checkWeather = async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), WEATHER_FETCH_TIMEOUT_MS);
+      try {
+        // Ask for actual measured precipitation (mm) + condition code.
+        // We trust the measured rain/showers/snow over the condition class,
+        // since a thunderstorm code can be reported with zero precipitation.
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
+            `&current=precipitation,rain,showers,snowfall,weather_code`,
+          { signal: controller.signal },
+        );
+        const data = await res.json();
+        if (cancelled) return;
+
+        const cur = data?.current ?? {};
+        const precip = Number(cur.precipitation ?? 0);
+        const rain = Number(cur.rain ?? 0);
+        const showers = Number(cur.showers ?? 0);
+        const snow = Number(cur.snowfall ?? 0);
+        const code: number = cur.weather_code ?? -1;
+
+        // Primary signal: any measurable precipitation right now.
+        // Fallback: trust the condition code only if the API omits precip fields.
+        const hasPrecipFields =
+          cur.precipitation != null || cur.rain != null || cur.showers != null || cur.snowfall != null;
+        const measuredWet = precip > 0 || rain > 0 || showers > 0 || snow > 0;
+        const raining = hasPrecipFields ? measuredWet : RAIN_CODES.has(code);
+
+        setIsRaining(raining);
+      } catch {
+        // Network/timeout — leave current state unchanged, next poll retries
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    checkWeather(); // immediate check
+    const interval = setInterval(checkWeather, WEATHER_REFRESH_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  // Re-subscribe when coordinates change or screen refocuses
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latitude, longitude, isFocused]);
+
+  // ── Notifications ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated) return;
     notificationApi.getNotifications()
@@ -99,9 +231,10 @@ const Home = () => {
         const list = Array.isArray(res?.data) ? res.data : [];
         setUnreadCount(list.filter((n: any) => !n.read).length);
       })
-      .catch(() => { });
+      .catch(() => {});
   }, [isAuthenticated, isFocused]);
 
+  // ── Service data ──────────────────────────────────────────────────────────
   const services = useMemo(
     () => [
       {
@@ -110,7 +243,6 @@ const Home = () => {
         description: 'Parcels & packages',
         serviceCategory: 'send_packages',
         image: require('../assets/images/send_parcel.png'),
-        bgColor: '#F3F4F6',
       },
       {
         id: 2,
@@ -118,7 +250,6 @@ const Home = () => {
         description: 'Goods & bulk items',
         serviceCategory: 'transport_goods',
         image: require('../assets/images/move_goods.png'),
-        bgColor: '#EFF6FF',
       },
       {
         id: 3,
@@ -126,7 +257,6 @@ const Home = () => {
         description: 'Pick upfrom any restaurant',
         serviceCategory: 'food_delivery',
         image: require('../assets/images/food_restaurant.png'),
-        bgColor: '#FFF5F0',
       },
       {
         id: 4,
@@ -134,28 +264,43 @@ const Home = () => {
         description: ' From any nearby pharmacy',
         serviceCategory: 'medicine',
         image: require('../assets/images/pharmacy_medicine.png'),
-        bgColor: '#F0FFF8',
       },
     ],
     [],
   );
 
+  const cardDelays = [360, 440, 520, 600];
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-        {/* Sticky Header */}
-        <View style={{ paddingHorizontal: sp(16) }}>
-          <View style={styles.header}>
+
+        {/* 1. Animated Header */}
+        <Animated.View style={[{ paddingHorizontal: sp(16) }, headerAnimStyle]}>
+          <View style={[styles.header, { overflow: 'hidden' }]}>
+            {/* City skyline background — bottom-aligned to the header base */}
+            <LottieView
+              source={require('../assets/animations/header-bg.json')}
+              style={styles.headerBg}
+              autoPlay
+              loop
+              resizeMode="cover"
+              pointerEvents="none"
+            />
+            {/* Rain animation overlay — shows when weather API detects precipitation */}
+            {isRaining && (
+              <LottieView
+                source={require('../assets/animations/rain.json')}
+                style={StyleSheet.absoluteFillObject}
+                autoPlay
+                loop
+                resizeMode="cover"
+                pointerEvents="none"
+              />
+            )}
             <View style={styles.headerTop}>
               <Text style={styles.ziptoText}>zipto</Text>
               <View style={styles.headerActions}>
-
-                {/* Wallet button — commented out, re-enable when Wallet screen is ready
-                <TouchableOpacity onPress={() => navigation.navigate('Wallet')} style={styles.headerIconBtn} activeOpacity={0.7}>
-                  <MaterialIcons name="account-balance-wallet" size={sp(isSmallScreen ? 20 : 22)} color="#1E3A8A" />
-                </TouchableOpacity>
-                */}
-
                 <TouchableOpacity
                   onPress={() => {
                     setUnreadCount(0);
@@ -177,64 +322,59 @@ const Home = () => {
             </View>
             <TouchableOpacity
               style={styles.headerLocation}
-              onPress={fetchLocation}
+              onPress={() => fetchLocation(true)}
               activeOpacity={0.6}
             >
               <MaterialIcons name="location-on" size={sp(20)} color="#1E3A8A" />
-              {locationLoading
+              {(!hydrated || (locationLoading && !address))
                 ? <HomeLocationSkeleton />
-                : <Text style={styles.locationText} numberOfLines={1} ellipsizeMode="tail">{currentLocation}</Text>
+                : <Text style={styles.locationText} numberOfLines={1} ellipsizeMode="tail">
+                    {address || 'Tap to detect location'}
+                  </Text>
               }
-              <MaterialIcons name="keyboard-arrow-down" size={sp(20)} color="#1A1A1A" />
+              <MaterialIcons
+                name={locationLoading ? 'sync' : 'keyboard-arrow-down'}
+                size={sp(20)}
+                color="#1A1A1A"
+              />
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Hero Banner */}
-          <View style={styles.heroBanner}>
+
+          {/* 2. Animated Hero Banner */}
+          <Animated.View style={[styles.heroBanner, bannerAnimStyle]}>
             <Image
               source={require('../assets/images/banner.png')}
               style={styles.heroBannerImage}
               resizeMode="contain"
             />
-          </View>
+          </Animated.View>
 
-          {/* Services */}
-          <View style={styles.servicesContainer}>
+          {/* 3. Animated Section Title */}
+          <Animated.View style={[styles.sectionTitleWrap, titleAnimStyle]}>
             <Text style={styles.servicesTitle}>What do you want us to pick up?</Text>
             <Text style={styles.servicesSubTitle}>We'll pick it up and deliver it to you</Text>
-            <View style={styles.servicesGrid}>
-              {services.map(service => (
-                <TouchableOpacity
-                  key={service.id}
-                  style={styles.serviceCard}
-                  onPress={() =>
-                    navigation.navigate('PickupDropSelection', {
-                      serviceCategory: service.serviceCategory,
-                    })
-                  }
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.serviceCardTop}>
-                    <View style={styles.serviceImageContainer}>
-                      <Image source={service.image} style={styles.serviceImage} resizeMode="contain" />
-                    </View>
-                    <View style={styles.serviceArrow}>
-                      <MaterialIcons name="arrow-forward" size={sp(14)} color="#1A1A1A" />
-                    </View>
-                  </View>
-                  <View style={styles.serviceCardBottom}>
-                    <Text style={styles.serviceCardTitle} numberOfLines={1}>{service.title}</Text>
-                    <Text style={styles.serviceDescription} numberOfLines={2}>{service.description}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+          </Animated.View>
+
+          {/* 4. Staggered animated service cards */}
+          <View style={styles.servicesGrid}>
+            {services.map((service, i) => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                delayMs={cardDelays[i]}
+                onPress={() =>
+                  navigation.navigate('PickupDropSelection', {
+                    serviceCategory: service.serviceCategory,
+                  })
+                }
+              />
+            ))}
           </View>
 
-
-          {/* Info Banner */}
+          {/* Info Banner (no separate animation — rides with scroll content) */}
           <View style={styles.infoBanner}>
             <View style={styles.infoIconContainer}>
               <MaterialIcons name="verified-user" size={sp(18)} color="#1E3A8A" />
@@ -247,8 +387,24 @@ const Home = () => {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Bottom Navigation */}
+      {/* 5. Fixed Bottom Tab */}
       <BottomTabBar />
+
+      {/* Rider rides across the screen center once on load.
+          Wrapped in a pointerEvents="none" View so the overlay never blocks
+          taps on the bottom tab bar / content underneath. */}
+      {showRider && (
+        <View style={styles.riderOverlay} pointerEvents="none">
+          <LottieView
+            source={require('../assets/animations/rider.json')}
+            style={StyleSheet.absoluteFillObject}
+            autoPlay
+            loop={false}
+            resizeMode="contain"
+            onAnimationFinish={() => setShowRider(false)}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -260,7 +416,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: sp(16),
-    paddingBottom: sp(100), // padding for bottom tab bar
+    paddingBottom: sp(100),
   },
 
   // Header
@@ -277,6 +433,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
+  },
+  // City skyline animation anchored to the header's bottom edge.
+  // aspectRatio matches the source (1920x1080) so the skyline sits flush at the
+  // bottom; the rest overflows upward and is clipped by the header's overflow:hidden.
+  headerBg: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    aspectRatio: 1920 / 1080,
+    opacity: 0.9,
+  },
+  // Rider ride-across overlay — fills the screen, contain keeps the rider
+  // vertically centered as it travels left→right across the middle.
+  riderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
   },
   headerTop: {
     flexDirection: 'row',
@@ -334,7 +508,7 @@ const styles = StyleSheet.create({
   heroBanner: {
     marginBottom: sp(24),
     width: '100%',
-    aspectRatio: 16 / 8, // Typical banner aspect ratio (2:1)
+    aspectRatio: 16 / 8,
   },
   heroBannerImage: {
     width: '100%',
@@ -343,35 +517,33 @@ const styles = StyleSheet.create({
   },
 
   // Services
-  servicesContainer: {
-    marginBottom: sp(24),
+  sectionTitleWrap: {
+    marginBottom: sp(16),
   },
   servicesTitle: {
-    fontSize: fs(isSmallScreen ? 18 : 20),
+    fontSize: fs(isSmallScreen ? 16 : 17),
     fontWeight: '800',
     fontFamily: 'Poppins-Bold',
     color: '#111827',
     marginBottom: sp(2),
   },
   servicesSubTitle: {
-    fontSize: fs(isSmallScreen ? 13 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     fontFamily: 'Poppins-Regular',
     color: '#6B7280',
-    marginBottom: sp(16),
   },
   servicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: sp(12),
+    marginBottom: sp(24),
   },
   serviceCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
-    padding: sp(14),
     borderRadius: sp(16),
-    height: sp(150),
-    justifyContent: 'space-between',
+    height: sp(124),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -386,8 +558,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   serviceImageContainer: {
-    width: sp(48),
-    height: sp(48),
+    width: sp(40),
+    height: sp(40),
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: sp(12),
@@ -406,20 +578,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   serviceCardBottom: {
-    marginTop: sp(10),
+    marginTop: sp(6),
   },
   serviceCardTitle: {
-    fontSize: fs(isSmallScreen ? 13 : 14),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     fontWeight: '700',
     fontFamily: 'Poppins-SemiBold',
     color: '#0F172A',
-    marginBottom: sp(2),
+    marginBottom: sp(1),
   },
   serviceDescription: {
-    fontSize: fs(isSmallScreen ? 10 : 11),
+    fontSize: fs(isSmallScreen ? 9 : 10),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    lineHeight: fs(isSmallScreen ? 14 : 16),
+    lineHeight: fs(isSmallScreen ? 12 : 14),
   },
 
   // Info Banner

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../api/client';
+import { getInstallId } from '../utils/device';
 
 const CUSTOMER_ROLE = 'customer';
 
@@ -41,7 +42,7 @@ interface AuthState {
 
   // Actions
   login: (phone: string) => Promise<any>;
-  verifyOtp: (phone: string, otp: string) => Promise<any>;
+  verifyOtp: (phone: string, otp: string, referralCode?: string) => Promise<any>;
   fetchProfile: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
   logout: () => Promise<void>;
@@ -88,10 +89,11 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      verifyOtp: async (phone: string, otp: string) => {
+      verifyOtp: async (phone: string, otp: string, referralCode?: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authApi.verifyOtp(phone, otp);
+          const deviceId = await getInstallId().catch(() => undefined);
+          const response = await authApi.verifyOtp(phone, otp, referralCode, deviceId);
 
           if (response.success && response.data) {
             const { user, access_token, refresh_token, is_new_user } = response.data;

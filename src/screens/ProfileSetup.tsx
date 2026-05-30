@@ -17,6 +17,8 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/useAuthStore';
 import { authApi } from '../api/client';
+import { referralApi } from '../api/referral';
+import { popReferralCode } from '../utils/referral';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const ProfileSetup = () => {
@@ -27,6 +29,13 @@ const ProfileSetup = () => {
   const [isFocused, setIsFocused] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [referral, setReferral] = useState('');
+  const [referralError, setReferralError] = useState('');
+
+  // Pre-fill a referral code captured from a deep link (zipto://refer?code=…)
+  useEffect(() => {
+    popReferralCode().then(code => { if (code) setReferral(code); });
+  }, []);
 
   const avatarScale = useRef(new Animated.Value(0)).current;
 
@@ -96,6 +105,23 @@ const ProfileSetup = () => {
 
     try {
       await authApi.updateCustomerProfile({ name: trimmed });
+
+      // Apply referral code if entered — block navigation only on a real
+      // referral error so the user can correct or clear it. The profile save
+      // above is idempotent, so retrying is safe.
+      const code = referral.trim().toUpperCase();
+      if (code) {
+        try {
+          await referralApi.apply(code);
+        } catch (refErr: any) {
+          const raw =
+            refErr?.response?.data?.message ?? refErr?.message ?? 'Invalid referral code';
+          setReferralError(Array.isArray(raw) ? raw.join('\n') : String(raw));
+          setSaving(false);
+          return;
+        }
+      }
+
       await fetchProfile();
       setNeedsProfileSetup(false);
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
@@ -226,6 +252,55 @@ const ProfileSetup = () => {
                 )}
               </TouchableOpacity>
               {!!error && <Text style={styles.errorText}>{error}</Text>}
+            </View>
+
+            {/* Referral code (optional) */}
+            <View style={styles.inputWrapper}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  !!referralError && styles.inputContainerError,
+                ]}
+              >
+                <Icon
+                  name="card-giftcard"
+                  size={ms(22)}
+                  color="#94A3B8"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Referral code (optional)"
+                  placeholderTextColor="#94A3B8"
+                  value={referral}
+                  onChangeText={t => {
+                    setReferral(t.toUpperCase());
+                    if (referralError) setReferralError('');
+                  }}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={12}
+                  editable={!saving}
+                />
+                {referral.length > 0 && !saving && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setReferral('');
+                      setReferralError('');
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Icon name="close" size={ms(20)} color="#94A3B8" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {referralError ? (
+                <Text style={styles.errorText}>{referralError}</Text>
+              ) : (
+                <Text style={styles.referralHint}>
+                  Have a code? Earn bonus coins after your first order.
+                </Text>
+              )}
             </View>
 
             {/* Save Button */}
@@ -386,6 +461,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#EF4444',
+    fontSize: fs(12),
+    marginTop: vs(8),
+    marginLeft: hs(4),
+  },
+  referralHint: {
+    color: '#64748B',
     fontSize: fs(12),
     marginTop: vs(8),
     marginLeft: hs(4),

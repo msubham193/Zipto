@@ -13,16 +13,17 @@ import {
   Vibration,
   TextInput,
   ScrollView,
+  PanResponder,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, MarkerAnimated, AnimatedRegion, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { vehicleApi } from '../api/vehicle';
 import { googleMapsApi } from '../api/googleMaps';
-import { paymentApi } from '../api/client';
 import { useBookingStore } from '../store/useBookingStore';
-import RazorpayCheckout from 'react-native-razorpay';
+import { connectSocket, onDriverLocation } from '../services/socketService';
+import { MAP_STYLE } from '../utils/mapStyle';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH, SCREEN_HEIGHT } from '../utils/metrics';
 
 type BookingStatus = 'searching' | 'assigned' | 'arriving' | 'in_progress' | 'completed' | 'cancelled';
@@ -58,21 +59,80 @@ const CANCEL_REASONS = [
   'Booked by mistake',
 ];
 
-// Individual digit boxes for OTP display
+// Compact, borderless OTP display — small spaced digits inline
 const OTPDigits = ({ code, color }: { code: string; color: string }) => (
-  <View style={{ flexDirection: 'row', gap: ms(7) }}>
-    {code.split('').map((ch, i) => (
-      <View key={i} style={[styles.otpDigitBox, { borderColor: color }]}>
-        <Text style={[styles.otpDigitText, { color }]}>{ch}</Text>
-      </View>
-    ))}
-  </View>
+  <Text style={[styles.otpInline, { color }]}>{code.split('').join(' ')}</Text>
 );
 
 const LiveTracking = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const mapRef = useRef<MapView>(null);
+
+  // ── Draggable bottom sheet ────────────────────────────────────────────────
+  // translateY 0 = fully expanded; positive = slid down so the map is revealed.
+  // We keep a small "peek" (handle + status header) visible while collapsed.
+  const SHEET_PEEK = ms(116);
+  const sheetTranslateY = useRef(new Animated.Value(0)).current;
+  const sheetCurrentYRef = useRef(0);   // live value of sheetTranslateY
+  const sheetDragStartRef = useRef(0);  // value when a drag begins
+  const sheetCollapseYRef = useRef(0);  // computed from measured sheet height
+  const sheetCollapsedRef = useRef(false);
+
+  useEffect(() => {
+    const id = sheetTranslateY.addListener(({ value }) => {
+      sheetCurrentYRef.current = value;
+    });
+    return () => sheetTranslateY.removeListener(id);
+  }, [sheetTranslateY]);
+
+  const snapSheet = useCallback(
+    (to: number) => {
+      sheetCollapsedRef.current = to > 0;
+      Animated.spring(sheetTranslateY, {
+        toValue: to,
+        useNativeDriver: true,
+        bounciness: 2,
+        speed: 16,
+      }).start();
+    },
+    [sheetTranslateY],
+  );
+
+  const collapseSheet = useCallback(() => {
+    if (sheetCollapseYRef.current > 0) snapSheet(sheetCollapseYRef.current);
+  }, [snapSheet]);
+
+  const sheetPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_evt, g) =>
+        Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderGrant: () => {
+        sheetTranslateY.stopAnimation();
+        sheetDragStartRef.current = sheetCurrentYRef.current;
+      },
+      onPanResponderMove: (_evt, g) => {
+        const collapseY = sheetCollapseYRef.current || 0;
+        let next = sheetDragStartRef.current + g.dy;
+        if (next < 0) next = 0;
+        if (next > collapseY) next = collapseY;
+        sheetTranslateY.setValue(next);
+      },
+      onPanResponderRelease: (_evt, g) => {
+        const collapseY = sheetCollapseYRef.current || 0;
+        // Treat a near-stationary press as a tap → toggle expand/collapse.
+        if (Math.abs(g.dy) < 6 && Math.abs(g.vy) < 0.3) {
+          snapSheet(sheetCollapsedRef.current ? 0 : collapseY);
+          return;
+        }
+        const current = sheetCurrentYRef.current;
+        const shouldCollapse =
+          g.vy > 0.5 || (g.vy >= -0.5 && current > collapseY / 2);
+        snapSheet(shouldCollapse ? collapseY : 0);
+      },
+    }),
+  ).current;
 
   const {
     bookingId,
@@ -105,6 +165,8 @@ const LiveTracking = () => {
     isRealBooking ? bookingId : null,
   );
   const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  // AnimatedRegion drives smooth gliding of the driver marker between fixes.
+  const driverAnim = useRef<AnimatedRegion | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
   const [successModal, setSuccessModal] = useState(false);
@@ -339,7 +401,9 @@ const LiveTracking = () => {
         if (data.pickup_otp)           setPickupOtp(data.pickup_otp);
         if (data.pickup_otp_verified != null)  setPickupOtpVerified(!!data.pickup_otp_verified);
         if (data.delivery_otp_verified != null) setDeliveryOtpVerified(!!data.delivery_otp_verified);
-        if (data.driver_location)      setDriverLocation(data.driver_location);
+        if (data.driver_location && Number.isFinite(data.driver_location.latitude)) {
+          animateDriverTo(data.driver_location.latitude, data.driver_location.longitude);
+        }
         if (data.paid_by)              setPaidBy(data.paid_by);
         // Use final_fare (includes toll + waiting) as the payment amount once booking completes
         const finalFare = parseFloat((data as any).final_fare);
@@ -354,10 +418,50 @@ const LiveTracking = () => {
     }
   }, [bookingId, bookingStatus, realBookingId]);
 
-  // Initial fetch
+  // Smoothly move the driver marker to a new position. First fix snaps; later
+  // fixes glide over ~1s via AnimatedRegion. Always keeps `driverLocation` state
+  // in sync so the marker mounts and camera logic still works.
+  const animateDriverTo = useCallback((latitude: number, longitude: number) => {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    if (!driverAnim.current) {
+      driverAnim.current = new AnimatedRegion({ latitude, longitude, latitudeDelta: 0, longitudeDelta: 0 });
+    } else {
+      driverAnim.current
+        .timing({ latitude, longitude, duration: 1000, useNativeDriver: false } as any)
+        .start();
+    }
+    setDriverLocation({ latitude, longitude });
+  }, []);
+
+  // ── Real-time driver location via WebSocket (primary), REST poll is fallback ──
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    let active = true;
+    if (bookingStatus === 'completed' || bookingStatus === 'cancelled') return;
+
+    (async () => {
+      await connectSocket();
+      if (!active) return;
+      unsub = onDriverLocation((loc) => {
+        const targetId = realBookingId || bookingId;
+        // Only accept updates for the booking we're tracking.
+        if (loc.bookingId && targetId && loc.bookingId !== targetId) return;
+        animateDriverTo(loc.latitude, loc.longitude);
+      });
+    })();
+
+    return () => {
+      active = false;
+      unsub?.();
+    };
+  }, [bookingStatus, realBookingId, bookingId, animateDriverTo]);
+
+  // Initial fetch + re-fetch when returning from Payment screen
   useEffect(() => {
     fetchBookingDetails();
-  }, [fetchBookingDetails]);
+    const unsub = navigation.addListener('focus', fetchBookingDetails);
+    return unsub;
+  }, [fetchBookingDetails, navigation]);
 
   // Smart polling — faster while searching, slower once stable
   useEffect(() => {
@@ -483,7 +587,7 @@ const LiveTracking = () => {
     clearActiveBooking();
   };
 
-  const handleOnlinePayment = async () => {
+  const handleOnlinePayment = () => {
     if (!realBookingId) {
       Alert.alert('Error', 'Booking not found. Please refresh and try again.');
       return;
@@ -493,39 +597,11 @@ const LiveTracking = () => {
       Alert.alert('Error', 'Invalid payment amount. Please try again.');
       return;
     }
-    try {
-      setPaymentLoading(true);
-      const orderRes = await paymentApi.createOrder({ booking_id: realBookingId, amount: payAmount });
-      const { order_id, key } = orderRes.data ?? orderRes;
-      if (!order_id || !key) throw new Error('Invalid order response from server');
-      const options = {
-        description: 'Zipto Delivery Payment',
-        currency: 'INR',
-        key,
-        amount: payAmount * 100,
-        order_id,
-        name: 'Zipto',
-        theme: { color: '#2563EB' },
-      };
-      const paymentData = await RazorpayCheckout.open(options);
-      await paymentApi.verifyPayment({
-        razorpay_order_id: paymentData.razorpay_order_id,
-        razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_signature: paymentData.razorpay_signature,
-        booking_id: realBookingId,
-      });
-      setPaymentDone(true);
-      Alert.alert('Payment Successful', 'Your payment has been confirmed!');
-    } catch (err: any) {
-      if (err?.code === 0) {
-        Alert.alert('Payment Cancelled', 'You can pay again from this screen or from Orders.');
-      } else {
-        const msg = err?.description || err?.message || 'Payment could not be completed. Please try again.';
-        Alert.alert('Payment Failed', msg);
-      }
-    } finally {
-      setPaymentLoading(false);
-    }
+    navigation.navigate('Payment', {
+      type: 'booking',
+      bookingId: realBookingId,
+      amount: payAmount,
+    });
   };
 
   const handleCancel = () => {
@@ -690,9 +766,11 @@ const LiveTracking = () => {
           longitudeDelta: 0.05,
         }}
         onMapReady={() => setMapReady(true)}
+        onPress={collapseSheet}
         showsUserLocation={false}
         toolbarEnabled={false}
         userInterfaceStyle="light"
+        customMapStyle={MAP_STYLE}
       >
         {/* Route line between pickup and drop */}
         <Polyline
@@ -729,10 +807,10 @@ const LiveTracking = () => {
           </View>
         </Marker>
 
-        {/* Driver Marker — moving vehicle (only after driver accepts) */}
-        {driverLocation && bookingStatus !== 'searching' && (
-          <Marker
-            coordinate={driverLocation}
+        {/* Driver Marker — smoothly glides between live fixes (after accept) */}
+        {driverLocation && driverAnim.current && bookingStatus !== 'searching' && (
+          <MarkerAnimated
+            coordinate={driverAnim.current as any}
             title={driver?.name || 'Driver'}
             anchor={{ x: 0.5, y: 0.5 }}
             tracksViewChanges={false}
@@ -743,7 +821,7 @@ const LiveTracking = () => {
                 <Icon name={getVehicleIcon()} size={20} color="#FFFFFF" />
               </View>
             </View>
-          </Marker>
+          </MarkerAnimated>
         )}
       </MapView>
 
@@ -778,12 +856,20 @@ const LiveTracking = () => {
           </View>
         </View>
 
-        {/* Bottom Card */}
-        <View style={styles.bottomCard}>
+        {/* Bottom Card — draggable: pull the handle (or tap the map) to reveal the map */}
+        <Animated.View
+          style={[styles.bottomCard, { transform: [{ translateY: sheetTranslateY }] }]}
+          onLayout={(e) => {
+            const h = e.nativeEvent.layout.height;
+            sheetCollapseYRef.current = Math.max(0, h - SHEET_PEEK);
+          }}
+        >
           {/* Dynamic status accent line */}
           <View style={[styles.bottomCardAccent, { backgroundColor: statusConfig.color }]} />
-          {/* Draggable handle indicator (visual only) */}
-          <View style={styles.bottomCardHandle} />
+          {/* Drag zone — grab here to slide the sheet down/up (tap to toggle) */}
+          <View style={styles.sheetDragZone} {...sheetPanResponder.panHandlers}>
+            <View style={styles.bottomCardHandle} />
+          </View>
 
           {/* Status Header */}
           <View style={styles.statusHeaderRow}>
@@ -879,14 +965,12 @@ const LiveTracking = () => {
           {/* OTP Sections */}
           {pickupOtp && !pickupOtpVerified && (bookingStatus === 'assigned' || bookingStatus === 'arriving') && (
             <View style={styles.otpCardNew}>
-              <View style={styles.otpCardTop}>
-                <View style={[styles.otpIconBox, { backgroundColor: '#DBEAFE' }]}>
-                  <Icon name="lock" size={ms(16)} color="#2563EB" />
-                </View>
-                <View style={styles.otpCardTextCol}>
-                  <Text style={styles.otpCardLabel}>Pickup OTP</Text>
-                  <Text style={styles.otpCardSub}>Share this code with your rider</Text>
-                </View>
+              <View style={[styles.otpIconBox, { backgroundColor: '#DBEAFE' }]}>
+                <Icon name="lock" size={ms(16)} color="#2563EB" />
+              </View>
+              <View style={styles.otpCardTextCol}>
+                <Text style={styles.otpCardLabel}>Pickup OTP</Text>
+                <Text style={styles.otpCardSub}>Share with your rider</Text>
               </View>
               <OTPDigits code={pickupOtp} color="#1E40AF" />
             </View>
@@ -894,14 +978,12 @@ const LiveTracking = () => {
 
           {otp && !deliveryOtpVerified && bookingStatus === 'in_progress' && (
             <View style={[styles.otpCardNew, { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' }]}>
-              <View style={styles.otpCardTop}>
-                <View style={[styles.otpIconBox, { backgroundColor: '#BBF7D0' }]}>
-                  <Icon name="verified" size={ms(16)} color="#059669" />
-                </View>
-                <View style={styles.otpCardTextCol}>
-                  <Text style={[styles.otpCardLabel, { color: '#065F46' }]}>Delivery OTP</Text>
-                  <Text style={[styles.otpCardSub, { color: '#059669' }]}>Share this code to confirm delivery</Text>
-                </View>
+              <View style={[styles.otpIconBox, { backgroundColor: '#BBF7D0' }]}>
+                <Icon name="verified" size={ms(16)} color="#059669" />
+              </View>
+              <View style={styles.otpCardTextCol}>
+                <Text style={[styles.otpCardLabel, { color: '#065F46' }]}>Delivery OTP</Text>
+                <Text style={[styles.otpCardSub, { color: '#059669' }]}>Confirm delivery</Text>
               </View>
               <OTPDigits code={otp} color="#059669" />
             </View>
@@ -1026,14 +1108,18 @@ const LiveTracking = () => {
                   </View>
                 </View>
               </View>
-              <View style={styles.actionButtonsRow}>
-                <TouchableOpacity style={styles.cancelBtnModern} onPress={handleCancel}>
-                  <Text style={styles.cancelBtnTextModern}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
+              {/* Cancel is only allowed before pickup — once the trip is in
+                  progress (pickup OTP verified) the order can no longer be cancelled. */}
+              {bookingStatus !== 'in_progress' && (
+                <View style={styles.actionButtonsRow}>
+                  <TouchableOpacity style={styles.cancelBtnModern} onPress={handleCancel}>
+                    <Text style={styles.cancelBtnTextModern}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
-        </View>
+        </Animated.View>
       </SafeAreaView>
 
       {/* ── Fare Increase / Retry Modal ── */}
@@ -1427,13 +1513,19 @@ const styles = StyleSheet.create({
     marginHorizontal: -ms(20),
     marginBottom: ms(14),
   },
+  // Generous grab area around the visual handle so the sheet is easy to drag.
+  sheetDragZone: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingTop: ms(2),
+    paddingBottom: ms(12),
+  },
   bottomCardHandle: {
-    width: ms(40),
-    height: ms(4),
-    backgroundColor: '#E5E7EB',
-    borderRadius: ms(2),
+    width: ms(44),
+    height: ms(5),
+    backgroundColor: '#D1D5DB',
+    borderRadius: ms(3),
     alignSelf: 'center',
-    marginBottom: ms(14),
   },
   statusHeaderRow: {
     flexDirection: 'row',
@@ -1455,9 +1547,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusTitleMain: {
-    fontSize: fs(18),
-    fontWeight: '800',
-    marginBottom: ms(2),
+    fontSize: fs(15),
+    fontWeight: '700',
+    marginBottom: ms(1),
   },
   statusSubtitleMain: {
     fontSize: fs(12),
@@ -1513,17 +1605,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFF',
-    borderRadius: ms(16),
+    borderRadius: ms(14),
     borderWidth: 1,
     borderColor: '#DBEAFE',
-    padding: ms(14),
-    marginBottom: ms(12),
-    gap: ms(12),
+    padding: ms(10),
+    marginBottom: ms(10),
+    gap: ms(10),
   },
   driverAvatarNew: {
-    width: ms(48),
-    height: ms(48),
-    borderRadius: ms(24),
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
     backgroundColor: '#2563EB',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1535,17 +1627,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   driverInitial: {
-    fontSize: fs(20),
+    fontSize: fs(16),
     fontWeight: '800',
     color: '#FFFFFF',
   },
   driverInfoNew: {
     flex: 1,
-    gap: ms(4),
+    gap: ms(2),
   },
   driverNameNew: {
-    fontSize: fs(16),
-    fontWeight: '800',
+    fontSize: fs(13),
+    fontWeight: '700',
     color: '#111827',
   },
   driverMetaRow: {
@@ -1556,22 +1648,22 @@ const styles = StyleSheet.create({
   vehicleTypeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: ms(4),
+    gap: ms(3),
     backgroundColor: '#EFF6FF',
-    borderRadius: ms(6),
-    paddingHorizontal: ms(7),
-    paddingVertical: ms(3),
+    borderRadius: ms(5),
+    paddingHorizontal: ms(6),
+    paddingVertical: ms(2),
     borderWidth: 1,
     borderColor: '#BFDBFE',
   },
   vehicleTypeBadgeText: {
-    fontSize: fs(10),
+    fontSize: fs(9),
     fontWeight: '700',
     color: '#2563EB',
     letterSpacing: 0.5,
   },
   vehicleNumberText: {
-    fontSize: fs(12),
+    fontSize: fs(11),
     color: '#6B7280',
     fontWeight: '600',
   },
@@ -1590,9 +1682,9 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   callBtnNew: {
-    width: ms(44),
-    height: ms(44),
-    borderRadius: ms(22),
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
     backgroundColor: '#2563EB',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1605,18 +1697,16 @@ const styles = StyleSheet.create({
   },
   // ── OTP Card (redesigned) ─────────────────────────────────────────────────
   otpCardNew: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: ms(16),
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-    padding: ms(14),
-    gap: ms(12),
-    marginBottom: ms(10),
-  },
-  otpCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: ms(14),
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingVertical: ms(10),
+    paddingHorizontal: ms(12),
     gap: ms(10),
+    marginBottom: ms(10),
   },
   otpIconBox: {
     width: ms(36),
@@ -1626,7 +1716,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexShrink: 0,
   },
-  otpCardTextCol: { flex: 1 },
+  otpCardTextCol: { flex: 1, minWidth: 0 },
   otpCardLabel: {
     fontSize: fs(13),
     fontWeight: '700',
@@ -1637,23 +1727,11 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
     marginTop: ms(1),
   },
-  otpDigitBox: {
-    width: ms(38),
-    height: ms(46),
-    borderRadius: ms(10),
-    borderWidth: 2,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  otpDigitText: {
-    fontSize: fs(22),
-    fontWeight: '900',
+  otpInline: {
+    fontSize: fs(18),
+    fontWeight: '800',
+    letterSpacing: ms(2),
+    flexShrink: 0,
   },
   // ── Route Card (redesigned) ───────────────────────────────────────────────
   routeCardNew: {

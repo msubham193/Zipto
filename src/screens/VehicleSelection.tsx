@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, VehiclePricing } from '../api/vehicle';
+import EnterView from '../components/EnterView';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -217,6 +218,7 @@ const VehicleSelection = () => {
     const vehicleImage = VEHICLE_IMAGES[item.vehicleType.toLowerCase()];
 
     return (
+      <EnterView delay={Math.min(index * 60, 360)}>
       <TouchableOpacity
         style={[styles.card, isSelected && styles.cardSelected]}
         onPress={() => setSelectedVehicle(item.id)}
@@ -271,6 +273,7 @@ const VehicleSelection = () => {
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
+      </EnterView>
     );
   };
 

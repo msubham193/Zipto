@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,14 @@ import {
   Modal,
   Platform,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
+import EnterView from '../components/EnterView';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Switch } from 'react-native';
-import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
+import { vehicleApi, FareEstimateResponse, Coupon } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBookingStore } from '../store/useBookingStore';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH, SCREEN_HEIGHT } from '../utils/metrics';
@@ -82,13 +84,25 @@ const FareEstimate = () => {
   // Zipto Coins
   const [coinsBalance, setCoinsBalance] = useState(0);
   const [useCoins, setUseCoins] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiRef = useRef<LottieView>(null);
+
+  const handleCoinsToggle = (value: boolean) => {
+    setUseCoins(value);
+    if (value) {
+      setShowConfetti(true);
+      confettiRef.current?.play();
+    }
+  };
 
   // Coupon
-  const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string; title: string; discount_amount: number;
   } | null>(null);
-  const [couponLoading, setCouponLoading] = useState(false);
+  const [showCouponSheet, setShowCouponSheet] = useState(false);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [applyingCode, setApplyingCode] = useState<string | null>(null);
 
   // GSTIN
   const [showGstInput, setShowGstInput] = useState(false);
@@ -143,13 +157,13 @@ const FareEstimate = () => {
       .catch(() => { });
   }, [fetchFareEstimate]);
 
-  // ── Apply coupon ────────────────────────────────────────────────────────────
-  const applyCoupon = async () => {
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-    if (!estimateData) return;
+  // ── Coupons ───────────────────────────────────────────────────────────────
+  // Apply a coupon by code (validated against the live fare).
+  const applyCoupon = async (rawCode: string) => {
+    const code = rawCode.trim().toUpperCase();
+    if (!code || !estimateData) return;
     try {
-      setCouponLoading(true);
+      setApplyingCode(code);
       const result = await vehicleApi.validateCoupon({
         code,
         order_value: estimateData.estimated_fare,
@@ -160,16 +174,40 @@ const FareEstimate = () => {
         title: result.title,
         discount_amount: result.discount_amount,
       });
-      setCouponInput('');
+      setShowCouponSheet(false);
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid coupon';
       Alert.alert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
     } finally {
-      setCouponLoading(false);
+      setApplyingCode(null);
     }
   };
 
   const removeCoupon = () => setAppliedCoupon(null);
+
+  // Open the "All Coupons" sheet and fetch the admin-managed list.
+  const openCouponSheet = async () => {
+    setShowCouponSheet(true);
+    setCouponsLoading(true);
+    try {
+      const list = await vehicleApi.getCoupons(selectedVehicleType);
+      setCoupons(list);
+    } catch {
+      setCoupons([]);
+    } finally {
+      setCouponsLoading(false);
+    }
+  };
+
+  // Helpers for displaying a coupon
+  const couponIconFor = (type: Coupon['type']): string =>
+    type === 'free_delivery' ? 'local-shipping' : type === 'percentage' ? 'percent' : 'sell';
+
+  const couponValueLabel = (c: Coupon): string => {
+    if (c.type === 'free_delivery') return 'FREE';
+    if (c.type === 'percentage') return `${Number(c.value)}%`;
+    return `₹${Number(c.value)}`;
+  };
 
   // ── Navigation helper ───────────────────────────────────────────────────────
   const navigateToTracking = (bookingId: string, showBookingSuccess = false) => {
@@ -379,7 +417,7 @@ const FareEstimate = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Route Card ── */}
-        <View style={styles.card}>
+        <EnterView delay={40} style={styles.card}>
           <View style={styles.vehicleInfoRow}>
             <Image
               source={
@@ -441,7 +479,7 @@ const FareEstimate = () => {
               </Text>
             </View>
           </View>
-        </View>
+        </EnterView>
 
         {/* ── Surge Banner ── */}
         {hasSurge && (
@@ -466,7 +504,7 @@ const FareEstimate = () => {
           </View>
           <Text style={styles.sectionTitle}>Fare Breakdown</Text>
         </View>
-        <View style={styles.card}>
+        <EnterView delay={120} style={styles.card}>
           <View style={styles.row}>
             <View style={styles.rowLabelWrap}>
               <View style={[styles.rowIconBox, { backgroundColor: '#EFF6FF' }]}>
@@ -546,7 +584,7 @@ const FareEstimate = () => {
           {useCoins && coinDiscount > 0 && (
             <View style={[styles.row, { marginTop: vs(4) }]}>
               <View style={styles.coinDiscountLabel}>
-                <Icon name="toll" size={sp(14)} color="#7C3AED" />
+                <Icon name="toll" size={sp(14)} color="#D97706" />
                 <Text style={styles.coinDiscountText}>Coins Discount (100 coins)</Text>
               </View>
               <Text style={styles.coinDiscountValue}>−₹{coinDiscount.toFixed(2)}</Text>
@@ -579,13 +617,13 @@ const FareEstimate = () => {
               </View>
             </>
           )}
-        </View>
+        </EnterView>
 
         {/* ── Zipto Coins ── */}
         {coinsBalance >= 100 && (
           <>
             <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIconBadge, { backgroundColor: '#7C3AED' }]}>
+              <View style={[styles.sectionIconBadge, { backgroundColor: '#F59E0B' }]}>
                 <Icon name="toll" size={sp(13)} color="#FFFFFF" />
               </View>
               <Text style={styles.sectionTitle}>Zipto Coins</Text>
@@ -593,7 +631,7 @@ const FareEstimate = () => {
             <View style={styles.coinsCard}>
               <View style={styles.coinsCardLeft}>
                 <View style={styles.coinsIconBox}>
-                  <Icon name="toll" size={sp(22)} color="#7C3AED" />
+                  <Icon name="toll" size={sp(22)} color="#D97706" />
                 </View>
                 <View style={styles.coinsTextBlock}>
                   <Text style={styles.coinsTitle}>
@@ -604,28 +642,30 @@ const FareEstimate = () => {
               </View>
               <Switch
                 value={useCoins}
-                onValueChange={setUseCoins}
-                trackColor={{ false: '#E5E7EB', true: '#DDD6FE' }}
-                thumbColor={useCoins ? '#7C3AED' : '#9CA3AF'}
+                onValueChange={handleCoinsToggle}
+                trackColor={{ false: '#E5E7EB', true: '#FDE68A' }}
+                thumbColor={useCoins ? '#F59E0B' : '#9CA3AF'}
               />
             </View>
           </>
         )}
 
-        {/* ── Promo Code ── */}
+        {/* ── Coupons ── */}
         <View style={styles.sectionTitleRow}>
           <View style={[styles.sectionIconBadge, { backgroundColor: '#16A34A' }]}>
             <Icon name="local-offer" size={sp(13)} color="#FFFFFF" />
           </View>
-          <Text style={styles.sectionTitle}>Promo Code</Text>
+          <Text style={styles.sectionTitle}>Coupons</Text>
         </View>
         {appliedCoupon ? (
           <View style={styles.couponApplied}>
             <View style={styles.couponAppliedLeft}>
-              <Icon name="local-offer" size={sp(18)} color="#16A34A" />
-              <View style={{ marginLeft: sp(10) }}>
+              <View style={styles.couponAppliedTicket}>
+                <Icon name="confirmation-number" size={sp(18)} color="#16A34A" />
+              </View>
+              <View style={{ marginLeft: sp(10), flex: 1 }}>
                 <Text style={styles.couponAppliedCode}>{appliedCoupon.code}</Text>
-                <Text style={styles.couponAppliedTitle}>{appliedCoupon.title}</Text>
+                <Text style={styles.couponAppliedTitle} numberOfLines={1}>{appliedCoupon.title}</Text>
               </View>
             </View>
             <View style={styles.couponAppliedRight}>
@@ -639,29 +679,18 @@ const FareEstimate = () => {
             </View>
           </View>
         ) : (
-          <View style={styles.couponRow}>
-            <TextInput
-              style={styles.couponInput}
-              placeholder="Enter promo code"
-              placeholderTextColor="#9CA3AF"
-              value={couponInput}
-              onChangeText={t => setCouponInput(t.toUpperCase())}
-              autoCapitalize="characters"
-              returnKeyType="done"
-              onSubmitEditing={applyCoupon}
-            />
-            <TouchableOpacity
-              style={[styles.couponApplyBtn, couponLoading && { opacity: 0.6 }]}
-              onPress={applyCoupon}
-              activeOpacity={0.8}
-              disabled={couponLoading}
-            >
-              {couponLoading
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.couponApplyText}>Apply</Text>
-              }
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.viewCouponsBtn} onPress={openCouponSheet} activeOpacity={0.8}>
+            <View style={styles.viewCouponsLeft}>
+              <View style={styles.viewCouponsIcon}>
+                <Icon name="local-offer" size={sp(18)} color="#16A34A" />
+              </View>
+              <View>
+                <Text style={styles.viewCouponsTitle}>View All Coupons</Text>
+                <Text style={styles.viewCouponsSub}>Tap to see offers & save instantly</Text>
+              </View>
+            </View>
+            <Icon name="chevron-right" size={sp(22)} color="#16A34A" />
+          </TouchableOpacity>
         )}
 
         {/* ── GSTIN ── */}
@@ -813,6 +842,20 @@ const FareEstimate = () => {
         />
       </View>
 
+      {/* ── Confetti overlay — fires when coins are enabled ── */}
+      {showConfetti && (
+        <LottieView
+          ref={confettiRef}
+          source={require('../assets/animations/confetti.json')}
+          style={StyleSheet.absoluteFillObject}
+          autoPlay
+          loop={false}
+          resizeMode="cover"
+          pointerEvents="none"
+          onAnimationFinish={() => setShowConfetti(false)}
+        />
+      )}
+
       {/* ── Restricted Items Bottom Sheet Modal ── */}
       <Modal
         visible={showRestrictedModal}
@@ -896,6 +939,115 @@ const FareEstimate = () => {
             >
               <Text style={styles.modalOkBtnText}>Okay, Understood</Text>
             </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── All Coupons Bottom Sheet ── */}
+      <Modal
+        visible={showCouponSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCouponSheet(false)}
+        statusBarTranslucent
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCouponSheet(false)}
+        >
+          <TouchableOpacity
+            style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, vs(20)) }]}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
+            <View style={styles.modalHandle} />
+
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Available Coupons</Text>
+              <TouchableOpacity
+                onPress={() => setShowCouponSheet(false)}
+                style={styles.modalCloseBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="close" size={sp(20)} color="#374151" />
+              </TouchableOpacity>
+            </View>
+
+            {couponsLoading ? (
+              <View style={styles.couponSheetLoading}>
+                <ActivityIndicator size="large" color="#16A34A" />
+                <Text style={styles.couponSheetLoadingText}>Loading coupons…</Text>
+              </View>
+            ) : !Array.isArray(coupons) || coupons.length === 0 ? (
+              <View style={styles.couponSheetEmpty}>
+                <Icon name="local-offer" size={sp(44)} color="#D1D5DB" />
+                <Text style={styles.couponSheetEmptyText}>No coupons available right now</Text>
+                <Text style={styles.couponSheetEmptySub}>Check back soon for new offers</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.couponSheetScroll} showsVerticalScrollIndicator={false}>
+                {coupons.map(c => {
+                  const applying = applyingCode === c.code;
+                  const belowMin = !!estimateData && estimateData.estimated_fare < Number(c.min_order_value);
+                  const eligible = !belowMin;
+                  return (
+                    <View key={c.id} style={[styles.couponCard, !eligible && styles.couponCardDisabled]}>
+                      {/* Left value stub */}
+                      <View style={[styles.couponStub, !eligible && styles.couponStubDisabled]}>
+                        <Icon name={couponIconFor(c.type)} size={sp(20)} color={eligible ? '#16A34A' : '#9CA3AF'} />
+                        <Text style={[styles.couponStubValue, !eligible && styles.couponTextMuted]}>{couponValueLabel(c)}</Text>
+                        <Text style={[styles.couponStubOff, !eligible && styles.couponTextMuted]}>OFF</Text>
+                      </View>
+
+                      {/* Perforation */}
+                      <View style={styles.couponPerforation}>
+                        <View style={styles.couponNotchTop} />
+                        <View style={styles.couponDashes} />
+                        <View style={styles.couponNotchBottom} />
+                      </View>
+
+                      {/* Details */}
+                      <View style={styles.couponBody}>
+                        <View style={styles.couponBodyText}>
+                          <View style={styles.couponCodeRow}>
+                            <View style={[styles.couponCodePill, !eligible && styles.couponCodePillDisabled]}>
+                              <Text style={[styles.couponCodePillText, !eligible && styles.couponTextMuted]}>{c.code}</Text>
+                            </View>
+                            <Text style={[styles.couponCardTitle, !eligible && styles.couponTextMuted]} numberOfLines={1}>{c.title}</Text>
+                          </View>
+                          {!!c.description && (
+                            <Text style={styles.couponCardDesc} numberOfLines={1}>{c.description}</Text>
+                          )}
+                          {!eligible ? (
+                            <Text style={styles.couponIneligibleText}>
+                              Add ₹{Math.ceil(Number(c.min_order_value) - (estimateData?.estimated_fare ?? 0))} more to use this
+                            </Text>
+                          ) : Number(c.min_order_value) > 0 ? (
+                            <Text style={styles.couponMinText}>Min. order ₹{Number(c.min_order_value)}</Text>
+                          ) : null}
+                        </View>
+
+                        <TouchableOpacity
+                          style={[styles.couponApplyPill, (!eligible || applying) && styles.couponApplyPillDisabled]}
+                          onPress={() => applyCoupon(c.code)}
+                          disabled={!eligible || applying}
+                          activeOpacity={0.85}
+                        >
+                          {applying ? (
+                            <ActivityIndicator size="small" color="#16A34A" />
+                          ) : (
+                            <Text style={[styles.couponApplyPillText, !eligible && styles.couponApplyPillTextDisabled]}>
+                              APPLY
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )}
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -1180,21 +1332,21 @@ const styles = StyleSheet.create({
   },
   coinDiscountText: {
     fontSize: fs(13),
-    color: '#7C3AED',
+    color: '#D97706',
     fontWeight: '500',
   },
   coinDiscountValue: {
     fontSize: fs(13),
-    color: '#7C3AED',
+    color: '#D97706',
     fontWeight: '600',
   },
 
   // ── Coins card ──
   coinsCard: {
-    backgroundColor: '#FAF5FF',
+    backgroundColor: '#FFFBEB',
     borderRadius: ms(14),
     borderWidth: 1.5,
-    borderColor: '#DDD6FE',
+    borderColor: '#FDE68A',
     paddingHorizontal: sp(14),
     paddingVertical: vs(14),
     flexDirection: 'row',
@@ -1212,7 +1364,7 @@ const styles = StyleSheet.create({
     width: ms(40),
     height: ms(40),
     borderRadius: ms(10),
-    backgroundColor: '#EDE9FE',
+    backgroundColor: '#FEF3C7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1222,7 +1374,7 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontWeight: '500',
   },
-  coinsBold: { color: '#7C3AED', fontWeight: '700' },
+  coinsBold: { color: '#D97706', fontWeight: '700' },
   coinsSub: {
     fontSize: fs(11),
     color: '#6B7280',
@@ -1297,6 +1449,228 @@ const styles = StyleSheet.create({
     fontSize: fs(14),
     fontWeight: '700',
     color: '#16A34A',
+  },
+  couponAppliedTicket: {
+    width: sp(34),
+    height: sp(34),
+    borderRadius: sp(9),
+    backgroundColor: '#DCFCE7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ── View All Coupons entry button ──
+  viewCouponsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(12),
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    borderStyle: 'dashed',
+    paddingHorizontal: sp(14),
+    paddingVertical: vs(13),
+    marginBottom: vs(12),
+  },
+  viewCouponsLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(12),
+    flex: 1,
+  },
+  viewCouponsIcon: {
+    width: sp(38),
+    height: sp(38),
+    borderRadius: sp(10),
+    backgroundColor: '#DCFCE7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewCouponsTitle: {
+    fontSize: fs(isSmallScreen ? 13 : 14),
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  viewCouponsSub: {
+    fontSize: fs(isSmallScreen ? 11 : 12),
+    color: '#16A34A',
+    marginTop: vs(2),
+  },
+
+  // ── Coupon sheet ──
+  couponSheetScroll: {
+    maxHeight: SCREEN_HEIGHT * 0.6,
+  },
+  couponSheetLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: vs(48),
+    gap: vs(12),
+  },
+  couponSheetLoadingText: { fontSize: fs(13), color: '#6B7280' },
+  couponSheetEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: vs(48),
+    gap: vs(6),
+  },
+  couponSheetEmptyText: { fontSize: fs(14), fontWeight: '600', color: '#374151' },
+  couponSheetEmptySub: { fontSize: fs(12), color: '#9CA3AF' },
+
+  // ── Coupon card (ticket style) ──
+  couponCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: ms(14),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: vs(12),
+    overflow: 'hidden',
+  },
+  couponStub: {
+    width: sp(70),
+    backgroundColor: '#F0FDF4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: vs(8),
+    gap: vs(1),
+  },
+  couponStubValue: {
+    fontSize: fs(isSmallScreen ? 14 : 16),
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  couponStubOff: {
+    fontSize: fs(9),
+    fontWeight: '700',
+    color: '#16A34A',
+    letterSpacing: 1,
+  },
+  couponPerforation: {
+    width: sp(12),
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  couponNotchTop: {
+    width: sp(12),
+    height: sp(6),
+    borderBottomLeftRadius: sp(6),
+    borderBottomRightRadius: sp(6),
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#E5E7EB',
+    marginTop: -1,
+  },
+  couponDashes: {
+    flex: 1,
+    width: 1,
+    borderLeftWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#D1D5DB',
+    marginVertical: vs(2),
+  },
+  couponNotchBottom: {
+    width: sp(12),
+    height: sp(6),
+    borderTopLeftRadius: sp(6),
+    borderTopRightRadius: sp(6),
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: '#E5E7EB',
+    marginBottom: -1,
+  },
+  couponBody: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: sp(12),
+    paddingVertical: vs(8),
+    gap: sp(10),
+  },
+  couponBodyText: {
+    flex: 1,
+    gap: vs(2),
+  },
+  couponCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sp(6),
+  },
+  couponCodePill: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: sp(5),
+    paddingHorizontal: sp(7),
+    paddingVertical: vs(1),
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    flexShrink: 0,
+  },
+  couponCodePillText: {
+    fontSize: fs(10),
+    fontWeight: '800',
+    color: '#15803D',
+    letterSpacing: 0.4,
+  },
+  couponCardTitle: {
+    flex: 1,
+    fontSize: fs(isSmallScreen ? 12 : 13),
+    fontWeight: '700',
+    color: '#111827',
+  },
+  couponCardDesc: {
+    fontSize: fs(11),
+    color: '#6B7280',
+    lineHeight: fs(14),
+  },
+  couponMinText: {
+    fontSize: fs(10),
+    color: '#9CA3AF',
+  },
+  couponApplyPill: {
+    backgroundColor: '#16A34A',
+    borderRadius: sp(8),
+    paddingHorizontal: sp(14),
+    paddingVertical: vs(7),
+    minWidth: sp(64),
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  couponApplyPillDisabled: {
+    backgroundColor: '#F3F4F6',
+  },
+  couponApplyPillText: {
+    fontSize: fs(12),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  couponApplyPillTextDisabled: {
+    color: '#9CA3AF',
+    letterSpacing: 0,
+  },
+  // ── Ineligible (disabled) coupon states ──
+  couponCardDisabled: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#EEEEEE',
+  },
+  couponStubDisabled: {
+    backgroundColor: '#F3F4F6',
+  },
+  couponCodePillDisabled: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+  },
+  couponTextMuted: {
+    color: '#9CA3AF',
+  },
+  couponIneligibleText: {
+    fontSize: fs(10),
+    color: '#EF4444',
+    fontWeight: '600',
   },
 
   // ── NEW: Restricted items highlight card ──────────────────────────────────

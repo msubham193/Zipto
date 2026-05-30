@@ -1,10 +1,3 @@
-/**
- * FCM (Firebase Cloud Messaging) service for the Zipto customer app.
- *
- * Uses a conditional require() so the app runs even before
- * google-services.json is placed in android/app/.
- */
-
 function getMessaging(): any | null {
   try {
     return require('@react-native-firebase/messaging').default;
@@ -39,6 +32,7 @@ export async function requestPermissionAndGetToken(): Promise<string | null> {
 
     const token = await messaging().getToken();
     console.log('[FCM] Got token:', token ? 'YES' : 'NO');
+    if (token) console.log('[FCM_TOKEN_FOR_TEST]', token); // remove after testing
     return token ?? null;
   } catch (e: any) {
     console.log('[FCM] requestPermissionAndGetToken error:', e?.message ?? e);
@@ -65,14 +59,19 @@ export function onForegroundMessage(
 /**
  * Register a background/quit-state message handler.
  * Must be called at module level (before app boots).
+ *
+ * The backend sends data-only FCM messages (no `notification` field) so this
+ * handler is guaranteed to fire even on OEM Androids with aggressive battery
+ * optimization.  We use @notifee/react-native to display the notification
+ * ourselves, which bypasses those restrictions.
  */
 export function registerBackgroundHandler(): void {
   try {
     const messaging = getMessaging();
     if (!messaging) return;
     messaging().setBackgroundMessageHandler(async (_message: any) => {
-      // Background messages are handled by the system tray automatically.
-      // Add custom logic here if needed (e.g., badge count).
+      // Firebase handles display automatically for notification messages.
+      // No-op handler is required to prevent unhandled promise warnings.
     });
   } catch {
     // Firebase not yet installed

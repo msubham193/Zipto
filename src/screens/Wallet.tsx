@@ -20,13 +20,6 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {walletApi} from '../api/client';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
-function getRazorpay(): any | null {
-  try {
-    return require('react-native-razorpay').default;
-  } catch {
-    return null;
-  }
-}
 
 interface WalletTransaction {
   id: string;
@@ -88,7 +81,7 @@ const Wallet = () => {
     fetchWallet(true);
   };
 
-  const handleAddMoney = async () => {
+  const handleAddMoney = () => {
     const amtNum = parseFloat(amount);
     if (!amtNum || amtNum < 10) {
       Alert.alert('Invalid Amount', 'Minimum top-up amount is ₹10.');
@@ -98,60 +91,12 @@ const Wallet = () => {
       Alert.alert('Invalid Amount', 'Maximum top-up amount is ₹50,000.');
       return;
     }
-
-    setAdding(true);
-    try {
-      // Step 1 — create Razorpay order
-      const res = await walletApi.initiateAddMoney(amtNum);
-      if (!res?.data) {throw new Error('Failed to create order');}
-
-      const {order_id, amount: orderAmount, currency, key_id} = res.data;
-
-      const RazorpayCheckout = getRazorpay();
-      if (!RazorpayCheckout) {
-        Alert.alert('Error', 'Payment SDK not available.');
-        return;
-      }
-
-      // Step 2 — open Razorpay checkout
-      const options = {
-        description: 'Wallet Top-up',
-        currency: currency || 'INR',
-        key: key_id,
-        amount: orderAmount,
-        order_id,
-        name: 'Zipto',
-        prefill: {},
-        theme: {color: '#3B82F6'},
-      };
-
-      const paymentData = await RazorpayCheckout.open(options);
-
-      // Step 3 — verify with backend
-      const verifyRes = await walletApi.verifyAddMoney({
-        order_id,
-        payment_id: paymentData.razorpay_payment_id,
-        signature: paymentData.razorpay_signature,
-        amount: amtNum,
-      });
-
-      if (verifyRes?.data?.balance !== undefined) {
-        setBalance(verifyRes.data.balance);
-        setShowAddMoney(false);
-        setAmount('');
-        // Refresh full list
-        fetchWallet(true);
-        Alert.alert('Success', `₹${amtNum} added to your wallet!`);
-      }
-    } catch (error: any) {
-      if (error?.code === 'PAYMENT_CANCELLED') {
-        // User cancelled — no alert needed
-      } else {
-        Alert.alert('Payment Failed', error?.description || error?.message || 'Something went wrong.');
-      }
-    } finally {
-      setAdding(false);
-    }
+    setShowAddMoney(false);
+    setAmount('');
+    // Navigate to HDFC Payment screen; wallet is credited by backend after HDFC response
+    navigation.navigate('Payment', { type: 'wallet', amount: amtNum });
+    // Refresh wallet balance when user returns
+    setTimeout(() => fetchWallet(true), 3000);
   };
 
   const creditCount = transactions.filter(t => t.type === 'credit').length;
