@@ -5,7 +5,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
+  Modal,
   ActivityIndicator,
   StatusBar,
   Linking,
@@ -38,24 +38,19 @@ const Profile = () => {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            setLoggingOut(true);
-            await logout();
-          } catch (err) {
-            console.error('Logout error:', err);
-            setLoggingOut(false);
-          }
-        },
-      },
-    ]);
+  const handleLogout = () => setLogoutModal(true);
+
+  const confirmLogout = async () => {
+    try {
+      setLoggingOut(true);
+      setLogoutModal(false);
+      await logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+      setLoggingOut(false);
+    }
   };
 
   // Wallet item removed from Account section
@@ -227,6 +222,48 @@ const Profile = () => {
       </ScrollView>
 
       <BottomTabBar />
+
+      {/* ── Logout confirmation modal ── */}
+      <Modal visible={logoutModal} transparent animationType="fade" onRequestClose={() => setLogoutModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            {/* Icon ring */}
+            <View style={styles.modalIconRing}>
+              <View style={styles.modalIconInner}>
+                <MaterialIcons name="logout" size={ms(28)} color={C.primary} />
+              </View>
+            </View>
+
+            <Text style={styles.modalTitle}>Leaving so soon?</Text>
+            <Text style={styles.modalSubtitle}>
+              You'll need to log in again to access your orders and account.
+            </Text>
+
+            {/* Divider */}
+            <View style={styles.modalDivider} />
+
+            {/* Buttons */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setLogoutModal(false)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.modalCancelText}>Stay</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalLogoutBtn}
+                onPress={confirmLogout}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="logout" size={ms(16)} color="#FFFFFF" />
+                <Text style={styles.modalLogoutText}>Yes, Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -483,6 +520,107 @@ const styles = StyleSheet.create({
     fontSize:   fs(11),
     fontWeight: '400',
     color:      C.border,
+  },
+
+  // ── Logout modal ──────────────────────────────────────────────────────────
+  modalOverlay: {
+    flex:            1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent:  'center',
+    alignItems:      'center',
+    paddingHorizontal: hs(28),
+  },
+  modalCard: {
+    width:           '100%',
+    backgroundColor: C.surface,
+    borderRadius:    ms(24),
+    paddingHorizontal: hs(24),
+    paddingBottom:   vs(24),
+    paddingTop:      vs(28),
+    alignItems:      'center',
+    shadowColor:     C.shadow,
+    shadowOffset:    { width: 0, height: 8 },
+    shadowOpacity:   0.18,
+    shadowRadius:    24,
+    elevation:       12,
+  },
+  modalIconRing: {
+    width:           ms(76),
+    height:          ms(76),
+    borderRadius:    ms(38),
+    backgroundColor: '#EFF6FF',
+    justifyContent:  'center',
+    alignItems:      'center',
+    marginBottom:    vs(16),
+    borderWidth:     2,
+    borderColor:     '#BFDBFE',
+  },
+  modalIconInner: {
+    width:           ms(54),
+    height:          ms(54),
+    borderRadius:    ms(27),
+    backgroundColor: '#DBEAFE',
+    justifyContent:  'center',
+    alignItems:      'center',
+  },
+  modalTitle: {
+    fontSize:      fs(20),
+    fontWeight:    '800',
+    color:         C.text,
+    letterSpacing: -0.3,
+    marginBottom:  vs(8),
+    textAlign:     'center',
+  },
+  modalSubtitle: {
+    fontSize:   fs(13),
+    color:      C.textSub,
+    textAlign:  'center',
+    lineHeight: fs(13) * 1.6,
+  },
+  modalDivider: {
+    width:           '100%',
+    height:          1,
+    backgroundColor: C.border,
+    marginVertical:  vs(20),
+  },
+  modalActions: {
+    flexDirection: 'row',
+    width:         '100%',
+    gap:           hs(12),
+  },
+  modalCancelBtn: {
+    flex:            1,
+    paddingVertical: vs(14),
+    borderRadius:    ms(14),
+    borderWidth:     1.5,
+    borderColor:     C.border,
+    backgroundColor: C.surfaceAlt,
+    alignItems:      'center',
+  },
+  modalCancelText: {
+    fontSize:   fs(15),
+    fontWeight: '700',
+    color:      C.textSub,
+  },
+  modalLogoutBtn: {
+    flex:            1,
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'center',
+    gap:             hs(6),
+    paddingVertical: vs(14),
+    borderRadius:    ms(14),
+    backgroundColor: C.primary,
+    shadowColor:     C.primary,
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.3,
+    shadowRadius:    8,
+    elevation:       4,
+  },
+  modalLogoutText: {
+    fontSize:   fs(15),
+    fontWeight: '700',
+    color:      '#FFFFFF',
   },
 });
 

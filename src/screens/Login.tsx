@@ -9,8 +9,8 @@ import {
   Platform,
   Image,
   ScrollView,
-  Alert,
   StatusBar,
+  Linking,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -138,14 +138,14 @@ const Login = () => {
                 I agree to the{' '}
                 <Text
                   style={styles.checkboxLink}
-                  onPress={() => Alert.alert('Terms of Service', 'Terms content here.')}
+                  onPress={() => Linking.openURL('https://ridezipto.com/terms-of-service')}
                 >
                   Terms of Service
                 </Text>
                 {' '}and{' '}
                 <Text
                   style={styles.checkboxLink}
-                  onPress={() => Alert.alert('Privacy Policy', 'Privacy policy content here.')}
+                  onPress={() => Linking.openURL('https://ridezipto.com/privacy-policy')}
                 >
                   Privacy Policy
                 </Text>

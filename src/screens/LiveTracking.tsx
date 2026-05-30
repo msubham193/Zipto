@@ -2127,11 +2127,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: ms(24),
     paddingVertical: ms(14),
     borderRadius: ms(12),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   homeBtnTextModern: {
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: fs(15),
+    textAlign: 'center',
   },
   successOverlay: {
     flex: 1,
