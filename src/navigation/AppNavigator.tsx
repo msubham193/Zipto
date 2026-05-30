@@ -14,6 +14,8 @@ import Payment from '../screens/Payment';
 import BookingHistory from '../screens/BookingHistory';
 import Profile from '../screens/Profile';
 import Coins from '../screens/Coins';
+import ReferEarn from '../screens/ReferEarn';
+import EarnCoinsInfo from '../screens/EarnCoinsInfo';
 import TransactionHistory from '../screens/TransactionHistory';
 import TransferToWallet from '../screens/TransferWallet';
 import WriteReview from '../screens/WriteReview';
@@ -60,7 +62,11 @@ export type AppStackParamList = {
     /** Pass true when navigating from MyOrders — bookingId is a real DB ID, not an offer ID */
     isRealBooking?: boolean;
   };
-  Payment: undefined;
+  Payment: {
+    type: 'booking' | 'wallet';
+    bookingId?: string;
+    amount: number;
+  };
   BookingHistory: undefined;
   Profile: undefined;
   MyOrders: { filter?: 'completed' | 'active' | 'all' } | undefined;
@@ -81,6 +87,8 @@ export type AppStackParamList = {
   TransactionHistory: undefined;
   TransferToWallet: undefined;
   WriteReview: undefined;
+  ReferEarn: undefined;
+  EarnCoinsInfo: undefined;
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -118,6 +126,12 @@ const AppNavigator = () => {
       <Stack.Screen name="Profile" component={Profile} />
 
       <Stack.Screen name="MyOrders" component={MyOrders} />
+
+      {/* Refer & Earn */}
+      <Stack.Screen name="ReferEarn" component={ReferEarn} />
+
+      {/* How to earn Zipto coins */}
+      <Stack.Screen name="EarnCoinsInfo" component={EarnCoinsInfo} />
 
       {/* Track Order Screen */}
       <Stack.Screen

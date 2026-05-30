@@ -15,6 +15,19 @@ import {
   StatusBar,
   Modal,
 } from 'react-native';
+import Reanimated, {
+  FadeInDown,
+  FadeIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing as REasing,
+} from 'react-native-reanimated';
+
+// Shared, calm easing for all entrance transitions (no spring/bounce).
+const ENTER_EASE = REasing.bezier(0.22, 1, 0.36, 1);
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -22,6 +35,7 @@ import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi as mapboxApi } from '../api/googleMaps';
 import { useAuthStore } from '../store/useAuthStore';
+import { useLocationStore } from '../store/useLocationStore';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 // ─── Parse lat/lon from a shared maps link or plain "lat,lon" text ────────────
@@ -127,6 +141,58 @@ const LOCATION_TYPES: LocationType[] = ['Home', 'Shop', 'Office', 'Other'];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+// Pulsing ring behind the active route dot — gives the pickup/drop indicator life.
+const PulsingDot = ({ color, active }: { color: string; active: boolean }) => {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (active) {
+      // Slow, soft halo — subtle "live" cue, not an attention-grabbing flash.
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.9, { duration: 1500, easing: REasing.out(REasing.quad) }),
+          withTiming(1, { duration: 0 }),
+        ),
+        -1,
+        false,
+      );
+      opacity.value = withRepeat(
+        withSequence(
+          withTiming(0.18, { duration: 0 }),
+          withTiming(0, { duration: 1500, easing: REasing.out(REasing.quad) }),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      scale.value = withTiming(1, { duration: 200 });
+      opacity.value = withTiming(0, { duration: 200 });
+    }
+  }, [active]);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Reanimated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          width: DOT_SIZE,
+          height: DOT_SIZE,
+          borderRadius: DOT_SIZE / 2,
+          backgroundColor: color,
+        },
+        ringStyle,
+      ]}
+    />
+  );
+};
+
 const SectionLabel = ({
   label, icon, iconColor = C.accent,
 }: { label: string; icon: string; iconColor?: string }) => (
@@ -220,6 +286,7 @@ const PickupDropSelection = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuthStore();
+  const locationStore = useLocationStore();
   const insets = useSafeAreaInsets();
   const serviceCategory = route.params?.serviceCategory || 'send_packages';
 
@@ -331,29 +398,35 @@ const PickupDropSelection = () => {
     } catch { }
   };
 
-  const detectCurrentLocation = () => {
+  const detectCurrentLocation = async () => {
     setAutoFillingPickup(true);
-    Geolocation.getCurrentPosition(
-      async position => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const address = await mapboxApi.reverseGeocode(latitude, longitude);
-          if (address) {
-            setPickup(address);
-            setPickupCoords({ latitude, longitude });
-            setActiveInput('drop');
-            setLocationChanged(false);
-            await savePickupCache(address, { latitude, longitude });
-          }
-        } catch (err) {
-          console.log('GPS pickup error:', err);
-        } finally {
-          setAutoFillingPickup(false);
-        }
-      },
-      error => { console.log('GPS error:', error); setAutoFillingPickup(false); },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
-    );
+    try {
+      // Use cached location if fresh (avoids GPS round-trip)
+      const { address: cachedAddr, latitude: cachedLat, longitude: cachedLon, isStale } = locationStore;
+      if (cachedAddr && cachedLat && cachedLon && !isStale()) {
+        setPickup(cachedAddr);
+        setPickupCoords({ latitude: cachedLat, longitude: cachedLon });
+        setActiveInput('drop');
+        setLocationChanged(false);
+        await savePickupCache(cachedAddr, { latitude: cachedLat, longitude: cachedLon });
+        return;
+      }
+
+      // Cache miss or stale — fetch fresh from GPS
+      await locationStore.fetch(true);
+      const { address, latitude, longitude } = useLocationStore.getState();
+      if (address && latitude && longitude) {
+        setPickup(address);
+        setPickupCoords({ latitude, longitude });
+        setActiveInput('drop');
+        setLocationChanged(false);
+        await savePickupCache(address, { latitude, longitude });
+      }
+    } catch (err) {
+      console.log('GPS pickup error:', err);
+    } finally {
+      setAutoFillingPickup(false);
+    }
   };
 
   useEffect(() => {
@@ -488,33 +561,37 @@ const PickupDropSelection = () => {
 
       {!isSearching && filteredLocations.length > 0 &&
         filteredLocations.map((item, idx) => (
-          <TouchableOpacity
+          <Reanimated.View
             key={item.id}
-            style={[
-              styles.suggestionRow,
-              idx < filteredLocations.length - 1 && styles.suggestionRowBorder,
-            ]}
-            onPress={() => handleLocationSelect(item)}
-            activeOpacity={0.65}
+            entering={FadeIn.delay(idx * 35).duration(220)}
           >
-            <View style={styles.suggestionHistoryIcon}>
-              <MaterialIcons name="history" size={ms(18)} color={C.textMuted} />
-            </View>
-            <View style={styles.suggestionInfo}>
-              <Text style={styles.suggestionName} numberOfLines={1}>{item.name}</Text>
-              <Text style={styles.suggestionAddress} numberOfLines={1}>{item.address}</Text>
-            </View>
-            <MaterialIcons name="favorite-border" size={ms(18)} color={C.heart} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.suggestionRow,
+                idx < filteredLocations.length - 1 && styles.suggestionRowBorder,
+              ]}
+              onPress={() => handleLocationSelect(item)}
+              activeOpacity={0.65}
+            >
+              <View style={styles.suggestionPinIcon}>
+                <MaterialIcons name="location-on" size={ms(18)} color={C.accent} />
+              </View>
+              <View style={styles.suggestionInfo}>
+                <Text style={styles.suggestionName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.suggestionAddress} numberOfLines={1}>{item.address}</Text>
+              </View>
+              <MaterialIcons name="north-east" size={ms(18)} color={C.textMuted} />
+            </TouchableOpacity>
+          </Reanimated.View>
         ))
       }
 
       {!isSearching && filteredLocations.length === 0 && query.trim().length > 2 && (
-        <View style={styles.suggestionEmpty}>
+        <Reanimated.View entering={FadeIn.duration(220)} style={styles.suggestionEmpty}>
           <MaterialIcons name="search-off" size={ms(32)} color={C.textMuted} />
           <Text style={styles.suggestionEmptyText}>No results for "{query}"</Text>
           <Text style={styles.suggestionEmptySub}>Try a different search term</Text>
-        </View>
+        </Reanimated.View>
       )}
     </View>
   );
@@ -547,6 +624,10 @@ const PickupDropSelection = () => {
           </TouchableOpacity>
 
           <Text style={styles.headerTitleLarge}>Select Location</Text>
+
+          <Reanimated.View entering={FadeIn.delay(120).duration(300)} style={styles.headerBadge}>
+            <MaterialIcons name="place" size={ms(18)} color={C.primary} />
+          </Reanimated.View>
         </View>
 
         {/* ── Scrollable body ── */}
@@ -558,24 +639,38 @@ const PickupDropSelection = () => {
             contentContainerStyle={styles.formScroll}
           >
             {/* ── Route card ── */}
-            <View style={styles.routeCard}>
+            <Reanimated.View entering={FadeInDown.delay(40).duration(420).easing(ENTER_EASE)} style={styles.routeCard}>
               {/* Pickup row */}
               <View style={[styles.routeRow, activeInput === 'pickup' && styles.routeRowActive]}>
                 <View style={styles.routeIconCol}>
-                  <View style={styles.dotPickup} />
+                  <View style={styles.dotWrap}>
+                    <PulsingDot color={C.green} active={activeInput === 'pickup'} />
+                    <View style={styles.dotPickup} />
+                  </View>
                   <View style={styles.routeConnector} />
                 </View>
-                <TextInput
-                  style={styles.routeTextInput}
-                  placeholder={autoFillingPickup ? 'Detecting your location…' : 'Pickup location'}
-                  placeholderTextColor={C.textMuted}
-                  value={pickup}
-                  onChangeText={text => {
-                    if (pickupCoords) setPickupCoords(null);
-                    handleSearchLocation(text);
-                  }}
-                  onFocus={() => setActiveInput('pickup')}
-                />
+                {pickupCoords && activeInput !== 'pickup' ? (
+                  <Text
+                    style={[styles.routeTextInput, styles.routeTextDisplay]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    onPress={() => { setPickupCoords(null); setActiveInput('pickup'); }}
+                  >
+                    {pickup}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={styles.routeTextInput}
+                    placeholder={autoFillingPickup ? 'Detecting your location…' : 'Pickup location'}
+                    placeholderTextColor={C.textMuted}
+                    value={pickup}
+                    onChangeText={text => {
+                      if (pickupCoords) setPickupCoords(null);
+                      handleSearchLocation(text);
+                    }}
+                    onFocus={() => setActiveInput('pickup')}
+                  />
+                )}
                 {autoFillingPickup ? (
                   <ActivityIndicator size="small" color={C.accent} style={styles.locateLoader} />
                 ) : (!pickup || locationChanged) ? (
@@ -599,24 +694,38 @@ const PickupDropSelection = () => {
               {/* Drop row */}
               <View style={[styles.routeRow, activeInput === 'drop' && styles.routeRowActive]}>
                 <View style={styles.routeIconCol}>
-                  <View style={styles.dotDrop} />
+                  <View style={styles.dotWrap}>
+                    <PulsingDot color={C.red} active={activeInput === 'drop'} />
+                    <View style={styles.dotDrop} />
+                  </View>
                 </View>
-                <TextInput
-                  style={styles.routeTextInput}
-                  placeholder="Drop location"
-                  placeholderTextColor={C.textMuted}
-                  value={drop}
-                  onChangeText={text => {
-                    if (dropCoords) setDropCoords(null);
-                    handleSearchLocation(text);
-                  }}
-                  onFocus={() => setActiveInput('drop')}
-                />
+                {dropCoords && activeInput !== 'drop' ? (
+                  <Text
+                    style={[styles.routeTextInput, styles.routeTextDisplay]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    onPress={() => { setDropCoords(null); setActiveInput('drop'); }}
+                  >
+                    {drop}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={styles.routeTextInput}
+                    placeholder="Drop location"
+                    placeholderTextColor={C.textMuted}
+                    value={drop}
+                    onChangeText={text => {
+                      if (dropCoords) setDropCoords(null);
+                      handleSearchLocation(text);
+                    }}
+                    onFocus={() => setActiveInput('drop')}
+                  />
+                )}
               </View>
-            </View>
+            </Reanimated.View>
 
             {/* ── Location action buttons ── */}
-            <View style={styles.mapStopsRow}>
+            <Reanimated.View entering={FadeInDown.delay(100).duration(420).easing(ENTER_EASE)} style={styles.mapStopsRow}>
               <TouchableOpacity
                 style={styles.mapStopsBtn}
                 activeOpacity={0.7}
@@ -642,7 +751,7 @@ const PickupDropSelection = () => {
                 <MaterialIcons name="link" size={ms(16)} color={C.accent} />
                 <Text style={styles.mapStopsBtnText}>Import Shared Link</Text>
               </TouchableOpacity>
-            </View>
+            </Reanimated.View>
 
             {/* Suggestion lists */}
             {activeInput === 'pickup' && pickup.trim().length > 1 && !pickupCoords && (
@@ -657,7 +766,7 @@ const PickupDropSelection = () => {
             )}
 
             {/* ── Sender Details ── */}
-            <View style={styles.card}>
+            <Reanimated.View entering={FadeInDown.delay(160).duration(420).easing(ENTER_EASE)} style={styles.card}>
               <SectionLabel label="Sender Details" icon="upload" iconColor={C.green} />
               <FieldInput
                 icon="person"
@@ -703,10 +812,10 @@ const PickupDropSelection = () => {
                   onChangeText={setCustomLocationName}
                 />
               )}
-            </View>
+            </Reanimated.View>
 
             {/* ── Receiver Details ── */}
-            <View style={[styles.card, { marginBottom: vs(12) }]}>
+            <Reanimated.View entering={FadeInDown.delay(220).duration(420).easing(ENTER_EASE)} style={[styles.card, { marginBottom: vs(12) }]}>
               <SectionLabel label="Receiver Details" icon="download" iconColor={C.red} />
               <FieldInput
                 icon="person-outline"
@@ -724,7 +833,7 @@ const PickupDropSelection = () => {
                 maxLength={10}
                 onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
               />
-            </View>
+            </Reanimated.View>
           </ScrollView>
         </Animated.View>
 
@@ -869,6 +978,15 @@ const styles = StyleSheet.create({
     color: C.text,
     letterSpacing: -0.5,
   },
+  headerBadge: {
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(17),
+    backgroundColor: C.accentLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
 
 
   // ── Form scroll ──────────────────────────────────────────────────────────
@@ -910,6 +1028,12 @@ const styles = StyleSheet.create({
     marginRight: hs(12),
     flexShrink: 0,
   },
+  dotWrap: {
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dotPickup: {
     width: DOT_SIZE,
     height: DOT_SIZE,
@@ -941,12 +1065,16 @@ const styles = StyleSheet.create({
   routeTextInput: {
     flex: 1,
     fontSize: fs(13),
-    color: '#111111',   // explicit dark — never inherits a faded colour
+    color: '#111111',
     paddingVertical: vs(10),
     paddingHorizontal: hs(4),
     fontWeight: '400',
-    includeFontPadding: false,      // Android: removes extra gap that clips ascenders
+    includeFontPadding: false,
     textAlignVertical: 'center',
+  },
+  routeTextDisplay: {
+    // Text (not TextInput) — guarantees tail truncation when not focused
+    lineHeight: vs(20),
   },
   locateLoader: { marginLeft: hs(8) },
   locateBtn: {
@@ -1017,6 +1145,15 @@ const styles = StyleSheet.create({
     height: ms(34),
     borderRadius: ms(17),
     backgroundColor: C.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  suggestionPinIcon: {
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(17),
+    backgroundColor: C.accentLight,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,

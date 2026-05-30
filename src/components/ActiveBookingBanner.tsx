@@ -8,6 +8,7 @@ import {
   Easing,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
@@ -25,15 +26,6 @@ const STATUS_CONFIG: Record<
   arriving:        { color: '#059669', bg: '#ECFDF5', label: 'Driver is on the way',    icon: 'near-me',         pulse: true  },
   ongoing:         { color: '#7C3AED', bg: '#F5F3FF', label: 'Delivery in progress',    icon: 'local-shipping',  pulse: false },
   in_progress:     { color: '#7C3AED', bg: '#F5F3FF', label: 'Delivery in progress',    icon: 'local-shipping',  pulse: false },
-};
-
-const VEHICLE_ICONS: Record<string, string> = {
-  bike:          'two-wheeler',
-  auto:          'electric-rickshaw',
-  mini_truck:    'local-shipping',
-  tata_ace:      'local-shipping',
-  pickup_truck:  'local-shipping',
-  tempo:         'local-shipping',
 };
 
 const TERMINAL = ['completed', 'cancelled', 'expired'];
@@ -57,6 +49,10 @@ const ActiveBookingBanner: React.FC = () => {
   const slideAnim  = useRef(new Animated.Value(40)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Number of consecutive "no active booking" responses — we only clear after a
+  // couple of misses so a transient network/empty response can't drop the banner
+  // mid-trip (e.g. while a delivery is still ongoing).
+  const missRef    = useRef(0);
 
   // ── Slide-in on mount ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -86,32 +82,31 @@ const ActiveBookingBanner: React.FC = () => {
   // ── Polling ─────────────────────────────────────────────────────────────────
   const poll = useCallback(async () => {
     if (!activeBooking) return;
-    const { id, status } = activeBooking;
-    if (TERMINAL.includes(status)) { clearActiveBooking(); return; }
+    if (TERMINAL.includes(activeBooking.status)) { clearActiveBooking(); return; }
 
     try {
-      if (status === 'searching' || status === 'pending') {
-        const res = await vehicleApi.getOfferStatus(id);
-        const data = (res as any)?.data ?? res;
-        if (data?.status === 'accepted' && data?.booking_id) {
-          updateActiveBookingId(data.booking_id);
-          updateActiveBookingStatus('accepted');
-        } else if (data?.status === 'expired') {
-          clearActiveBooking();
-        }
-      } else {
-        const res = await vehicleApi.getBookingDetails(id);
-        const booking = (res as any)?.data ?? res;
-        if (!booking?.id) return;
-        const s: string = (booking.status ?? '').toLowerCase();
-        if (TERMINAL.includes(s)) {
-          clearActiveBooking();
-        } else {
-          updateActiveBookingStatus(s);
-        }
+      // Single source of truth: resolves searching offer → real booking and
+      // reports the live status through every phase (accepted → ongoing/delivery)
+      // until the trip is completed or cancelled.
+      const active = await vehicleApi.getCustomerActiveBooking();
+
+      if (!active || !active.id) {
+        // Only clear after a couple of consecutive misses so a transient empty
+        // response can't drop the banner while a delivery is still in progress.
+        missRef.current += 1;
+        if (missRef.current >= 2) clearActiveBooking();
+        return;
       }
+      missRef.current = 0;
+
+      const s: string = String(active.status ?? '').toLowerCase();
+      if (TERMINAL.includes(s)) { clearActiveBooking(); return; }
+
+      // Keep the offer→real-booking id in sync and reflect the live status.
+      if (active.id !== activeBooking.id) updateActiveBookingId(active.id);
+      if (s && s !== activeBooking.status) updateActiveBookingStatus(s);
     } catch {
-      // silent — banner is best-effort
+      // silent — banner is best-effort; keep last known state visible
     }
   }, [activeBooking]);
 
@@ -124,7 +119,6 @@ const ActiveBookingBanner: React.FC = () => {
   // ── Guard ───────────────────────────────────────────────────────────────────
   if (!activeBooking || TERMINAL.includes(activeBooking.status)) return null;
 
-  const vehicleIcon = VEHICLE_ICONS[activeBooking.vehicleType] ?? 'local-shipping';
   const fare = activeBooking.estimatedFare;
 
   const handlePress = () => {
@@ -153,9 +147,15 @@ const ActiveBookingBanner: React.FC = () => {
         onPress={handlePress}
         style={[styles.card, { borderLeftColor: cfg.color }]}
       >
-        {/* Left: vehicle icon circle */}
+        {/* Left: animated rider (processing) */}
         <View style={[styles.iconCircle, { backgroundColor: cfg.color + '18' }]}>
-          <MaterialIcons name={vehicleIcon} size={22} color={cfg.color} />
+          <LottieView
+            source={require('../assets/animations/rider-processing.json')}
+            style={styles.riderLottie}
+            autoPlay
+            loop
+            resizeMode="contain"
+          />
         </View>
 
         {/* Middle: status + route */}
@@ -256,11 +256,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  riderLottie: {
+    width: 44,
+    height: 44,
   },
   middle: {
     flex: 1,

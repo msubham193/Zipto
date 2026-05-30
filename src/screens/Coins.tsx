@@ -7,7 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -16,11 +15,9 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
+import EnterView from '../components/EnterView';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
-
-const REVIEW_SUBMITTED_KEY = 'zipto_review_submitted';
 
 const Coins = () => {
   const navigation =
@@ -33,7 +30,6 @@ const Coins = () => {
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [balanceError, setBalanceError] = useState(false);
-  const [reviewDone, setReviewDone]     = useState(false);
 
   const fetchData = useCallback(async (isRefresh = false) => {
     try {
@@ -66,12 +62,6 @@ const Coins = () => {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  useEffect(() => {
-    AsyncStorage.getItem(REVIEW_SUBMITTED_KEY)
-      .then(val => { if (val) setReviewDone(true); })
-      .catch(() => {});
-  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -129,33 +119,16 @@ const Coins = () => {
       done: false,
       coinsColor: undefined,
       coinsBg: undefined,
-      onPress: () => navigation.navigate('MyOrders', { filter: 'completed' }),
+      onPress: () => navigation.navigate('EarnCoinsInfo'),
     },
     {
       icon: 'share',
       text: 'Refer friends',
-      coins: '+50',
+      coins: '+1000',
       done: false,
       coinsColor: undefined,
       coinsBg: undefined,
-      onPress: () => {
-        const { Share } = require('react-native');
-        Share.share({
-          message: 'Join Zipto and get 50 bonus coins! Download now: https://zipto.app/refer',
-          title: 'Refer Zipto',
-        });
-      },
-    },
-    {
-      icon: 'star',
-      text: 'Write reviews',
-      coins: reviewDone ? 'Done' : '+5',
-      coinsColor: reviewDone ? '#10B981' : undefined,
-      coinsBg: reviewDone ? '#DCFCE7' : undefined,
-      done: reviewDone,
-      onPress: reviewDone
-        ? () => Alert.alert('Already Reviewed', 'You have already submitted a review. Thank you!')
-        : () => navigation.navigate('WriteReview'),
+      onPress: () => navigation.navigate('ReferEarn'),
     },
     // Transaction history row — commented out, re-enable when TransactionHistory screen is ready
     /*
@@ -226,7 +199,7 @@ const Coins = () => {
           }
         >
           {/* Coins Balance Card */}
-          <View style={styles.balanceCardContainer}>
+          <EnterView delay={40} style={styles.balanceCardContainer}>
             <LinearGradient
               colors={['#6366F1', '#8B5CF6', '#A855F7']}
               start={{ x: 0, y: 0 }}
@@ -272,7 +245,7 @@ const Coins = () => {
               <MaterialIcons name="chevron-right" size={ms(20)} color="#94A3B8" />
             </TouchableOpacity>
             */}
-          </View>
+          </EnterView>
 
           {/* Recent Transactions — commented out, re-enable when TransactionHistory screen is ready */}
           {/*
@@ -352,7 +325,7 @@ const Coins = () => {
           */}
 
           {/* Earn More Coins Section */}
-          <View style={styles.section}>
+          <EnterView delay={120} style={styles.section}>
             <Text style={styles.sectionTitle}>Earn More Coins</Text>
             <View style={styles.earnCard}>
               {earnCoinsWays.map((way, index) => (
@@ -384,15 +357,15 @@ const Coins = () => {
                 </React.Fragment>
               ))}
             </View>
-          </View>
+          </EnterView>
 
           {/* Info Banner */}
-          <View style={styles.infoBanner}>
+          <EnterView delay={180} variant="fade" style={styles.infoBanner}>
             <MaterialIcons name="info" size={ms(20)} color="#3B82F6" />
             <Text style={styles.infoBannerText}>
               {rate || '100 coins = ₹2'}. Use your coins for discounts on your next delivery!
             </Text>
-          </View>
+          </EnterView>
         </ScrollView>
       </SafeAreaView>
 

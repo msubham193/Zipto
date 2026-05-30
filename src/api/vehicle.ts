@@ -58,6 +58,10 @@ export interface FareEstimateResponse {
     distance: number;
     duration: number;
     estimated_fare: number;
+    /** True when at least one driver is online within the search radius at pickup */
+    drivers_available: boolean;
+    /** Number of online drivers found within the search radius */
+    nearby_driver_count: number;
     breakdown: {
       base_fare: number;
       distance_charge: number;
@@ -132,12 +136,6 @@ export interface CreateOrderResponse {
   message?: string;
 }
 
-export interface VerifyPaymentRequest {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-  booking_id: string;
-}
 
 export interface VerifyPaymentResponse {
   success: boolean;
@@ -353,21 +351,6 @@ export const vehicleApi = {
     return response.data;
   },
 
-  createPaymentOrder: async (request: CreateOrderRequest): Promise<CreateOrderResponse> => {
-    const response = await client.post<CreateOrderResponse>(
-      '/payment/create-order',
-      request
-    );
-    return response.data;
-  },
-
-  verifyPayment: async (request: VerifyPaymentRequest): Promise<VerifyPaymentResponse> => {
-    const response = await client.post<VerifyPaymentResponse>(
-      '/payment/verify',
-      request
-    );
-    return response.data;
-  },
 
   getOfferStatus: async (offerId: string): Promise<{
     success: boolean;
@@ -471,5 +454,32 @@ export const vehicleApi = {
     const response = await client.post('/booking/coupon/validate', payload);
     return response.data?.data ?? response.data;
   },
+
+  getCoupons: async (vehicleType?: string): Promise<Coupon[]> => {
+    const qs = vehicleType ? `?vehicle_type=${encodeURIComponent(vehicleType)}` : '';
+    const response = await client.get(`/booking/coupons${qs}`);
+    // Unwrap any level of `{ data: ... }` nesting until we reach the array.
+    // Handles `[...]`, `{data:[...]}`, and double-wrapped `{data:{data:[...]}}`.
+    let d: any = response.data;
+    let guard = 0;
+    while (d && !Array.isArray(d) && d.data !== undefined && guard++ < 5) {
+      d = d.data;
+    }
+    return Array.isArray(d) ? d : [];
+  },
 };
+
+// Coupon shape returned by the backend (admin-managed)
+export interface Coupon {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  type: 'flat' | 'percentage' | 'free_delivery';
+  value: number;
+  max_discount: number | null;
+  min_order_value: number;
+  valid_until: string | null;
+  applicable_vehicle_types: string[] | null;
+}
 

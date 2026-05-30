@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Push notification permission (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Bypass OEM battery optimization for reliable background FCM (Xiaomi/Samsung/OnePlus) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
       android:name=".MainApplication"
@@ -33,6 +35,20 @@
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        <!-- Referral deep links: zipto://refer?code=XXX -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="zipto" android:host="refer" />
+        </intent-filter>
+        <!-- Referral universal links: https://ridezipto.com/refer/XXX -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" android:host="ridezipto.com" android:pathPrefix="/refer" />
         </intent-filter>
       </activity>
       <!-- Google Maps API Key - Required for react-native-maps -->
