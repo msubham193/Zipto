@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Linking } from 'react-native';
 import { navigationRef } from './navigationRef';
 import { useAuthStore } from '../store/useAuthStore';
 import Splash from '../screens/Splash';
+import { parseReferralCode, stashReferralCode } from '../utils/referral';
 
 const MIN_SPLASH_DURATION = 2800;
 
@@ -73,6 +74,19 @@ const RootNavigator = () => {
             }
         };
     }, [fetchProfile]);
+
+    // ── Referral deep links ──────────────────────────────────────────────────
+    // Capture a referral code from the launch URL or any link opened while
+    // running, and stash it so the Login screen can pre-fill it at signup.
+    useEffect(() => {
+        const handleUrl = (url?: string | null) => {
+            const code = parseReferralCode(url);
+            if (code) stashReferralCode(code);
+        };
+        Linking.getInitialURL().then(handleUrl).catch(() => {});
+        const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+        return () => sub.remove();
+    }, []);
 
     // Always show splash while showSplash is true
     if (showSplash) {

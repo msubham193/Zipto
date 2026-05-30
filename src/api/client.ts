@@ -162,16 +162,6 @@ export const walletApi = {
     const response = await client.post('/customer/wallet/add-money/initiate', { amount });
     return response.data;
   },
-
-  verifyAddMoney: async (payload: {
-    order_id: string;
-    payment_id: string;
-    signature: string;
-    amount: number;
-  }) => {
-    const response = await client.post('/customer/wallet/add-money/verify', payload);
-    return response.data;
-  },
 };
 
 export const notificationApi = {
@@ -206,10 +196,12 @@ export const authApi = {
     return response.data;
   },
 
-  verifyOtp: async (phone: string, otp: string) => {
+  verifyOtp: async (phone: string, otp: string, referralCode?: string, deviceId?: string) => {
     const response = await client.post('/auth/verify-otp', {
       phone,
       otp,
+      ...(referralCode ? { referral_code: referralCode } : {}),
+      ...(deviceId ? { device_id: deviceId } : {}),
     });
     return response.data;
   },
@@ -248,18 +240,13 @@ export const authApi = {
 };
 
 export const paymentApi = {
-  createOrder: async (payload: { booking_id: string; amount: number; payment_method?: string }) => {
-    const response = await client.post('/payment/create-order', payload);
+  initiate: async (payload: { booking_id: string; amount: number }) => {
+    const response = await client.post('/payment/initiate', payload);
     return response.data;
   },
 
-  verifyPayment: async (payload: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
-    booking_id?: string;
-  }) => {
-    const response = await client.post('/payment/verify', payload);
+  getStatus: async (bookingId: string) => {
+    const response = await client.get(`/payment/status/${bookingId}`);
     return response.data;
   },
 };

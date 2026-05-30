@@ -22,9 +22,7 @@ import BottomTabBar from './BottomTabBar';
 import { OrderCardSkeleton } from '../components/Skeleton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { vehicleApi, BookingDetails } from '../api/vehicle';
-import { paymentApi } from '../api/client';
 import { Alert } from 'react-native';
-import RazorpayCheckout from 'react-native-razorpay';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
 
 const ACTIVE_STATUSES = ['pending', 'searching', 'accepted', 'assigned', 'driver_assigned', 'driver_arriving', 'arriving', 'in_progress', 'ongoing', 'picked_up'];
@@ -258,46 +256,18 @@ const MyOrders = () => {
     }
   };
 
-  const handlePayNow = async (booking: BookingDetails) => {
+  const handlePayNow = (booking: BookingDetails) => {
     if (payingBookingId) return;
     const amount = Math.round(parseFloat((booking as any).final_fare || booking.estimated_fare || '0'));
     if (!amount || amount <= 0) {
       Alert.alert('Error', 'Cannot determine payment amount for this booking.');
       return;
     }
-    setPayingBookingId(booking.id);
-    try {
-      const orderRes = await paymentApi.createOrder({ booking_id: booking.id, amount });
-      const { order_id, key } = orderRes.data ?? orderRes;
-      if (!order_id || !key) throw new Error('Invalid order response from server');
-      const options = {
-        description: 'Zipto Delivery Payment',
-        currency: 'INR',
-        key,
-        amount: amount * 100,
-        order_id,
-        name: 'Zipto',
-        theme: { color: '#2563EB' },
-      };
-      const paymentData = await RazorpayCheckout.open(options);
-      await paymentApi.verifyPayment({
-        razorpay_order_id: paymentData.razorpay_order_id,
-        razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_signature: paymentData.razorpay_signature,
-        booking_id: booking.id,
-      });
-      Alert.alert('Payment Successful', 'Your payment has been confirmed!');
-      fetchBookings(true);
-    } catch (err: any) {
-      if (err?.code === 0) {
-        Alert.alert('Payment Cancelled', 'You can pay again from the Orders screen.');
-      } else {
-        const msg = err?.description || err?.message || 'Payment could not be completed. Please try again.';
-        Alert.alert('Payment Failed', msg);
-      }
-    } finally {
-      setPayingBookingId(null);
-    }
+    navigation.navigate('Payment', {
+      type: 'booking',
+      bookingId: booking.id,
+      amount,
+    });
   };
 
   const showSuccessAnimation = () => {

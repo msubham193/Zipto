@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import ActiveBookingBanner from '../components/ActiveBookingBanner';
 import { useBookingStore } from '../store/useBookingStore';
+import { vehicleApi } from '../api/vehicle';
+
+const TERMINAL_STATUSES = ['completed', 'cancelled', 'expired'];
 
 type TabName = 'Home' | 'MyOrders' | 'Coins' | 'Profile';
 
@@ -35,10 +38,41 @@ const BottomTabBar: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const route = useRoute();
   const activeBooking = useBookingStore((s) => s.activeBooking);
+  const setActiveBooking = useBookingStore((s) => s.setActiveBooking);
+
+  // Bootstrap: if the store has no active booking (fresh app launch, store
+  // cleared, etc.) ask the server whether the customer currently has one. This
+  // is what makes the banner appear on Home even when nothing put it in the
+  // store this session. Re-checks whenever we land on a tab while empty.
+  useEffect(() => {
+    if (activeBooking) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const active = await vehicleApi.getCustomerActiveBooking();
+        if (cancelled || !active || !active.id) return;
+        const s = String(active.status ?? '').toLowerCase();
+        if (TERMINAL_STATUSES.includes(s)) return;
+        setActiveBooking({
+          id: active.id,
+          status: s,
+          pickupAddress: active.pickup_address ?? '',
+          dropAddress: active.drop_address ?? '',
+          vehicleType: active.vehicle_type ?? 'bike',
+          estimatedFare: active.estimated_fare ?? 0,
+          pickup: active.pickup_address ?? '',
+          drop: active.drop_address ?? '',
+        });
+      } catch {
+        // best-effort — leave the store empty if the lookup fails
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeBooking, route.name, setActiveBooking]);
 
   const showBanner =
     !!activeBooking &&
-    !['completed', 'cancelled', 'expired'].includes(activeBooking.status) &&
+    !TERMINAL_STATUSES.includes(activeBooking.status) &&
     !BANNER_HIDDEN_ON.includes(route.name);
 
   const handleTabPress = (tabName: TabName) => {
