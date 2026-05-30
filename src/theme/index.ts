@@ -1,25 +1,12 @@
-import { Platform } from 'react-native';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, scaleW, scaleH, ms, fs } from '../utils/responsive';
 
-const FONT_FAMILY = Platform.select({
-  ios: 'Poppins',
-  android: 'Poppins-Regular',
-}) as string;
-
-const FONT_FAMILY_MEDIUM = Platform.select({
-  ios: 'Poppins',
-  android: 'Poppins-Medium',
-}) as string;
-
-const FONT_FAMILY_BOLD = Platform.select({
-  ios: 'Poppins',
-  android: 'Poppins-Bold',
-}) as string;
-
-const FONT_FAMILY_SEMIBOLD = Platform.select({
-  ios: 'Poppins',
-  android: 'Poppins-SemiBold',
-}) as string;
+// On both iOS and Android the PostScript name (Poppins-Regular, etc.) is correct.
+// iOS uses the PostScript name from the font file; Android uses the filename without extension.
+// Both are identical for Poppins, so no Platform.select needed.
+const FONT_FAMILY         = 'Poppins-Regular';
+const FONT_FAMILY_MEDIUM  = 'Poppins-Medium';
+const FONT_FAMILY_BOLD    = 'Poppins-Bold';
+const FONT_FAMILY_SEMIBOLD = 'Poppins-SemiBold';
 
 export const COLORS = {
   primary: '#FF6D00', // Vibrant Orange
