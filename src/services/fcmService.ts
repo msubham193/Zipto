@@ -1,8 +1,27 @@
+import { PermissionsAndroid, Platform } from 'react-native';
+
 function getMessaging(): any | null {
   try {
     return require('@react-native-firebase/messaging').default;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Android 13+ (API 33) requires the runtime POST_NOTIFICATIONS permission before
+ * the OS will display ANY tray / heads-up push. Firebase's requestPermission()
+ * doesn't reliably trigger this dialog, so request it explicitly.
+ */
+async function ensureAndroidNotificationPermission(): Promise<void> {
+  if (Platform.OS !== 'android' || Platform.Version < 33) return;
+  try {
+    const perm = (PermissionsAndroid.PERMISSIONS as any).POST_NOTIFICATIONS;
+    if (!perm) return;
+    const already = await PermissionsAndroid.check(perm);
+    if (!already) await PermissionsAndroid.request(perm);
+  } catch {
+    /* user can still grant later from settings */
   }
 }
 
@@ -17,6 +36,9 @@ export async function requestPermissionAndGetToken(): Promise<string | null> {
       console.log('[FCM] Firebase messaging module not available');
       return null;
     }
+
+    // Android 13+: explicitly request POST_NOTIFICATIONS so tray pushes show.
+    await ensureAndroidNotificationPermission();
 
     const authStatus = await messaging().requestPermission();
     console.log('[FCM] Auth status:', authStatus, '| AUTHORIZED:', messaging.AuthorizationStatus?.AUTHORIZED);

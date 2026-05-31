@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -29,12 +29,6 @@ import { notificationApi } from '../api/client';
 import { horizontalScale as hs, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
 import { HomeLocationSkeleton } from '../components/Skeleton';
 
-// WMO weather codes that indicate precipitation (drizzle, rain, snow, showers, thunderstorm)
-const RAIN_CODES = new Set([51,53,55,56,57,61,63,65,66,67,71,73,75,77,80,81,82,85,86,95,96,99]);
-// Re-poll weather on this cadence — weather changes even when the user doesn't move
-const WEATHER_REFRESH_MS = 10 * 60 * 1000; // 10 minutes
-const WEATHER_FETCH_TIMEOUT_MS = 8000;
-
 const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
 
@@ -48,24 +42,21 @@ function ServiceCard({
   delayMs: number;
   onPress: () => void;
 }) {
-  const scale = useSharedValue(0.85);
-  const opacity = useSharedValue(0);
+  // Start slightly scaled-down but ALWAYS fully opaque — the card must never be
+  // invisible even if the entrance animation never runs (e.g. first launch /
+  // permission dialog pausing the UI thread). Only the scale is animated.
+  const scale = useSharedValue(0.92);
 
   useEffect(() => {
     scale.value = withDelay(
       delayMs,
       withSpring(1, { damping: 14, stiffness: 120, mass: 0.8 }),
     );
-    opacity.value = withDelay(
-      delayMs,
-      withTiming(1, { duration: 300 }),
-    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    opacity: opacity.value,
   }));
 
   return (
@@ -101,21 +92,28 @@ const Home = () => {
   const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const { address, latitude, longitude, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
-  const [isRaining, setIsRaining] = useState(false);
+  const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
   const [showRider, setShowRider] = useState(true); // rides across screen center once on load
+  const headerBgRef = useRef<LottieView>(null);
+
+  // Pause the looping header animation whenever Home isn't the active screen —
+  // a continuously-looping Lottie wastes CPU/GPU on low-end devices in the
+  // background. Resume it when Home regains focus.
+  useEffect(() => {
+    if (isFocused) headerBgRef.current?.resume();
+    else headerBgRef.current?.pause();
+  }, [isFocused]);
 
   // ── Animation shared values ──────────────────────────────────────────────
+  // IMPORTANT: opacity always starts (and stays) at 1, so content is NEVER
+  // hidden — even if the entrance animation never runs (first launch, or the OS
+  // permission dialog pausing the UI thread). Only transforms animate, which can
+  // at most leave content slightly offset/scaled but always visible.
   // 1. Header
-  const headerOpacity = useSharedValue(0);
   const headerY = useSharedValue(-20);
-
   // 2. Hero banner
-  const bannerOpacity = useSharedValue(0);
   const bannerScale = useSharedValue(0.95);
-
   // 3. Section title
-  const titleOpacity = useSharedValue(0);
   const titleY = useSharedValue(15);
 
   // ── Trigger entrance on mount ────────────────────────────────────────────
@@ -123,38 +121,27 @@ const Home = () => {
     const ease = Easing.out(Easing.ease);
     const cubic = Easing.out(Easing.cubic);
 
-    // 1. Header — 0ms
-    headerOpacity.value = withTiming(1, { duration: 400, easing: ease });
     headerY.value = withTiming(0, { duration: 400, easing: ease });
-
-    // 2. Hero banner — 150ms
-    bannerOpacity.value = withDelay(150, withTiming(1, { duration: 450, easing: cubic }));
     bannerScale.value = withDelay(150, withTiming(1, { duration: 450, easing: cubic }));
-
-    // 3. Section title — 280ms
-    titleOpacity.value = withDelay(280, withTiming(1, { duration: 350, easing: ease }));
     titleY.value = withDelay(280, withTiming(0, { duration: 350, easing: ease }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Animated styles ──────────────────────────────────────────────────────
+  // ── Animated styles (transform-only; opacity stays 1) ─────────────────────
   const headerAnimStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
     transform: [{ translateY: headerY.value }],
   }));
 
   const bannerAnimStyle = useAnimatedStyle(() => ({
-    opacity: bannerOpacity.value,
     transform: [{ scale: bannerScale.value }],
   }));
 
   const titleAnimStyle = useAnimatedStyle(() => ({
-    opacity: titleOpacity.value,
     transform: [{ translateY: titleY.value }],
   }));
 
   // ── Location ─────────────────────────────────────────────────────────────
-  // Wait for AsyncStorage hydration, then fetch only if no cached address or stale
+  // Wait for AsyncStorage hydration, then fetch only if no cached address or stale.
   useEffect(() => {
     if (!hydrated) return;
     if (!address || isStale()) fetchLocation();
@@ -166,63 +153,6 @@ const Home = () => {
     if (isFocused && hydrated && address && isStale()) fetchLocation();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused]);
-
-  // ── Weather → rain animation ──────────────────────────────────────────────
-  // Driven by the user's real location via Open-Meteo (free, no API key).
-  // Re-checks when coordinates change, when the screen refocuses, and on a
-  // 10-min interval (weather can change while the user stays put).
-  useEffect(() => {
-    if (!latitude || !longitude) return;
-
-    let cancelled = false;
-
-    const checkWeather = async () => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), WEATHER_FETCH_TIMEOUT_MS);
-      try {
-        // Ask for actual measured precipitation (mm) + condition code.
-        // We trust the measured rain/showers/snow over the condition class,
-        // since a thunderstorm code can be reported with zero precipitation.
-        const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
-            `&current=precipitation,rain,showers,snowfall,weather_code`,
-          { signal: controller.signal },
-        );
-        const data = await res.json();
-        if (cancelled) return;
-
-        const cur = data?.current ?? {};
-        const precip = Number(cur.precipitation ?? 0);
-        const rain = Number(cur.rain ?? 0);
-        const showers = Number(cur.showers ?? 0);
-        const snow = Number(cur.snowfall ?? 0);
-        const code: number = cur.weather_code ?? -1;
-
-        // Primary signal: any measurable precipitation right now.
-        // Fallback: trust the condition code only if the API omits precip fields.
-        const hasPrecipFields =
-          cur.precipitation != null || cur.rain != null || cur.showers != null || cur.snowfall != null;
-        const measuredWet = precip > 0 || rain > 0 || showers > 0 || snow > 0;
-        const raining = hasPrecipFields ? measuredWet : RAIN_CODES.has(code);
-
-        setIsRaining(raining);
-      } catch {
-        // Network/timeout — leave current state unchanged, next poll retries
-      } finally {
-        clearTimeout(timer);
-      }
-    };
-
-    checkWeather(); // immediate check
-    const interval = setInterval(checkWeather, WEATHER_REFRESH_MS);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  // Re-subscribe when coordinates change or screen refocuses
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [latitude, longitude, isFocused]);
 
   // ── Notifications ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -281,22 +211,15 @@ const Home = () => {
           <View style={[styles.header, { overflow: 'hidden' }]}>
             {/* City skyline background — bottom-aligned to the header base */}
             <LottieView
+              ref={headerBgRef}
               source={require('../assets/animations/header-bg.json')}
-              style={styles.headerBg}
+              style={[styles.headerBg, { pointerEvents: 'none' }]}
               autoPlay
               loop
+              renderMode="HARDWARE"
+              cacheComposition
               resizeMode="cover"
             />
-            {/* Rain animation overlay — shows when weather API detects precipitation */}
-            {isRaining && (
-              <LottieView
-                source={require('../assets/animations/rain.json')}
-                style={StyleSheet.absoluteFillObject}
-                autoPlay
-                loop
-                resizeMode="cover"
-              />
-            )}
             <View style={styles.headerTop}>
               <Text style={styles.ziptoText}>zipto</Text>
               <View style={styles.headerActions}>
@@ -399,6 +322,8 @@ const Home = () => {
             style={StyleSheet.absoluteFillObject}
             autoPlay
             loop={false}
+            renderMode="HARDWARE"
+            cacheComposition
             resizeMode="contain"
             onAnimationFinish={() => setShowRider(false)}
           />

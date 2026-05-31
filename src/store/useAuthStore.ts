@@ -42,7 +42,7 @@ interface AuthState {
 
   // Actions
   login: (phone: string) => Promise<any>;
-  verifyOtp: (phone: string, otp: string, referralCode?: string) => Promise<any>;
+  verifyOtp: (phone: string, otp: string, referralCode?: string, confirmSwitch?: boolean) => Promise<any>;
   fetchProfile: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
   logout: () => Promise<void>;
@@ -89,11 +89,11 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      verifyOtp: async (phone: string, otp: string, referralCode?: string) => {
+      verifyOtp: async (phone: string, otp: string, referralCode?: string, confirmSwitch?: boolean) => {
         set({ isLoading: true, error: null });
         try {
           const deviceId = await getInstallId().catch(() => undefined);
-          const response = await authApi.verifyOtp(phone, otp, referralCode, deviceId);
+          const response = await authApi.verifyOtp(phone, otp, referralCode, deviceId, confirmSwitch);
 
           if (response.success && response.data) {
             const { user, access_token, refresh_token, is_new_user } = response.data;

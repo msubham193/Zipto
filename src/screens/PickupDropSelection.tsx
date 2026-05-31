@@ -205,7 +205,7 @@ const SectionLabel = ({
 );
 
 const FieldInput = ({
-  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode, onFocus: onFocusProp, hasError, errorText,
+  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode, onFocus: onFocusProp, error,
 }: {
   icon: string;
   placeholder: string;
@@ -215,30 +215,31 @@ const FieldInput = ({
   maxLength?: number;
   rightNode?: React.ReactNode;
   onFocus?: () => void;
-  hasError?: boolean;
-  errorText?: string;
+  error?: string;
 }) => {
   const [focused, setFocused] = useState(false);
+  const field = (
+    <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused, !!error && sub.fieldWrapError]}>
+      <MaterialIcons name={icon} size={ms(17)} color={error ? C.red : focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
+      <TextInput
+        style={sub.fieldInput}
+        placeholder={placeholder}
+        placeholderTextColor={C.textMuted}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        maxLength={maxLength}
+        onFocus={() => { setFocused(true); onFocusProp?.(); }}
+        onBlur={() => setFocused(false)}
+      />
+      {rightNode}
+    </View>
+  );
+  if (!error) return field;
   return (
     <View>
-      <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused, hasError && sub.fieldWrapError]}>
-        <MaterialIcons name={icon} size={ms(17)} color={hasError ? C.red : focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
-        <TextInput
-          style={sub.fieldInput}
-          placeholder={placeholder}
-          placeholderTextColor={C.textMuted}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          maxLength={maxLength}
-          onFocus={() => { setFocused(true); onFocusProp?.(); }}
-          onBlur={() => setFocused(false)}
-        />
-        {rightNode}
-      </View>
-      {hasError && errorText ? (
-        <Text style={sub.fieldErrorText}>{errorText}</Text>
-      ) : null}
+      {field}
+      <Text style={sub.fieldErrorText}>{error}</Text>
     </View>
   );
 };
@@ -280,13 +281,12 @@ const sub = StyleSheet.create({
   },
   fieldWrapError: {
     borderColor: C.red,
-    backgroundColor: '#FFF5F5',
-    marginBottom: vs(2),
+    marginBottom: vs(4),
   },
   fieldErrorText: {
-    fontSize: fs(11),
     color: C.red,
-    marginBottom: vs(6),
+    fontSize: fs(11),
+    marginBottom: vs(8),
     marginLeft: hs(4),
   },
   fieldIcon: { marginRight: hs(8) },
@@ -535,7 +535,8 @@ const PickupDropSelection = () => {
     if (!validateMobileNumber(senderMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit sender mobile number'); return; }
     if (!receiverName.trim()) { Alert.alert('Missing Information', 'Please enter receiver name'); return; }
     if (!validateMobileNumber(receiverMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit receiver mobile number'); return; }
-    if (sameNumber) { Alert.alert('Invalid Numbers', 'Sender and receiver mobile numbers cannot be the same'); return; }
+    // Same-number is surfaced inline under the field + disables Continue, so just guard here.
+    if (senderMobile.replace(/\D/g, '') === receiverMobile.replace(/\D/g, '')) return;
     if (!selectedLocationType) { Alert.alert('Missing Information', 'Please select location type'); return; }
     if (selectedLocationType === 'Other' && !customLocationName.trim()) { Alert.alert('Missing Information', 'Please enter custom location name'); return; }
     if (!pickupCoords) { Alert.alert('Invalid Pickup Location', 'Please select pickup location from the suggestions'); return; }
@@ -552,16 +553,17 @@ const PickupDropSelection = () => {
     }
   };
 
-  const sameNumber =
-    validateMobileNumber(senderMobile) &&
-    validateMobileNumber(receiverMobile) &&
-    senderMobile === receiverMobile;
+  // Inline validation: receiver number must differ from sender's. Shown once the
+  // receiver number is fully typed (10 digits), under the receiver mobile field.
+  const receiverSameAsSender =
+    receiverMobile.replace(/\D/g, '').length === 10 &&
+    receiverMobile.replace(/\D/g, '') === senderMobile.replace(/\D/g, '');
 
   const canProceed =
     pickup.trim() !== '' && drop.trim() !== '' &&
     senderName.trim() !== '' && validateMobileNumber(senderMobile) &&
     receiverName.trim() !== '' && validateMobileNumber(receiverMobile) &&
-    !sameNumber &&
+    !receiverSameAsSender &&
     selectedLocationType !== '' &&
     (selectedLocationType !== 'Other' || customLocationName.trim() !== '');
 
@@ -856,9 +858,8 @@ const PickupDropSelection = () => {
                 onChangeText={text => setReceiverMobile(text.replace(/\D/g, '').slice(0, 10))}
                 keyboardType="phone-pad"
                 maxLength={10}
+                error={receiverSameAsSender ? 'Sender and receiver number cannot be the same' : undefined}
                 onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
-                hasError={sameNumber}
-                errorText="Receiver number must be different from sender"
               />
             </Reanimated.View>
           </ScrollView>
