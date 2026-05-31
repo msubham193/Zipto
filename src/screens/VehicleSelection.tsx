@@ -132,7 +132,7 @@ const VehicleSelection = () => {
   const {
     pickup, drop, pickupCoords, dropCoords,
     city, serviceCategory, senderName, senderMobile,
-    receiverName, receiverPhone, alternativePhone,
+    receiverName, receiverMobile, alternativePhone,
   } = route.params || {};
 
   const fadeAnim  = useRef(new Animated.Value(1)).current;
@@ -217,7 +217,7 @@ const VehicleSelection = () => {
       vehicle, pickup, drop, pickupCoords, dropCoords,
       hasHelper: false, helperCount: 0, helperCost: 0,
       city, serviceCategory, senderName, senderMobile,
-      receiverName, receiverPhone, alternativePhone,
+      receiverName, receiverMobile, alternativePhone,
     });
   };
 
