@@ -97,9 +97,14 @@ export default function Payment({ route, navigation }: Props) {
       const url = navState.url ?? '';
       if (!url.includes(RESULT_URL_PATTERN)) return;
       try {
-        const urlObj = new URL(url);
-        const status = urlObj.searchParams.get('status') ?? 'failed';
-        const ref = urlObj.searchParams.get('ref') ?? undefined;
+        const qs = url.includes('?') ? url.split('?')[1] : '';
+        const params: Record<string, string> = {};
+        qs.split('&').forEach(pair => {
+          const [k, v] = pair.split('=');
+          if (k) params[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+        });
+        const status = params.status ?? 'failed';
+        const ref = params.ref;
         handleResult(status, ref);
       } catch {
         handleResult('failed');

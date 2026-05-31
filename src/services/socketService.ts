@@ -59,7 +59,7 @@ export const connectSocket = async (): Promise<void> => {
   socket.on('connect', attachListeners);
 
   // On forced disconnect (expired JWT), refresh token from storage and reconnect.
-  socket.on('disconnect', async (reason) => {
+  socket.on('disconnect', async (reason: string) => {
     if (reason === 'io server disconnect') {
       const fresh = await AsyncStorage.getItem('auth_token');
       if (fresh && socket) {
