@@ -255,7 +255,7 @@ const Home = () => {
       {
         id: 3,
         title: 'Food Pickup',
-        description: 'Pick upfrom any restaurant',
+        description: 'Pick up from any restaurant',
         serviceCategory: 'food_delivery',
         image: require('../assets/images/food_restaurant.png'),
       },

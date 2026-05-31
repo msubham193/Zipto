@@ -205,7 +205,7 @@ const SectionLabel = ({
 );
 
 const FieldInput = ({
-  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode, onFocus: onFocusProp,
+  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode, onFocus: onFocusProp, hasError, errorText,
 }: {
   icon: string;
   placeholder: string;
@@ -215,23 +215,30 @@ const FieldInput = ({
   maxLength?: number;
   rightNode?: React.ReactNode;
   onFocus?: () => void;
+  hasError?: boolean;
+  errorText?: string;
 }) => {
   const [focused, setFocused] = useState(false);
   return (
-    <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused]}>
-      <MaterialIcons name={icon} size={ms(17)} color={focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
-      <TextInput
-        style={sub.fieldInput}
-        placeholder={placeholder}
-        placeholderTextColor={C.textMuted}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        maxLength={maxLength}
-        onFocus={() => { setFocused(true); onFocusProp?.(); }}
-        onBlur={() => setFocused(false)}
-      />
-      {rightNode}
+    <View>
+      <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused, hasError && sub.fieldWrapError]}>
+        <MaterialIcons name={icon} size={ms(17)} color={hasError ? C.red : focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
+        <TextInput
+          style={sub.fieldInput}
+          placeholder={placeholder}
+          placeholderTextColor={C.textMuted}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          onFocus={() => { setFocused(true); onFocusProp?.(); }}
+          onBlur={() => setFocused(false)}
+        />
+        {rightNode}
+      </View>
+      {hasError && errorText ? (
+        <Text style={sub.fieldErrorText}>{errorText}</Text>
+      ) : null}
     </View>
   );
 };
@@ -270,6 +277,17 @@ const sub = StyleSheet.create({
   fieldWrapFocused: {
     borderColor: C.accent,
     backgroundColor: C.accentLight,
+  },
+  fieldWrapError: {
+    borderColor: C.red,
+    backgroundColor: '#FFF5F5',
+    marginBottom: vs(2),
+  },
+  fieldErrorText: {
+    fontSize: fs(11),
+    color: C.red,
+    marginBottom: vs(6),
+    marginLeft: hs(4),
   },
   fieldIcon: { marginRight: hs(8) },
   fieldInput: {
@@ -517,6 +535,7 @@ const PickupDropSelection = () => {
     if (!validateMobileNumber(senderMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit sender mobile number'); return; }
     if (!receiverName.trim()) { Alert.alert('Missing Information', 'Please enter receiver name'); return; }
     if (!validateMobileNumber(receiverMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit receiver mobile number'); return; }
+    if (sameNumber) { Alert.alert('Invalid Numbers', 'Sender and receiver mobile numbers cannot be the same'); return; }
     if (!selectedLocationType) { Alert.alert('Missing Information', 'Please select location type'); return; }
     if (selectedLocationType === 'Other' && !customLocationName.trim()) { Alert.alert('Missing Information', 'Please enter custom location name'); return; }
     if (!pickupCoords) { Alert.alert('Invalid Pickup Location', 'Please select pickup location from the suggestions'); return; }
@@ -533,10 +552,16 @@ const PickupDropSelection = () => {
     }
   };
 
+  const sameNumber =
+    validateMobileNumber(senderMobile) &&
+    validateMobileNumber(receiverMobile) &&
+    senderMobile === receiverMobile;
+
   const canProceed =
     pickup.trim() !== '' && drop.trim() !== '' &&
     senderName.trim() !== '' && validateMobileNumber(senderMobile) &&
     receiverName.trim() !== '' && validateMobileNumber(receiverMobile) &&
+    !sameNumber &&
     selectedLocationType !== '' &&
     (selectedLocationType !== 'Other' || customLocationName.trim() !== '');
 
@@ -832,6 +857,8 @@ const PickupDropSelection = () => {
                 keyboardType="phone-pad"
                 maxLength={10}
                 onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
+                hasError={sameNumber}
+                errorText="Receiver number must be different from sender"
               />
             </Reanimated.View>
           </ScrollView>

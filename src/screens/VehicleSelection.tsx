@@ -114,6 +114,10 @@ export interface UIVehicle {
 const formatVehicleName = (vehicleType: string): string =>
   vehicleType.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
+// ─── Module-level pricing cache (survives re-mounts within the same session) ──
+let _pricingCache: { vehicles: UIVehicle[]; ts: number } | null = null;
+const PRICING_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const VehicleSelection = () => {
   const navigation = useNavigation<any>();
@@ -138,9 +142,14 @@ const VehicleSelection = () => {
 
   const fetchVehicleTypes = async () => {
     try {
+      // Serve from cache if fresh — avoids API round-trip on back-and-forth navigation
+      if (_pricingCache && Date.now() - _pricingCache.ts < PRICING_CACHE_TTL) {
+        setVehicles(_pricingCache.vehicles);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
-      await AsyncStorage.getItem('auth_token');
       const response: any = await vehicleApi.getVehiclePricing();
 
       let vehiclesData: VehiclePricing[] = [];
@@ -186,6 +195,7 @@ const VehicleSelection = () => {
               tagColor: meta.tagColor,
             };
           });
+        _pricingCache = { vehicles: transformed, ts: Date.now() };
         setVehicles(transformed);
       } else {
         throw new Error('No vehicle data received');
