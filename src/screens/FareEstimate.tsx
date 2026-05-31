@@ -12,6 +12,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  InteractionManager,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import EnterView from '../components/EnterView';
@@ -150,11 +151,18 @@ const FareEstimate = () => {
     }
   }, [pickupCoords, dropCoords, vehicle?.vehicleType, helperCount, pickup, drop, selectedVehicleType]);
 
+  // Defer the network work until the screen-transition animation has finished.
+  // The `loading` gate keeps the loader on screen meanwhile, so the page is
+  // fully presented (and the transition stays smooth on low-end devices)
+  // before we start estimating.
   useEffect(() => {
-    fetchFareEstimate();
-    vehicleApi.getCoinsBalance()
-      .then(res => setCoinsBalance(res?.coins ?? 0))
-      .catch(() => { });
+    const task = InteractionManager.runAfterInteractions(() => {
+      fetchFareEstimate();
+      vehicleApi.getCoinsBalance()
+        .then(res => setCoinsBalance(res?.coins ?? 0))
+        .catch(() => { });
+    });
+    return () => task.cancel();
   }, [fetchFareEstimate]);
 
   // ── Coupons ───────────────────────────────────────────────────────────────
@@ -856,6 +864,8 @@ const FareEstimate = () => {
           style={StyleSheet.absoluteFillObject}
           autoPlay
           loop={false}
+          renderMode="HARDWARE"
+          cacheComposition
           resizeMode="cover"
           pointerEvents="none"
           onAnimationFinish={() => setShowConfetti(false)}

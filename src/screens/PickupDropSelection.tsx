@@ -205,7 +205,7 @@ const SectionLabel = ({
 );
 
 const FieldInput = ({
-  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode, onFocus: onFocusProp,
+  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode, onFocus: onFocusProp, error,
 }: {
   icon: string;
   placeholder: string;
@@ -215,11 +215,12 @@ const FieldInput = ({
   maxLength?: number;
   rightNode?: React.ReactNode;
   onFocus?: () => void;
+  error?: string;
 }) => {
   const [focused, setFocused] = useState(false);
-  return (
-    <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused]}>
-      <MaterialIcons name={icon} size={ms(17)} color={focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
+  const field = (
+    <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused, !!error && sub.fieldWrapError]}>
+      <MaterialIcons name={icon} size={ms(17)} color={error ? C.red : focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
       <TextInput
         style={sub.fieldInput}
         placeholder={placeholder}
@@ -232,6 +233,13 @@ const FieldInput = ({
         onBlur={() => setFocused(false)}
       />
       {rightNode}
+    </View>
+  );
+  if (!error) return field;
+  return (
+    <View>
+      {field}
+      <Text style={sub.fieldErrorText}>{error}</Text>
     </View>
   );
 };
@@ -270,6 +278,16 @@ const sub = StyleSheet.create({
   fieldWrapFocused: {
     borderColor: C.accent,
     backgroundColor: C.accentLight,
+  },
+  fieldWrapError: {
+    borderColor: C.red,
+    marginBottom: vs(4),
+  },
+  fieldErrorText: {
+    color: C.red,
+    fontSize: fs(11),
+    marginBottom: vs(8),
+    marginLeft: hs(4),
   },
   fieldIcon: { marginRight: hs(8) },
   fieldInput: {
@@ -517,6 +535,8 @@ const PickupDropSelection = () => {
     if (!validateMobileNumber(senderMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit sender mobile number'); return; }
     if (!receiverName.trim()) { Alert.alert('Missing Information', 'Please enter receiver name'); return; }
     if (!validateMobileNumber(receiverMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit receiver mobile number'); return; }
+    // Same-number is surfaced inline under the field + disables Continue, so just guard here.
+    if (senderMobile.replace(/\D/g, '') === receiverMobile.replace(/\D/g, '')) return;
     if (!selectedLocationType) { Alert.alert('Missing Information', 'Please select location type'); return; }
     if (selectedLocationType === 'Other' && !customLocationName.trim()) { Alert.alert('Missing Information', 'Please enter custom location name'); return; }
     if (!pickupCoords) { Alert.alert('Invalid Pickup Location', 'Please select pickup location from the suggestions'); return; }
@@ -533,10 +553,17 @@ const PickupDropSelection = () => {
     }
   };
 
+  // Inline validation: receiver number must differ from sender's. Shown once the
+  // receiver number is fully typed (10 digits), under the receiver mobile field.
+  const receiverSameAsSender =
+    receiverMobile.replace(/\D/g, '').length === 10 &&
+    receiverMobile.replace(/\D/g, '') === senderMobile.replace(/\D/g, '');
+
   const canProceed =
     pickup.trim() !== '' && drop.trim() !== '' &&
     senderName.trim() !== '' && validateMobileNumber(senderMobile) &&
     receiverName.trim() !== '' && validateMobileNumber(receiverMobile) &&
+    !receiverSameAsSender &&
     selectedLocationType !== '' &&
     (selectedLocationType !== 'Other' || customLocationName.trim() !== '');
 
@@ -831,6 +858,7 @@ const PickupDropSelection = () => {
                 onChangeText={text => setReceiverMobile(text.replace(/\D/g, '').slice(0, 10))}
                 keyboardType="phone-pad"
                 maxLength={10}
+                error={receiverSameAsSender ? 'Sender and receiver number cannot be the same' : undefined}
                 onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
               />
             </Reanimated.View>
