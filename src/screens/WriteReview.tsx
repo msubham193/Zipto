@@ -62,7 +62,7 @@ const RATING_LABELS: Record<number, string> = {
 const QUICK_TAGS = [
   'Fast delivery',
   'Careful handling',
-  'Friendly driver',
+  'Friendly rider',
   'On time',
   'Good packaging',
   'Professional',
