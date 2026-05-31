@@ -119,7 +119,7 @@ const FareEstimate = () => {
     vehicle, pickup, drop, pickupCoords, dropCoords,
     city, serviceCategory, senderName, senderMobile,
     helperCount, helperCost,
-    receiverName, receiverPhone, alternativePhone,
+    receiverName, receiverMobile, alternativePhone,
   } = route.params || {};
 
   const selectedVehicleType = vehicle?.vehicleType || 'bike';
@@ -248,12 +248,18 @@ const FareEstimate = () => {
         booking_type: 'instant' as const,
         number_of_helpers: helperCount || 0,
         receiver_name: receiverName || undefined,
-        receiver_phone: receiverPhone || undefined,
+        receiver_phone: receiverMobile || undefined,
         alternative_phone: alternativePhone || undefined,
         paid_by: paidBy as 'sender' | 'receiver',
         coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
         coupon_code: appliedCoupon?.code || undefined,
       };
+      console.log('📦 [FareEstimate] Booking payload:', JSON.stringify({
+        receiver_name: bookingData.receiver_name,
+        receiver_phone: bookingData.receiver_phone,
+        mobile_number: bookingData.mobile_number,
+        receiverMobile_raw: receiverMobile,
+      }));
       const bookingResponse = await vehicleApi.createBooking(bookingData as any);
       if (!bookingResponse.success) {
         const raw = bookingResponse.message;
