@@ -19,11 +19,11 @@ const STATUS_CONFIG: Record<
   string,
   { color: string; bg: string; label: string; icon: string; pulse: boolean }
 > = {
-  pending:         { color: '#F59E0B', bg: '#FFFBEB', label: 'Finding your driver…',   icon: 'search',          pulse: true  },
-  searching:       { color: '#F59E0B', bg: '#FFFBEB', label: 'Finding your driver…',   icon: 'search',          pulse: true  },
-  accepted:        { color: '#2563EB', bg: '#EFF6FF', label: 'Driver assigned',         icon: 'directions-car',  pulse: false },
-  driver_assigned: { color: '#2563EB', bg: '#EFF6FF', label: 'Driver assigned',         icon: 'directions-car',  pulse: false },
-  arriving:        { color: '#059669', bg: '#ECFDF5', label: 'Driver is on the way',    icon: 'near-me',         pulse: true  },
+  pending:         { color: '#F59E0B', bg: '#FFFBEB', label: 'Finding your rider…',    icon: 'search',          pulse: true  },
+  searching:       { color: '#F59E0B', bg: '#FFFBEB', label: 'Finding your rider…',    icon: 'search',          pulse: true  },
+  accepted:        { color: '#2563EB', bg: '#EFF6FF', label: 'Rider assigned',          icon: 'directions-car',  pulse: false },
+  driver_assigned: { color: '#2563EB', bg: '#EFF6FF', label: 'Rider assigned',          icon: 'directions-car',  pulse: false },
+  arriving:        { color: '#059669', bg: '#ECFDF5', label: 'Rider is on the way',     icon: 'near-me',         pulse: true  },
   ongoing:         { color: '#7C3AED', bg: '#F5F3FF', label: 'Delivery in progress',    icon: 'local-shipping',  pulse: false },
   in_progress:     { color: '#7C3AED', bg: '#F5F3FF', label: 'Delivery in progress',    icon: 'local-shipping',  pulse: false },
 };

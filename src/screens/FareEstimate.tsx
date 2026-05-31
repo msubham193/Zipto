@@ -343,54 +343,79 @@ const FareEstimate = () => {
 
   // ── No Drivers Available state ───────────────────────────────────────────────
   if (!driversAvailable && estimateData) {
-    const vehicleLabel = selectedVehicleType.replace(/_/g, ' ');
     return (
       <View style={[styles.noDriversRoot, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" translucent />
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
 
         {/* Back button */}
-        <TouchableOpacity style={styles.noDriversBack} onPress={handleGoBack} activeOpacity={0.7}>
-          <Icon name="arrow-back" size={sp(22)} color="#111827" />
+        <TouchableOpacity
+          style={styles.noDriversBack}
+          onPress={handleGoBack}
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-back" size={sp(20)} color="#111827" />
         </TouchableOpacity>
 
-        {/* Illustration */}
-        <View style={styles.noDriversIllustration}>
-          <View style={styles.noDriversIconRing}>
-            <Icon name="directions-car" size={sp(52)} color="#6B7280" />
-            <View style={styles.noDriversBadge}>
-              <Icon name="close" size={sp(12)} color="#FFFFFF" />
-            </View>
-          </View>
+        {/* Hero image */}
+        <View style={styles.noDriversHeroWrap}>
+          <Image
+            source={require('../assets/images/rider.png')}
+            style={styles.noDriversHeroImg}
+            resizeMode="cover"
+          />
         </View>
 
-        {/* Text */}
-        <Text style={styles.noDriversTitle}>No Drivers Near You</Text>
-        <Text style={styles.noDriversSub}>
-          No available {vehicleLabel} drivers were found within 4 km of your pickup location right now.
+        {/* Title */}
+        <Text style={styles.noDriversTitle}>
+          {'Oops! '}
+          <Text style={styles.noDriversTitleAccent}>No Riders </Text>
+          {'Available Right Now'}
         </Text>
 
-        {/* Tips */}
-        <View style={styles.noDriversTips}>
+        {/* Subtitle */}
+        <Text style={styles.noDriversSub}>
+          No active ZIPTO riders near your pickup right now. Try again or change your location.
+        </Text>
+
+        {/* Tip cards */}
+        <View style={styles.noDriversTipCard}>
           <View style={styles.noDriversTipRow}>
-            <Icon name="schedule" size={sp(16)} color="#2563EB" style={{ marginTop: vs(1) }} />
-            <Text style={styles.noDriversTipText}>Try again in a few minutes — drivers go online throughout the day.</Text>
+            <View style={styles.noDriversTipIconBox}>
+              <Icon name="access-time" size={sp(17)} color="#2563EB" />
+            </View>
+            <View style={styles.noDriversTipTextCol}>
+              <Text style={styles.noDriversTipTitle}>Riders come online throughout the day.</Text>
+              <Text style={styles.noDriversTipBody}>Please check again in a few minutes.</Text>
+            </View>
           </View>
+          <View style={styles.noDriversTipDivider} />
           <View style={styles.noDriversTipRow}>
-            <Icon name="location-on" size={sp(16)} color="#2563EB" style={{ marginTop: vs(1) }} />
-            <Text style={styles.noDriversTipText}>Adjust your pickup point slightly to a nearby road or landmark.</Text>
+            <View style={styles.noDriversTipIconBox}>
+              <Icon name="location-on" size={sp(17)} color="#2563EB" />
+            </View>
+            <View style={styles.noDriversTipTextCol}>
+              <Text style={styles.noDriversTipTitle}>Changing your pickup location</Text>
+              <Text style={styles.noDriversTipBody}>may help you find a rider faster.</Text>
+            </View>
           </View>
         </View>
 
         {/* Actions */}
         <View style={styles.noDriversActions}>
           <TouchableOpacity style={styles.noDriversRetryBtn} onPress={fetchFareEstimate} activeOpacity={0.85}>
-            <Icon name="refresh" size={sp(18)} color="#FFFFFF" />
+            <Icon name="refresh" size={sp(17)} color="#FFFFFF" />
             <Text style={styles.noDriversRetryText}>Try Again</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.noDriversChangeBtn} onPress={() => navigation.navigate('PickupDropSelection', { serviceCategory })} activeOpacity={0.85}>
-            <Icon name="edit-location" size={sp(18)} color="#2563EB" />
+
+          <TouchableOpacity
+            style={styles.noDriversChangeBtn}
+            onPress={() => navigation.navigate('PickupDropSelection', { serviceCategory })}
+            activeOpacity={0.85}
+          >
+            <Icon name="location-on" size={sp(17)} color="#2563EB" />
             <Text style={styles.noDriversChangeText}>Change Location</Text>
           </TouchableOpacity>
+
         </View>
       </View>
     );
@@ -2150,91 +2175,107 @@ const styles = StyleSheet.create({
   // ── No Drivers Available ──
   noDriversRoot: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: hs(24),
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: hs(20),
   },
   noDriversBack: {
-    position: 'absolute',
-    top: vs(56),
-    left: hs(16),
-    width: sp(40),
-    height: sp(40),
-    borderRadius: sp(20),
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  noDriversIllustration: {
-    marginBottom: vs(28),
-  },
-  noDriversIconRing: {
-    width: sp(110),
-    height: sp(110),
-    borderRadius: sp(55),
+    alignSelf: 'flex-start',
+    width: sp(36),
+    height: sp(36),
+    borderRadius: sp(18),
     backgroundColor: '#F3F4F6',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: vs(8),
   },
-  noDriversBadge: {
-    position: 'absolute',
-    bottom: sp(8),
-    right: sp(8),
-    width: sp(24),
-    height: sp(24),
-    borderRadius: sp(12),
-    backgroundColor: '#EF4444',
-    justifyContent: 'center',
+  noDriversHeroWrap: {
+    width: sp(200),
+    height: sp(200),
+    borderRadius: sp(100),
+    backgroundColor: '#EEF2FF',
+    overflow: 'hidden',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#F9FAFB',
+    justifyContent: 'center',
+  },
+  noDriversHeroImg: {
+    width: sp(185),
+    height: sp(185),
   },
   noDriversTitle: {
-    fontSize: fs(isSmallScreen ? 20 : 22),
+    fontSize: fs(isSmallScreen ? 17 : 19),
     fontWeight: '800',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: vs(10),
     letterSpacing: -0.3,
+    lineHeight: fs(isSmallScreen ? 24 : 27),
+    fontFamily: 'Poppins-Bold',
+  },
+  noDriversTitleAccent: {
+    color: '#2563EB',
   },
   noDriversSub: {
-    fontSize: fs(isSmallScreen ? 13 : 14),
+    fontSize: fs(isSmallScreen ? 11 : 12),
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: fs(20),
-    marginBottom: vs(24),
-    paddingHorizontal: hs(8),
+    lineHeight: fs(isSmallScreen ? 16 : 18),
+    paddingHorizontal: hs(4),
+    fontFamily: 'Poppins-Regular',
   },
-  noDriversTips: {
+  noDriversTipCard: {
     width: '100%',
-    backgroundColor: '#EFF6FF',
-    borderRadius: sp(12),
-    padding: sp(14),
-    gap: vs(10),
-    marginBottom: vs(28),
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(14),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   noDriversTipRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: hs(8),
+    alignItems: 'center',
+    gap: hs(12),
+    paddingHorizontal: hs(14),
+    paddingVertical: vs(10),
   },
-  noDriversTipText: {
+  noDriversTipIconBox: {
+    width: sp(34),
+    height: sp(34),
+    borderRadius: sp(17),
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  noDriversTipTextCol: {
     flex: 1,
-    fontSize: fs(isSmallScreen ? 12 : 13),
-    color: '#1D4ED8',
-    lineHeight: fs(18),
+  },
+  noDriversTipTitle: {
+    fontSize: fs(isSmallScreen ? 11 : 12),
+    fontWeight: '700',
+    color: '#2563EB',
+    fontFamily: 'Poppins-SemiBold',
+    marginBottom: vs(1),
+  },
+  noDriversTipBody: {
+    fontSize: fs(isSmallScreen ? 10 : 11),
+    color: '#6B7280',
+    fontFamily: 'Poppins-Regular',
+  },
+  noDriversTipDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: hs(14),
   },
   noDriversActions: {
     width: '100%',
-    gap: vs(10),
+    gap: vs(8),
+    paddingBottom: vs(4),
   },
   noDriversRetryBtn: {
     flexDirection: 'row',
@@ -2242,29 +2283,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: hs(8),
     backgroundColor: '#2563EB',
-    borderRadius: sp(14),
-    paddingVertical: vs(15),
+    borderRadius: sp(12),
+    paddingVertical: vs(12),
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   noDriversRetryText: {
-    fontSize: fs(isSmallScreen ? 14 : 16),
+    fontSize: fs(isSmallScreen ? 13 : 14),
     fontWeight: '700',
     color: '#FFFFFF',
+    fontFamily: 'Poppins-Bold',
   },
   noDriversChangeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: hs(8),
-    backgroundColor: '#EFF6FF',
-    borderRadius: sp(14),
-    paddingVertical: vs(15),
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    backgroundColor: '#FFFFFF',
+    borderRadius: sp(12),
+    paddingVertical: vs(11),
+    borderWidth: 1.5,
+    borderColor: '#2563EB',
   },
   noDriversChangeText: {
-    fontSize: fs(isSmallScreen ? 14 : 15),
+    fontSize: fs(isSmallScreen ? 12 : 13),
     fontWeight: '600',
     color: '#2563EB',
+    fontFamily: 'Poppins-SemiBold',
+  },
+  noDriversNotifyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: hs(8),
+    backgroundColor: '#F9FAFB',
+    borderRadius: sp(12),
+    paddingVertical: vs(11),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  noDriversNotifyText: {
+    fontSize: fs(isSmallScreen ? 11 : 12),
+    fontWeight: '600',
+    color: '#374151',
+    fontFamily: 'Poppins-SemiBold',
   },
 });
 

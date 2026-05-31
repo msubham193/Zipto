@@ -16,7 +16,7 @@ import {
   PanResponder,
 } from 'react-native';
 import MapView, { Marker, MarkerAnimated, AnimatedRegion, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { vehicleApi } from '../api/vehicle';
@@ -54,7 +54,7 @@ function haversineKm(
 const CANCEL_REASONS = [
   'Changed my mind',
   'Found a better price',
-  'Driver taking too long',
+  'Rider taking too long',
   'Wrong pickup/drop location',
   'Booked by mistake',
 ];
@@ -68,6 +68,7 @@ const LiveTracking = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const mapRef = useRef<MapView>(null);
+  const insets = useSafeAreaInsets();
 
   // ── Draggable bottom sheet ────────────────────────────────────────────────
   // translateY 0 = fully expanded; positive = slid down so the map is revealed.
@@ -390,7 +391,7 @@ const LiveTracking = () => {
 
         if (data.driver) {
           setDriver({
-            name: data.driver.name || 'Driver',
+            name: data.driver.name || 'Rider',
             phone: data.driver.phone || '',
             vehicle_number: data.driver.vehicle_number,
             rating: (data as any).driver_stats?.average_rating ?? data.driver.rating,
@@ -545,7 +546,7 @@ const LiveTracking = () => {
     if (driver?.phone) {
       Linking.openURL(`tel:${driver.phone}`);
     } else {
-      Alert.alert('Unavailable', 'Driver phone number is not available yet.');
+      Alert.alert('Unavailable', 'Rider phone number is not available yet.');
     }
   };
 
@@ -657,8 +658,8 @@ const LiveTracking = () => {
           bg: '#FFFBEB',
           border: '#FDE68A',
           icon: 'search',
-          title: `Finding driver... ${searchCountdown}s`,
-          subtitle: 'Please wait while we find the best driver for you',
+          title: `Finding rider... ${searchCountdown}s`,
+          subtitle: 'Please wait while we find the best rider for you',
         };
       case 'assigned':
         return {
@@ -666,8 +667,8 @@ const LiveTracking = () => {
           bg: '#EFF6FF',
           border: '#BFDBFE',
           icon: 'person-pin',
-          title: 'Driver assigned!',
-          subtitle: 'Your driver is preparing to pick up',
+          title: 'Rider assigned!',
+          subtitle: 'Your rider is preparing to pick up',
         };
       case 'arriving':
         return {
@@ -675,8 +676,8 @@ const LiveTracking = () => {
           bg: '#F0FDF4',
           border: '#BBF7D0',
           icon: 'directions-car',
-          title: 'Driver on the way',
-          subtitle: 'Your driver is heading to the pickup point',
+          title: 'Rider on the way',
+          subtitle: 'Your rider is heading to the pickup point',
         };
       case 'in_progress':
         return {
@@ -811,7 +812,7 @@ const LiveTracking = () => {
         {driverLocation && driverAnim.current && bookingStatus !== 'searching' && (
           <MarkerAnimated
             coordinate={driverAnim.current as any}
-            title={driver?.name || 'Driver'}
+            title={driver?.name || 'Rider'}
             anchor={{ x: 0.5, y: 0.5 }}
             tracksViewChanges={false}
           >
@@ -834,7 +835,7 @@ const LiveTracking = () => {
       )}
 
       {/* Overlay Content */}
-      <SafeAreaView style={styles.overlay} pointerEvents="box-none">
+      <SafeAreaView style={styles.overlay} edges={['top']} pointerEvents="box-none">
         {/* Top Bar - Status Badge */}
         <View style={styles.topSection}>
           <TouchableOpacity
@@ -864,7 +865,7 @@ const LiveTracking = () => {
 
         {/* Bottom Card — draggable: pull the handle (or tap the map) to reveal the map */}
         <Animated.View
-          style={[styles.bottomCard, { transform: [{ translateY: sheetTranslateY }] }]}
+          style={[styles.bottomCard, { transform: [{ translateY: sheetTranslateY }], paddingBottom: ms(16) + insets.bottom }]}
           onLayout={(e) => {
             const h = e.nativeEvent.layout.height;
             sheetCollapseYRef.current = Math.max(0, h - SHEET_PEEK);
@@ -921,7 +922,7 @@ const LiveTracking = () => {
                 : (
                   <>
                     <Icon name="trending-up" size={ms(16)} color="#2563EB" style={{ marginRight: ms(6) }} />
-                    <Text style={styles.fareIncreaseBtnText}>+ ₹10 to attract drivers</Text>
+                    <Text style={styles.fareIncreaseBtnText}>+ ₹10 to attract riders</Text>
                   </>
                 )
               }
@@ -1135,10 +1136,10 @@ const LiveTracking = () => {
             <View style={styles.retryIconBox}>
               <Icon name="search-off" size={ms(32)} color="#F59E0B" />
             </View>
-            <Text style={styles.retryTitle}>No Driver Found</Text>
+            <Text style={styles.retryTitle}>No Rider Found</Text>
             <Text style={styles.retrySub}>
-              No drivers accepted your booking in 60 seconds.{'\n'}
-              Increase the fare to attract more drivers nearby.
+              No riders accepted your booking in 60 seconds.{'\n'}
+              Increase the fare to attract more riders nearby.
             </Text>
 
             <View style={styles.retryFareRow}>
@@ -1219,7 +1220,7 @@ const LiveTracking = () => {
             <Text style={styles.successSubtitle}>
               {paidByParam === 'receiver'
                 ? 'Receiver pays — fare collected at delivery.'
-                : 'Pay after delivery. Driver search has started.'}
+                : 'Pay after delivery. Rider search has started.'}
             </Text>
           </Animated.View>
         </View>
@@ -1506,7 +1507,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: ms(28),
     borderTopRightRadius: ms(28),
     paddingHorizontal: ms(20),
-    paddingBottom: ms(30),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: ms(-10) },
     shadowOpacity: 0.15,

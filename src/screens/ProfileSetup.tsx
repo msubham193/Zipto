@@ -191,7 +191,7 @@ const ProfileSetup = () => {
           >
             <Text style={styles.title}>What's your name?</Text>
             <Text style={styles.subtitle}>
-              Let us know your real name so drivers{'\n'}can identify you easily
+              Let us know your real name so riders{'\n'}can identify you easily
             </Text>
           </Animated.View>
 

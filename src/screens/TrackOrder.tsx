@@ -62,9 +62,9 @@ const TrackOrder = () => {
 
   const timeline: TimelineStep[] = [
     { id: '1', title: 'Order Placed',      description: 'Your order has been confirmed',  time: '10:30 AM',           completed: true,  active: false, icon: 'check-circle'   },
-    { id: '2', title: 'Pickup Confirmed',  description: 'Driver picked up your package',  time: '10:45 AM',           completed: true,  active: false, icon: 'check-circle'   },
+    { id: '2', title: 'Pickup Confirmed',  description: 'Rider picked up your package',   time: '10:45 AM',           completed: true,  active: false, icon: 'check-circle'   },
     { id: '3', title: 'In Transit',        description: 'Package is on the way',          time: '11:00 AM',           completed: true,  active: true,  icon: 'local-shipping' },
-    { id: '4', title: 'Out for Delivery',  description: 'Driver is nearby',               time: 'Expected',           completed: false, active: false, icon: 'near-me'        },
+    { id: '4', title: 'Out for Delivery',  description: 'Rider is nearby',                time: 'Expected',           completed: false, active: false, icon: 'near-me'        },
     { id: '5', title: 'Delivered',         description: 'Package delivered successfully', time: 'Expected 11:15 AM',  completed: false, active: false, icon: 'done-all'       },
   ];
 

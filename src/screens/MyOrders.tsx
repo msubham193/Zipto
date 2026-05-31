@@ -35,7 +35,7 @@ type PaymentFilter = 'all' | 'paid' | 'unpaid';
 const CANCEL_REASONS = [
   'Changed my mind',
   'Found a better price',
-  'Driver taking too long',
+  'Rider taking too long',
   'Wrong pickup/drop location',
   'Booked by mistake',
 ];
@@ -73,7 +73,7 @@ const MyOrders = () => {
     4: { label: 'Good',          emoji: '😊', color: '#22C55E', bg: '#F0FDF4' },
     5: { label: 'Excellent!',    emoji: '🤩', color: '#10B981', bg: '#ECFDF5' },
   };
-  const RATING_TAGS = ['Fast delivery', 'Careful handling', 'Friendly driver', 'On time', 'Professional', 'Great service'];
+  const RATING_TAGS = ['Fast delivery', 'Careful handling', 'Friendly rider', 'On time', 'Professional', 'Great service'];
 
   const toggleRatingTag = (tag: string) =>
     setRatingTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
@@ -171,9 +171,9 @@ const MyOrders = () => {
     if (s === 'completed' || s === 'delivered') return 'Completed';
     if (s === 'cancelled') return 'Cancelled';
     if (s === 'in_progress' || s === 'ongoing' || s === 'picked_up') return 'In Transit';
-    if (s === 'driver_arriving' || s === 'arriving') return 'Driver Arriving';
-    if (s === 'assigned' || s === 'driver_assigned' || s === 'accepted') return 'Driver Assigned';
-    if (s === 'searching') return 'Finding Driver';
+    if (s === 'driver_arriving' || s === 'arriving') return 'Rider Arriving';
+    if (s === 'assigned' || s === 'driver_assigned' || s === 'accepted') return 'Rider Assigned';
+    if (s === 'searching') return 'Finding Rider';
     if (s === 'pending') return 'Pending';
     return status;
   };
@@ -445,7 +445,7 @@ const MyOrders = () => {
             <View style={styles.otpTextWrap}>
               <Text style={styles.otpLabel}>Delivery OTP</Text>
               <Text style={styles.otpValue}>{booking.delivery_otp}</Text>
-              <Text style={styles.otpHint}>Share with driver on delivery</Text>
+              <Text style={styles.otpHint}>Share with rider on delivery</Text>
             </View>
           </View>
         )}
