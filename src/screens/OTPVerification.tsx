@@ -34,7 +34,7 @@ const CARD_RADIUS     = ms(24);
 const OTPVerification = () => {
   const navigation = useNavigation<any>();
   const route      = useRoute<any>();
-  const { mobile } = route.params ?? {};
+  const { mobile, confirmSwitch } = route.params ?? {};
 
   const { verifyOtp, login, isLoading, error: authError, clearError } = useAuthStore();
 
@@ -89,7 +89,7 @@ const OTPVerification = () => {
     if (!isComplete) { setError('Please enter the 6-digit OTP'); return; }
     setError('');
     try {
-      await verifyOtp(mobile, otp);
+      await verifyOtp(mobile, otp, undefined, confirmSwitch);
     } catch {
       // error displayed via authError from store
     }

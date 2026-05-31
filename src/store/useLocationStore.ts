@@ -50,7 +50,8 @@ function getGPS(): Promise<{ latitude: number; longitude: number }> {
       pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
       reject,
       // maximumAge: use device-cached GPS if less than 2 min old — instant on most devices
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 },
+      // timeout reduced to 5s so the skeleton clears faster on first permission grant
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 120000 },
     ),
   );
 }
@@ -136,6 +137,10 @@ export const useLocationStore = create<LocationState>((set, get) => {
             return;
           }
 
+          // Coords obtained — clear the skeleton immediately so the header stops blocking.
+          // Reverse geocoding runs in the background and updates the address quietly.
+          set({ latitude, longitude, loading: false, address: get().address || 'Detecting address…' });
+
           // Reverse geocode
           let address = 'Current Location';
           try {
@@ -149,7 +154,7 @@ export const useLocationStore = create<LocationState>((set, get) => {
           }
 
           const next = { address, latitude, longitude, fetchedAt: Date.now() };
-          set({ ...next, loading: false });
+          set({ ...next });
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
 
         } catch {

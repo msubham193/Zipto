@@ -839,7 +839,13 @@ const LiveTracking = () => {
         <View style={styles.topSection}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              if (isRealBooking && navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+              }
+            }}
           >
             <Icon name="arrow-back" size={ms(24)} color="#1F2937" />
           </TouchableOpacity>

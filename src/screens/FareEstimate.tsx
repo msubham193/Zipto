@@ -127,28 +127,54 @@ const FareEstimate = () => {
 
   // ── Fetch fare estimate ─────────────────────────────────────────────────────
   const fetchFareEstimate = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      if (!pickupCoords || !dropCoords) throw new Error('Location coordinates are required');
-      if (!vehicle?.vehicleType) throw new Error('Vehicle type is required');
-      const response = await vehicleApi.estimateFare({
-        pickup_location: { latitude: pickupCoords.latitude, longitude: pickupCoords.longitude, address: pickup || '' },
-        drop_location: { latitude: dropCoords.latitude, longitude: dropCoords.longitude, address: drop || '' },
-        vehicle_type: selectedVehicleType,
-        number_of_helpers: helperCount || 0,
-      });
-      if (response.success && response.data) {
-        setEstimateData(response.data);
-        setDriversAvailable(response.data.drivers_available !== false);
-      } else {
-        throw new Error('Failed to get fare estimate');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to calculate fare. Please try again.');
-    } finally {
+    setLoading(true);
+    setError(null);
+
+    if (!pickupCoords || !dropCoords) {
+      setError('Location coordinates are required');
       setLoading(false);
+      return;
     }
+    if (!vehicle?.vehicleType) {
+      setError('Vehicle type is required');
+      setLoading(false);
+      return;
+    }
+
+    const MAX_ATTEMPTS = 3;
+    let lastError = 'Failed to calculate fare. Please try again.';
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      if (attempt > 0) {
+        await new Promise<void>(r => setTimeout(() => r(), 1500 * attempt));
+      }
+      try {
+        const response = await vehicleApi.estimateFare({
+          pickup_location: { latitude: pickupCoords.latitude, longitude: pickupCoords.longitude, address: pickup || '' },
+          drop_location: { latitude: dropCoords.latitude, longitude: dropCoords.longitude, address: drop || '' },
+          vehicle_type: selectedVehicleType,
+          number_of_helpers: helperCount || 0,
+        });
+        if (response.success && response.data) {
+          setEstimateData(response.data);
+          setDriversAvailable(response.data.drivers_available !== false);
+          setLoading(false);
+          return;
+        }
+        // API returned success:false — server-side logic error, no point retrying
+        lastError = (response as any)?.message || 'Failed to get fare estimate';
+        break;
+      } catch (err: any) {
+        const serverMsg = err.response?.data?.message || err.response?.data?.error;
+        if (serverMsg) lastError = serverMsg;
+        // If the server replied (4xx/5xx) it's not a transient network issue — stop
+        if (err.response) break;
+        // Otherwise it's a timeout / connection error — retry silently
+      }
+    }
+
+    setError(lastError);
+    setLoading(false);
   }, [pickupCoords, dropCoords, vehicle?.vehicleType, helperCount, pickup, drop, selectedVehicleType]);
 
   // Defer the network work until the screen-transition animation has finished.
@@ -220,9 +246,8 @@ const FareEstimate = () => {
   // ── Navigation helper ───────────────────────────────────────────────────────
   const navigateToTracking = (bookingId: string, showBookingSuccess = false) => {
     navigation.reset({
-      index: 1,
+      index: 0,
       routes: [
-        { name: 'Home' },
         {
           name: 'LiveTracking',
           params: {
@@ -370,7 +395,7 @@ const FareEstimate = () => {
             <Icon name="refresh" size={sp(18)} color="#FFFFFF" />
             <Text style={styles.noDriversRetryText}>Try Again</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.noDriversChangeBtn} onPress={handleGoBack} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.noDriversChangeBtn} onPress={() => navigation.navigate('PickupDropSelection', { serviceCategory })} activeOpacity={0.85}>
             <Icon name="edit-location" size={sp(18)} color="#2563EB" />
             <Text style={styles.noDriversChangeText}>Change Location</Text>
           </TouchableOpacity>
@@ -858,18 +883,19 @@ const FareEstimate = () => {
 
       {/* ── Confetti overlay — fires when coins are enabled ── */}
       {showConfetti && (
-        <LottieView
-          ref={confettiRef}
-          source={require('../assets/animations/confetti.json')}
-          style={StyleSheet.absoluteFillObject}
-          autoPlay
-          loop={false}
-          renderMode="HARDWARE"
-          cacheComposition
-          resizeMode="cover"
-          pointerEvents="none"
-          onAnimationFinish={() => setShowConfetti(false)}
-        />
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <LottieView
+            ref={confettiRef}
+            source={require('../assets/animations/confetti.json')}
+            style={StyleSheet.absoluteFill}
+            autoPlay
+            loop={false}
+            renderMode="HARDWARE"
+            cacheComposition
+            resizeMode="cover"
+            onAnimationFinish={() => setShowConfetti(false)}
+          />
+        </View>
       )}
 
       {/* ── Restricted Items Bottom Sheet Modal ── */}

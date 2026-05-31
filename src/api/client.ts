@@ -196,12 +196,20 @@ export const authApi = {
     return response.data;
   },
 
-  verifyOtp: async (phone: string, otp: string, referralCode?: string, deviceId?: string) => {
+  verifyOtp: async (
+    phone: string,
+    otp: string,
+    referralCode?: string,
+    deviceId?: string,
+    confirmSwitch?: boolean,
+  ) => {
     const response = await client.post('/auth/verify-otp', {
       phone,
       otp,
+      role: 'customer',
       ...(referralCode ? { referral_code: referralCode } : {}),
       ...(deviceId ? { device_id: deviceId } : {}),
+      ...(confirmSwitch ? { confirm_switch: true } : {}),
     });
     return response.data;
   },

@@ -332,7 +332,11 @@ export const vehicleApi = {
       '/booking/estimate-fare',
       request
     );
-    return response.data;
+    // Unwrap potential outer envelope { data: { success, data } } — same pattern
+    // used by other endpoints in this file to handle backend response nesting.
+    return (response.data as any)?.data?.success !== undefined
+      ? (response.data as any).data
+      : response.data;
   },
 
   createBooking: async (request: CreateBookingRequest): Promise<CreateBookingResponse> => {
