@@ -212,9 +212,8 @@ const FareEstimate = () => {
   // ── Navigation helper ───────────────────────────────────────────────────────
   const navigateToTracking = (bookingId: string, showBookingSuccess = false) => {
     navigation.reset({
-      index: 1,
+      index: 0,
       routes: [
-        { name: 'Home' },
         {
           name: 'LiveTracking',
           params: {
@@ -850,16 +849,17 @@ const FareEstimate = () => {
 
       {/* ── Confetti overlay — fires when coins are enabled ── */}
       {showConfetti && (
-        <LottieView
-          ref={confettiRef}
-          source={require('../assets/animations/confetti.json')}
-          style={StyleSheet.absoluteFillObject}
-          autoPlay
-          loop={false}
-          resizeMode="cover"
-          pointerEvents="none"
-          onAnimationFinish={() => setShowConfetti(false)}
-        />
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <LottieView
+            ref={confettiRef}
+            source={require('../assets/animations/confetti.json')}
+            style={StyleSheet.absoluteFill}
+            autoPlay
+            loop={false}
+            resizeMode="cover"
+            onAnimationFinish={() => setShowConfetti(false)}
+          />
+        </View>
       )}
 
       {/* ── Restricted Items Bottom Sheet Modal ── */}

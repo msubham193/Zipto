@@ -286,7 +286,6 @@ const Home = () => {
               autoPlay
               loop
               resizeMode="cover"
-              pointerEvents="none"
             />
             {/* Rain animation overlay — shows when weather API detects precipitation */}
             {isRaining && (
@@ -296,7 +295,6 @@ const Home = () => {
                 autoPlay
                 loop
                 resizeMode="cover"
-                pointerEvents="none"
               />
             )}
             <View style={styles.headerTop}>

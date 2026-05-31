@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Linking,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -87,11 +88,15 @@ const Profile = () => {
       items: [
         { id: 10, title: 'About Us',     icon: 'info', color: '#6366F1', onPress: () => navigation.navigate('AboutUs') },
         { id: 11, title: 'Rate Our App', icon: 'star', color: '#F59E0B', onPress: () => {
-          const url = 'market://details?id=com.ridezipto.customer';
-          const fallback = 'https://play.google.com/store/apps/details?id=com.ridezipto.customer';
-          Linking.canOpenURL(url)
-            .then(supported => Linking.openURL(supported ? url : fallback))
-            .catch(() => Linking.openURL(fallback));
+          if (Platform.OS === 'ios') {
+            Linking.openURL('https://apps.apple.com/app/zipto/id6738934498');
+          } else {
+            const url = 'market://details?id=com.ridezipto.customer';
+            const fallback = 'https://play.google.com/store/apps/details?id=com.ridezipto.customer';
+            Linking.canOpenURL(url)
+              .then(supported => Linking.openURL(supported ? url : fallback))
+              .catch(() => Linking.openURL(fallback));
+          }
         }},
       ],
     },
