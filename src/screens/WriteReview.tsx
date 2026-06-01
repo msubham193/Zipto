@@ -7,8 +7,8 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -88,7 +88,7 @@ const WriteReview = () => {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      Alert.alert('Rating Required', 'Please select a star rating before submitting.');
+      showAlert('Rating Required', 'Please select a star rating before submitting.');
       return;
     }
     try {
@@ -97,13 +97,13 @@ const WriteReview = () => {
       // await vehicleApi.submitReview({ rating, review: reviewText, tags: selectedTags });
       await new Promise<void>(resolve => setTimeout(resolve, 1000)); // mock delay
       await AsyncStorage.setItem(REVIEW_SUBMITTED_KEY, 'true');
-      Alert.alert(
+      showAlert(
         'Review Submitted! 🎉',
         `You earned +5 coins for writing a review. Thank you for your feedback!`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (err) {
-      Alert.alert('Error', 'Failed to submit review. Please try again.');
+      showAlert('Error', 'Failed to submit review. Please try again.');
     } finally {
       setSubmitting(false);
     }

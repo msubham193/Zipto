@@ -6,7 +6,6 @@ import {
   Text,
   TextInput,
   ActivityIndicator,
-  Alert,
   ScrollView,
   Animated,
   Image,
@@ -15,6 +14,7 @@ import {
   StatusBar,
   Modal,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import Reanimated, {
   FadeInDown,
   FadeIn,
@@ -218,28 +218,26 @@ const FieldInput = ({
   error?: string;
 }) => {
   const [focused, setFocused] = useState(false);
-  const field = (
-    <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused, !!error && sub.fieldWrapError]}>
-      <MaterialIcons name={icon} size={ms(17)} color={error ? C.red : focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
-      <TextInput
-        style={sub.fieldInput}
-        placeholder={placeholder}
-        placeholderTextColor={C.textMuted}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        maxLength={maxLength}
-        onFocus={() => { setFocused(true); onFocusProp?.(); }}
-        onBlur={() => setFocused(false)}
-      />
-      {rightNode}
-    </View>
-  );
-  if (!error) return field;
+  // Always render the same tree structure so the TextInput is never remounted
+  // when the error prop changes — remounting drops keyboard focus.
   return (
     <View>
-      {field}
-      <Text style={sub.fieldErrorText}>{error}</Text>
+      <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused, !!error && sub.fieldWrapError]}>
+        <MaterialIcons name={icon} size={ms(17)} color={error ? C.red : focused ? C.accent : C.textMuted} style={sub.fieldIcon} />
+        <TextInput
+          style={sub.fieldInput}
+          placeholder={placeholder}
+          placeholderTextColor={C.textMuted}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          onFocus={() => { setFocused(true); onFocusProp?.(); }}
+          onBlur={() => setFocused(false)}
+        />
+        {rightNode}
+      </View>
+      {error ? <Text style={sub.fieldErrorText}>{error}</Text> : null}
     </View>
   );
 };
@@ -455,12 +453,12 @@ const PickupDropSelection = () => {
   const handleLocationSelect = async (location: Location) => {
     try {
       if (!location.metadata?.place_id) {
-        Alert.alert('Error', 'Invalid location data. Please try selecting again.');
+        showAlert('Error', 'Invalid location data. Please try selecting again.');
         return;
       }
       const fullLocationData = await mapboxApi.retrievePlace(location.metadata.place_id!, sessionTokenRef.current);
       if (!fullLocationData || !fullLocationData.center) {
-        Alert.alert('Error', 'Could not get location coordinates. Please try again.');
+        showAlert('Error', 'Could not get location coordinates. Please try again.');
         return;
       }
       const fullAddress = fullLocationData.name + ', ' + fullLocationData.address;
@@ -471,7 +469,7 @@ const PickupDropSelection = () => {
       setActiveInput('' as 'pickup' | 'drop');
       sessionTokenRef.current = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     } catch {
-      Alert.alert('Error', 'Failed to select location. Please try again.');
+      showAlert('Error', 'Failed to select location. Please try again.');
     }
   };
 
@@ -504,12 +502,12 @@ const PickupDropSelection = () => {
     try {
       const coords = await resolveSharedLink(text);
       if (!coords) {
-        Alert.alert('Could not read location', 'Make sure you pasted a valid Google Maps link or coordinates like "20.2961, 85.8245".');
+        showAlert('Could not read location', 'Make sure you pasted a valid Google Maps link or coordinates like "20.2961, 85.8245".');
         return;
       }
       const address = await mapboxApi.reverseGeocode(coords.lat, coords.lon);
       if (!address) {
-        Alert.alert('Error', 'Could not resolve address for those coordinates.');
+        showAlert('Error', 'Could not resolve address for those coordinates.');
         return;
       }
       const coordsObj = { latitude: coords.lat, longitude: coords.lon };
@@ -531,16 +529,16 @@ const PickupDropSelection = () => {
   };
 
   const navigateToBook = () => {
-    if (!senderName.trim()) { Alert.alert('Missing Information', 'Please enter sender name'); return; }
-    if (!validateMobileNumber(senderMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit sender mobile number'); return; }
-    if (!receiverName.trim()) { Alert.alert('Missing Information', 'Please enter receiver name'); return; }
-    if (!validateMobileNumber(receiverMobile)) { Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit receiver mobile number'); return; }
+    if (!senderName.trim()) { showAlert('Missing Information', 'Please enter sender name'); return; }
+    if (!validateMobileNumber(senderMobile)) { showAlert('Invalid Mobile Number', 'Please enter a valid 10-digit sender mobile number'); return; }
+    if (!receiverName.trim()) { showAlert('Missing Information', 'Please enter receiver name'); return; }
+    if (!validateMobileNumber(receiverMobile)) { showAlert('Invalid Mobile Number', 'Please enter a valid 10-digit receiver mobile number'); return; }
     // Same-number is surfaced inline under the field + disables Continue, so just guard here.
     if (senderMobile.replace(/\D/g, '') === receiverMobile.replace(/\D/g, '')) return;
-    if (!selectedLocationType) { Alert.alert('Missing Information', 'Please select location type'); return; }
-    if (selectedLocationType === 'Other' && !customLocationName.trim()) { Alert.alert('Missing Information', 'Please enter custom location name'); return; }
-    if (!pickupCoords) { Alert.alert('Invalid Pickup Location', 'Please select pickup location from the suggestions'); return; }
-    if (!dropCoords) { Alert.alert('Invalid Drop Location', 'Please select drop location from the suggestions'); return; }
+    if (!selectedLocationType) { showAlert('Missing Information', 'Please select location type'); return; }
+    if (selectedLocationType === 'Other' && !customLocationName.trim()) { showAlert('Missing Information', 'Please enter custom location name'); return; }
+    if (!pickupCoords) { showAlert('Invalid Pickup Location', 'Please select pickup location from the suggestions'); return; }
+    if (!dropCoords) { showAlert('Invalid Drop Location', 'Please select drop location from the suggestions'); return; }
     if (pickup && drop) {
       navigation.navigate('VehicleSelection', {
         pickup, drop, pickupCoords, dropCoords,

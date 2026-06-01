@@ -5,9 +5,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   SafeAreaView,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import WebView, { WebViewNavigation } from 'react-native-webview';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
@@ -73,17 +73,17 @@ export default function Payment({ route, navigation }: Props) {
       resolvedRef.current = true;
 
       if (status === 'success') {
-        Alert.alert(
+        showAlert(
           'Payment Successful',
           `₹${amount} paid successfully${ref ? `\nRef: ${ref}` : ''}`,
           [{ text: 'OK', onPress: () => navigation.goBack() }],
         );
       } else if (status === 'cancelled') {
-        Alert.alert('Payment Cancelled', 'You can retry from the Orders screen.', [
+        showAlert('Payment Cancelled', 'You can retry from the Orders screen.', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } else {
-        Alert.alert('Payment Failed', 'Please try again.', [
+        showAlert('Payment Failed', 'Please try again.', [
           { text: 'Retry', onPress: () => initiate() },
           { text: 'Cancel', onPress: () => navigation.goBack() },
         ]);

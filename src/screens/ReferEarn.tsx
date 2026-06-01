@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   Share,
-  Alert,
   TextInput,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -86,26 +86,26 @@ const ReferEarn = () => {
   const handleCopy = async () => {
     if (!info) return;
     const ok = await copyText(info.code);
-    if (ok) Alert.alert('Copied', `Referral code ${info.code} copied to clipboard`);
+    if (ok) showAlert('Copied', `Referral code ${info.code} copied to clipboard`);
     else handleShare();
   };
 
   const handleApply = async () => {
     const code = applyCode.trim().toUpperCase();
     if (code.length < 4) {
-      Alert.alert('Invalid code', 'Please enter a valid referral code');
+      showAlert('Invalid code', 'Please enter a valid referral code');
       return;
     }
     try {
       setApplying(true);
       const res = await referralApi.apply(code);
-      Alert.alert('Success', res.message || 'Referral code applied!');
+      showAlert('Success', res.message || 'Referral code applied!');
       setApplyCode('');
       setApplyOpen(false);
       fetchData(true);
     } catch (err: any) {
       const raw = err?.response?.data?.message ?? err?.message ?? 'Could not apply this code';
-      Alert.alert('Could not apply', Array.isArray(raw) ? raw.join('\n') : String(raw));
+      showAlert('Could not apply', Array.isArray(raw) ? raw.join('\n') : String(raw));
     } finally {
       setApplying(false);
     }

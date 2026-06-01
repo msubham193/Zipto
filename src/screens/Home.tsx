@@ -141,16 +141,20 @@ const Home = () => {
   }));
 
   // ── Location ─────────────────────────────────────────────────────────────
-  // Wait for AsyncStorage hydration, then fetch only if no cached address or stale.
+  const needsLocationFetch = (addr: string) =>
+    !addr || addr === 'Current Location' || addr === 'Detecting address…' || isStale();
+
+  // Wait for AsyncStorage hydration, then fetch if no real address or stale.
   useEffect(() => {
     if (!hydrated) return;
-    if (!address || isStale()) fetchLocation();
+    if (needsLocationFetch(address)) fetchLocation();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
-  // Screen focus: silent background refresh only when stale (cached address stays visible)
+  // Screen focus: retry whenever address is missing, failed, or stale.
   useEffect(() => {
-    if (isFocused && hydrated && address && isStale()) fetchLocation();
+    if (!isFocused || !hydrated) return;
+    if (needsLocationFetch(address)) fetchLocation();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused]);
 

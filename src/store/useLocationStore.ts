@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi } from '../api/googleMaps';
 
 const STALE_MS = 10 * 60 * 1000;   // background refresh after 10 min
-const ERROR_RETRY_MS = 90 * 1000;  // retry after error in 90 sec
+const ERROR_RETRY_MS = 20 * 1000;  // retry after error in 20 sec (GPS warms up quickly)
 const COORD_THRESHOLD = 0.0005;    // ~50m — skip geocode if barely moved
 const STORAGE_KEY = '@zipto_location_v1';
 
@@ -51,7 +51,7 @@ function getGPS(): Promise<{ latitude: number; longitude: number }> {
       reject,
       // maximumAge: use device-cached GPS if less than 2 min old — instant on most devices
       // timeout reduced to 5s so the skeleton clears faster on first permission grant
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 120000 },
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 },
     ),
   );
 }
@@ -106,14 +106,15 @@ export const useLocationStore = create<LocationState>((set, get) => {
 
       const state = get();
 
-      // Use error-retry window: if last fetch failed (address='Current Location', fetchedAt set),
-      // don't hammer — wait ERROR_RETRY_MS unless forced
-      if (!force && state.fetchedAt && state.address === 'Current Location') {
+      const isFailedState = state.address === 'Current Location' || state.address === 'Detecting address…';
+
+      // Use error-retry window: if last fetch failed, don't hammer — wait ERROR_RETRY_MS
+      if (!force && state.fetchedAt && isFailedState) {
         if (Date.now() - state.fetchedAt < ERROR_RETRY_MS) return;
       }
 
-      // Skip if cache is fresh and not forced
-      if (!force && !state.isStale() && state.address && state.address !== 'Current Location') return;
+      // Skip if cache is fresh, has a real address, and not forced
+      if (!force && !state.isStale() && state.address && !isFailedState) return;
 
       _fetchPromise = (async () => {
         // Only show skeleton when we have no address at all

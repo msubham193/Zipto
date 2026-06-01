@@ -8,10 +8,10 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Alert,
   Platform,
   RefreshControl,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -84,11 +84,11 @@ const Wallet = () => {
   const handleAddMoney = () => {
     const amtNum = parseFloat(amount);
     if (!amtNum || amtNum < 10) {
-      Alert.alert('Invalid Amount', 'Minimum top-up amount is ₹10.');
+      showAlert('Invalid Amount', 'Minimum top-up amount is ₹10.');
       return;
     }
     if (amtNum > 50000) {
-      Alert.alert('Invalid Amount', 'Maximum top-up amount is ₹50,000.');
+      showAlert('Invalid Amount', 'Maximum top-up amount is ₹50,000.');
       return;
     }
     setShowAddMoney(false);

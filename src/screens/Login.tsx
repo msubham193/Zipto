@@ -11,8 +11,8 @@ import {
   ScrollView,
   StatusBar,
   Linking,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
@@ -60,7 +60,7 @@ const Login = () => {
       // If this number is registered as a Rider, confirm before continuing —
       // logging in here will sign them out of the Rider app.
       if (info?.requires_role_switch) {
-        Alert.alert(
+        showAlert(
           'Number registered as a Rider',
           "This number is registered on the Zipto Rider app. If you continue, you'll be signed out of the Rider app and switched to a customer account. Continue?",
           [

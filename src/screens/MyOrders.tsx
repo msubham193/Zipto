@@ -22,7 +22,7 @@ import BottomTabBar from './BottomTabBar';
 import { OrderCardSkeleton } from '../components/Skeleton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { vehicleApi, BookingDetails } from '../api/vehicle';
-import { Alert } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
 
 const ACTIVE_STATUSES = ['pending', 'searching', 'accepted', 'assigned', 'driver_assigned', 'driver_arriving', 'arriving', 'in_progress', 'ongoing', 'picked_up'];
@@ -260,7 +260,7 @@ const MyOrders = () => {
     if (payingBookingId) return;
     const amount = Math.round(parseFloat((booking as any).final_fare || booking.estimated_fare || '0'));
     if (!amount || amount <= 0) {
-      Alert.alert('Error', 'Cannot determine payment amount for this booking.');
+      showAlert('Error', 'Cannot determine payment amount for this booking.');
       return;
     }
     navigation.navigate('Payment', {
@@ -348,10 +348,10 @@ const MyOrders = () => {
       setRatingValue(0);
       setRatingComment('');
       setRatingTags([]);
-      Alert.alert('Thank you!', 'Your rating has been submitted successfully.');
+      showAlert('Thank you!', 'Your rating has been submitted successfully.');
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to submit rating';
-      Alert.alert('Error', msg);
+      showAlert('Error', msg);
     } finally {
       setSubmittingRating(false);
     }

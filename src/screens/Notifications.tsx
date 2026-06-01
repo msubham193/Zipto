@@ -7,9 +7,9 @@ import {
   ScrollView,
   StatusBar,
   Platform,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -90,7 +90,7 @@ const Notifications = () => {
   }, [fetchNotifications]);
 
   const handleClear = useCallback(() => {
-    Alert.alert(
+    showAlert(
       'Clear All Notifications',
       'This will remove all notifications. Continue?',
       [
@@ -104,7 +104,7 @@ const Notifications = () => {
               await notificationApi.clearAll();
               if (mountedRef.current) {setNotifications([]);}
             } catch {
-              Alert.alert('Error', 'Failed to clear notifications.');
+              showAlert('Error', 'Failed to clear notifications.');
             } finally {
               if (mountedRef.current) {setClearing(false);}
             }

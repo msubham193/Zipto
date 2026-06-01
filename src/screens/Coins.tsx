@@ -229,10 +229,6 @@ const Coins = () => {
                 </View>
               ) : null}
 
-              {/* Decorative circles */}
-              <View style={[styles.decorCircle, styles.decorCircle1]} />
-              <View style={[styles.decorCircle, styles.decorCircle2]} />
-              <View style={[styles.decorCircle, styles.decorCircle3]} />
             </LinearGradient>
 
             {/* Transaction History button — commented out, re-enable when TransactionHistory screen is ready

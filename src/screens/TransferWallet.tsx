@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -72,16 +72,16 @@ const TransferToWalletScreen = () => {
 
   const handleTransfer = async () => {
     if (coinsNum <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid number of coins.');
+      showAlert('Invalid Amount', 'Please enter a valid number of coins.');
       return;
     }
     if (coinsNum > availableCoins) {
-      Alert.alert('Insufficient Coins', `You only have ${availableCoins} coins available.`);
+      showAlert('Insufficient Coins', `You only have ${availableCoins} coins available.`);
       return;
     }
     const minCoins = coinsPerRupee;
     if (coinsNum < minCoins) {
-      Alert.alert('Minimum Transfer', `Minimum transfer is ${minCoins} coins (₹1).`);
+      showAlert('Minimum Transfer', `Minimum transfer is ${minCoins} coins (₹1).`);
       return;
     }
 
@@ -97,10 +97,10 @@ const TransferToWalletScreen = () => {
         setAvailableCoins(res.data?.remaining_coins ?? (availableCoins - coinsNum));
         setCoinsToTransfer('');
       } else {
-        Alert.alert('Transfer Failed', res.message || 'Something went wrong. Please try again.');
+        showAlert('Transfer Failed', res.message || 'Something went wrong. Please try again.');
       }
     } catch (err: any) {
-      Alert.alert(
+      showAlert(
         'Transfer Failed',
         err.response?.data?.message || err.message || 'Something went wrong. Please try again.',
       );

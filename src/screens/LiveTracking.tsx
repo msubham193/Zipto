@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Linking,
-  Alert,
   Modal,
   Animated,
   Easing,
@@ -15,6 +14,7 @@ import {
   ScrollView,
   PanResponder,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import MapView, { Marker, MarkerAnimated, AnimatedRegion, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -546,7 +546,7 @@ const LiveTracking = () => {
     if (driver?.phone) {
       Linking.openURL(`tel:${driver.phone}`);
     } else {
-      Alert.alert('Unavailable', 'Rider phone number is not available yet.');
+      showAlert('Unavailable', 'Rider phone number is not available yet.');
     }
   };
 
@@ -557,7 +557,7 @@ const LiveTracking = () => {
       await vehicleApi.updateOfferFare(bookingId, newFare);
       setLiveFare(newFare);
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Could not update fare.');
+      showAlert('Error', err?.response?.data?.message || 'Could not update fare.');
     } finally {
       setFareIncreasing(false);
     }
@@ -573,7 +573,7 @@ const LiveTracking = () => {
       setRetryCount(prev => prev + 1);
       setSearchCountdown(60);
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Could not retry. Please try again.');
+      showAlert('Error', err?.response?.data?.message || 'Could not retry. Please try again.');
     } finally {
       setRetryLoading(false);
     }
@@ -590,12 +590,12 @@ const LiveTracking = () => {
 
   const handleOnlinePayment = () => {
     if (!realBookingId) {
-      Alert.alert('Error', 'Booking not found. Please refresh and try again.');
+      showAlert('Error', 'Booking not found. Please refresh and try again.');
       return;
     }
     const payAmount = Math.round(liveFare);
     if (!payAmount || payAmount <= 0) {
-      Alert.alert('Error', 'Invalid payment amount. Please try again.');
+      showAlert('Error', 'Invalid payment amount. Please try again.');
       return;
     }
     navigation.navigate('Payment', {
@@ -607,7 +607,7 @@ const LiveTracking = () => {
 
   const handleCancel = () => {
     if (!bookingId) {
-      Alert.alert('Unable to Cancel', 'Booking ID not found.');
+      showAlert('Unable to Cancel', 'Booking ID not found.');
       return;
     }
     setCancelModalVisible(true);
@@ -630,7 +630,7 @@ const LiveTracking = () => {
       setCustomCancelReason('');
 
       if (response.success === false) {
-        Alert.alert(
+        showAlert(
           'Cancel Failed',
           response.message || 'Could not cancel booking. Please try again.',
         );
@@ -641,7 +641,7 @@ const LiveTracking = () => {
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch (err: any) {
       setCancelling(false);
-      Alert.alert(
+      showAlert(
         'Cancel Failed',
         err?.response?.data?.message ||
           err?.message ||

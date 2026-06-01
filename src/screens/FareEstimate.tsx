@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   StatusBar,
   Image,
@@ -14,6 +13,7 @@ import {
   Platform,
   InteractionManager,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import LottieView from 'lottie-react-native';
 import EnterView from '../components/EnterView';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -211,7 +211,7 @@ const FareEstimate = () => {
       setShowCouponSheet(false);
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid coupon';
-      Alert.alert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
+      showAlert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
     } finally {
       setApplyingCode(null);
     }
@@ -297,7 +297,7 @@ const FareEstimate = () => {
       if (!bookingResponse.success) {
         const raw = bookingResponse.message;
         const msg = Array.isArray(raw) ? raw.join('\n') : (raw || 'Failed to create booking. Please try again.');
-        Alert.alert('Booking Failed', msg);
+        showAlert('Booking Failed', msg);
         return;
       }
       const bookingId = bookingResponse.data?.booking_id || bookingResponse.data?.id;
@@ -318,7 +318,7 @@ const FareEstimate = () => {
     } catch (err: any) {
       const raw = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
       const msg = Array.isArray(raw) ? raw.join('\n') : String(raw);
-      Alert.alert('Error', msg);
+      showAlert('Error', msg);
     } finally {
       setBookingLoading(false);
     }

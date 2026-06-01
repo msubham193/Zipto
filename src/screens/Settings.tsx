@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -100,14 +100,14 @@ const Settings = () => {
 
   // ── Handlers ──
   const handleDeleteAccount = () => {
-    Alert.alert(
+    showAlert(
       'Delete Account',
       'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete', style: 'destructive',
-          onPress: () => Alert.alert('Request Submitted', 'Your account deletion request has been submitted. Our team will process it within 7 business days.'),
+          onPress: () => showAlert('Request Submitted', 'Your account deletion request has been submitted. Our team will process it within 7 business days.'),
         },
       ]
     );
