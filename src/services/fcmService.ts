@@ -1,4 +1,5 @@
 import { PermissionsAndroid, Platform } from 'react-native';
+import { requestPermissionSerialized } from '../utils/permissions';
 
 function getMessaging(): any | null {
   try {
@@ -11,18 +12,14 @@ function getMessaging(): any | null {
 /**
  * Android 13+ (API 33) requires the runtime POST_NOTIFICATIONS permission before
  * the OS will display ANY tray / heads-up push. Firebase's requestPermission()
- * doesn't reliably trigger this dialog, so request it explicitly.
+ * doesn't reliably trigger this dialog, so request it explicitly — serialized so
+ * it never races the location-permission dialog on launch.
  */
 async function ensureAndroidNotificationPermission(): Promise<void> {
   if (Platform.OS !== 'android' || Platform.Version < 33) return;
-  try {
-    const perm = (PermissionsAndroid.PERMISSIONS as any).POST_NOTIFICATIONS;
-    if (!perm) return;
-    const already = await PermissionsAndroid.check(perm);
-    if (!already) await PermissionsAndroid.request(perm);
-  } catch {
-    /* user can still grant later from settings */
-  }
+  const perm = (PermissionsAndroid.PERMISSIONS as any).POST_NOTIFICATIONS;
+  if (!perm) return;
+  await requestPermissionSerialized(perm);
 }
 
 /**

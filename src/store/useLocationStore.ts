@@ -3,6 +3,7 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi } from '../api/googleMaps';
+import { requestPermissionSerialized } from '../utils/permissions';
 
 const STALE_MS = 10 * 60 * 1000;   // background refresh after 10 min
 const ERROR_RETRY_MS = 90 * 1000;  // retry after error in 90 sec
@@ -23,25 +24,18 @@ interface LocationState {
 
 async function requestPermission(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
-  try {
-    const already = await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-    );
-    if (already) return true;
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      {
-        title: 'Location Permission',
-        message: 'Zipto needs your location to show nearby services.',
-        buttonNeutral: 'Ask Me Later',
-        buttonNegative: 'Cancel',
-        buttonPositive: 'OK',
-      },
-    );
-    return result === PermissionsAndroid.RESULTS.GRANTED;
-  } catch {
-    return false;
-  }
+  // Serialized so it never races the notification-permission dialog on launch
+  // (Android shows only one permission dialog at a time).
+  return requestPermissionSerialized(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    {
+      title: 'Location Permission',
+      message: 'Zipto needs your location to show nearby services.',
+      buttonNeutral: 'Ask Me Later',
+      buttonNegative: 'Cancel',
+      buttonPositive: 'OK',
+    },
+  );
 }
 
 function getGPS(): Promise<{ latitude: number; longitude: number }> {

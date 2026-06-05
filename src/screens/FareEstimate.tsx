@@ -15,7 +15,6 @@ import {
   InteractionManager,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
-import EnterView from '../components/EnterView';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
@@ -209,6 +208,9 @@ const FareEstimate = () => {
         discount_amount: result.discount_amount,
       });
       setShowCouponSheet(false);
+      // Celebrate the applied discount with the same confetti used for coins.
+      setShowConfetti(true);
+      confettiRef.current?.play();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid coupon';
       Alert.alert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
@@ -481,7 +483,7 @@ const FareEstimate = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Route Card ── */}
-        <EnterView delay={40} style={styles.card}>
+        <View style={styles.card}>
           <View style={styles.vehicleInfoRow}>
             <Image
               source={
@@ -543,7 +545,7 @@ const FareEstimate = () => {
               </Text>
             </View>
           </View>
-        </EnterView>
+        </View>
 
         {/* ── Surge Banner ── */}
         {hasSurge && (
@@ -568,7 +570,7 @@ const FareEstimate = () => {
           </View>
           <Text style={styles.sectionTitle}>Fare Breakdown</Text>
         </View>
-        <EnterView delay={120} style={styles.card}>
+        <View style={styles.card}>
           <View style={styles.row}>
             <View style={styles.rowLabelWrap}>
               <View style={[styles.rowIconBox, { backgroundColor: '#EFF6FF' }]}>
@@ -681,7 +683,7 @@ const FareEstimate = () => {
               </View>
             </>
           )}
-        </EnterView>
+        </View>
 
         {/* ── Zipto Coins ── */}
         {coinsBalance >= 100 && (

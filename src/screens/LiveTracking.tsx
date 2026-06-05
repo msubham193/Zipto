@@ -24,6 +24,8 @@ import { googleMapsApi } from '../api/googleMaps';
 import { useBookingStore } from '../store/useBookingStore';
 import { connectSocket, onDriverLocation } from '../services/socketService';
 import { MAP_STYLE } from '../utils/mapStyle';
+import RatingModal from '../components/RatingModal';
+import { setPendingRating, clearPendingRating } from '../utils/pendingRating';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH, SCREEN_HEIGHT } from '../utils/metrics';
 
 type BookingStatus = 'searching' | 'assigned' | 'arriving' | 'in_progress' | 'completed' | 'cancelled';
@@ -169,6 +171,9 @@ const LiveTracking = () => {
   // AnimatedRegion drives smooth gliding of the driver marker between fixes.
   const driverAnim = useRef<AnimatedRegion | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  // Rating prompt after delivery (shown once; reset guard so polling can't re-open it)
+  const [showRating, setShowRating] = useState(false);
+  const ratingHandledRef = useRef(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
   const [successModal, setSuccessModal] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -377,6 +382,20 @@ const LiveTracking = () => {
         } else if (status === 'completed') {
           setBookingStatus('completed');
           clearActiveBooking();
+          // Prompt the customer to rate the rider (once), unless already rated.
+          if (!ratingHandledRef.current) {
+            ratingHandledRef.current = true;
+            const rateId = realBookingId || bookingId;
+            const rateDriver = data.driver?.name;
+            (async () => {
+              try {
+                const existing: any = await vehicleApi.getRatingByBooking(rateId);
+                if (existing?.rating) return; // already rated
+              } catch { /* still prompt */ }
+              await setPendingRating({ bookingId: rateId, driverName: rateDriver });
+              setShowRating(true);
+            })();
+          }
         } else if (status === 'in_progress' || status === 'picked_up' || status === 'ongoing') {
           // 'ongoing' is the real backend status after pickup OTP is verified
           setBookingStatus('in_progress');
@@ -1363,6 +1382,16 @@ const LiveTracking = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Rate the rider after a completed delivery */}
+      <RatingModal
+        visible={showRating}
+        bookingId={realBookingId || bookingId}
+        driverName={driver?.name}
+        // Keep the pending flag on dismiss so Home can re-surface it; clear on submit.
+        onClose={() => setShowRating(false)}
+        onSubmitted={() => { clearPendingRating(); }}
+      />
     </View>
   );
 };

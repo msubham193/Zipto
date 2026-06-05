@@ -11,7 +11,6 @@ import {
   ScrollView,
   StatusBar,
   Linking,
-  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -55,25 +54,10 @@ const Login = () => {
     }
     setError('');
     try {
-      const res = await login(trimmed);
-      const info = res?.data ?? res;
-      // If this number is registered as a Rider, confirm before continuing —
-      // logging in here will sign them out of the Rider app.
-      if (info?.requires_role_switch) {
-        Alert.alert(
-          'Number registered as a Rider',
-          "This number is registered on the Zipto Rider app. If you continue, you'll be signed out of the Rider app and switched to a customer account. Continue?",
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Continue',
-              style: 'destructive',
-              onPress: () => navigation.navigate('OTPVerification', { mobile: trimmed, confirmSwitch: true }),
-            },
-          ],
-        );
-        return;
-      }
+      await login(trimmed);
+      // A number registered as a Rider is switched to a customer account
+      // silently (no confirmation dialog) — see authApi.verifyOtp which always
+      // sends confirm_switch.
       navigation.navigate('OTPVerification', { mobile: trimmed });
     } catch {
       // authError from store is displayed below

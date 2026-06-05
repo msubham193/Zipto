@@ -127,14 +127,22 @@ client.interceptors.response.use(
         processQueue(refreshError, null);
         isRefreshing = false;
 
-        // Clear tokens and logout user
-        await AsyncStorage.removeItem('auth_token');
-        await AsyncStorage.removeItem('refresh_token');
+        // Only log out when the refresh token is GENUINELY invalid (the server
+        // rejected it with 401/403). A network error / timeout / 5xx is
+        // transient — logging out there causes a spurious login/splash flash
+        // mid-booking. In that case we keep the session and let the next
+        // request retry the refresh.
+        const status = refreshError?.response?.status;
+        const tokenInvalid = status === 401 || status === 403;
 
-        // Trigger store logout if callback is registered
-        if (logoutCallback) {
-          console.log('🔄 Triggering store logout callback...');
-          logoutCallback();
+        if (tokenInvalid) {
+          await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
+          if (logoutCallback) {
+            console.log('🔄 Token invalid — triggering store logout callback...');
+            logoutCallback();
+          }
+        } else {
+          console.log('⚠️ Refresh failed transiently (network/5xx) — keeping session');
         }
 
         return Promise.reject(refreshError);
@@ -158,9 +166,16 @@ export const walletApi = {
     return response.data;
   },
 
-  initiateAddMoney: async (amount: number) => {
-    const response = await client.post('/customer/wallet/add-money/initiate', { amount });
-    return response.data;
+  /** Cashfree wallet top-up — returns { order_id, payment_session_id, mode }. */
+  initiateAddMoneyCashfree: async (amount: number) => {
+    const response = await client.post('/payment/wallet/cashfree/create-order', { amount });
+    return response.data?.data ?? response.data;
+  },
+
+  /** Confirm a Cashfree wallet top-up after the SDK reports completion. */
+  verifyWalletTopup: async (orderId: string) => {
+    const response = await client.post('/payment/wallet/cashfree/verify', { order_id: orderId });
+    return response.data?.data ?? response.data;
   },
 };
 
@@ -201,15 +216,17 @@ export const authApi = {
     otp: string,
     referralCode?: string,
     deviceId?: string,
-    confirmSwitch?: boolean,
+    _confirmSwitch?: boolean,
   ) => {
     const response = await client.post('/auth/verify-otp', {
       phone,
       otp,
       role: 'customer',
+      // Always confirm the role switch silently — if this number was a Rider,
+      // it's switched to a customer account without a confirmation dialog.
+      confirm_switch: true,
       ...(referralCode ? { referral_code: referralCode } : {}),
       ...(deviceId ? { device_id: deviceId } : {}),
-      ...(confirmSwitch ? { confirm_switch: true } : {}),
     });
     return response.data;
   },
@@ -227,6 +244,16 @@ export const authApi = {
   getCustomerProfile: async () => {
     const response = await client.get('/customer/profile');
     return response.data;
+  },
+
+  /** Current authenticated user (used to detect a role switch to a rider). */
+  getMe: async (): Promise<{ id: string; role: string } | null> => {
+    try {
+      const response = await client.get('/auth/me');
+      return response.data?.data ?? response.data ?? null;
+    } catch {
+      return null;
+    }
   },
 
   updateCustomerProfile: async (data: any) => {
@@ -253,9 +280,15 @@ export const paymentApi = {
     return response.data;
   },
 
+  /** Cashfree PG — returns { checkout_url, order_id, payment_session_id, mode }. */
+  initiateCashfree: async (payload: { booking_id: string; amount: number }) => {
+    const response = await client.post('/payment/cashfree/initiate', payload);
+    return response.data?.data ?? response.data;
+  },
+
   getStatus: async (bookingId: string) => {
     const response = await client.get(`/payment/status/${bookingId}`);
-    return response.data;
+    return response.data?.data ?? response.data;
   },
 };
 

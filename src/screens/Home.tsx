@@ -28,6 +28,8 @@ import { useLocationStore } from '../store/useLocationStore';
 import { notificationApi } from '../api/client';
 import { horizontalScale as hs, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
 import { HomeLocationSkeleton } from '../components/Skeleton';
+import RatingModal from '../components/RatingModal';
+import { getPendingRating, clearPendingRating, PendingRating } from '../utils/pendingRating';
 
 const sp = (n: number) => Math.round(hs(n));
 const isSmallScreen = SCREEN_WIDTH <= 360;
@@ -95,6 +97,13 @@ const Home = () => {
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
   const [showRider, setShowRider] = useState(true); // rides across screen center once on load
   const headerBgRef = useRef<LottieView>(null);
+
+  // Pending "rate your rider" prompt left over from a just-completed delivery.
+  const [pendingRating, setPendingRating] = useState<PendingRating | null>(null);
+  useEffect(() => {
+    if (!isFocused) return;
+    getPendingRating().then(p => { if (p) setPendingRating(p); });
+  }, [isFocused]);
 
   // Pause the looping header animation whenever Home isn't the active screen —
   // a continuously-looping Lottie wastes CPU/GPU on low-end devices in the
@@ -329,6 +338,15 @@ const Home = () => {
           />
         </View>
       )}
+
+      {/* Rate your rider — surfaced if a just-completed delivery is still unrated */}
+      <RatingModal
+        visible={!!pendingRating}
+        bookingId={pendingRating?.bookingId || ''}
+        driverName={pendingRating?.driverName}
+        onClose={() => { clearPendingRating(); setPendingRating(null); }}
+        onSubmitted={() => { clearPendingRating(); }}
+      />
     </View>
   );
 };

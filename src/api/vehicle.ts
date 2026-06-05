@@ -456,7 +456,14 @@ export const vehicleApi = {
     final_fare: number;
   }> => {
     const response = await client.post('/booking/coupon/validate', payload);
-    return response.data?.data ?? response.data;
+    // Unwrap any depth of { success, data } envelopes (the endpoint was
+    // double-wrapped before) and stop at the actual coupon result.
+    let d: any = response.data;
+    let guard = 0;
+    while (d && d.discount_amount === undefined && d.data !== undefined && guard++ < 5) {
+      d = d.data;
+    }
+    return d;
   },
 
   getCoupons: async (vehicleType?: string): Promise<Coupon[]> => {
