@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
-  Alert,
   Animated,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -89,7 +89,7 @@ const Support = () => {
       desc: 'Average response under 2 min',
       badge: 'Online Now', badgeColor: COLORS.green,
       accent: COLORS.accent, light: COLORS.accentLight,
-      onPress: () => Alert.alert('Coming Soon', 'Live chat will be available soon.'),
+      onPress: () => showAlert('Coming Soon', 'Live chat will be available soon.'),
     },
     {
       id: 2, title: 'Call Support',

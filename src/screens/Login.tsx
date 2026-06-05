@@ -12,6 +12,7 @@ import {
   StatusBar,
   Linking,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';

@@ -154,7 +154,7 @@ const ActiveBookingBanner: React.FC = () => {
             style={styles.riderLottie}
             autoPlay
             loop
-            renderMode="HARDWARE"
+            renderMode="SOFTWARE"
             cacheComposition
             resizeMode="contain"
           />

@@ -12,6 +12,7 @@ import {
   InAppNotificationBanner,
   NotificationPayload,
 } from './src/components/InAppNotificationBanner';
+import { CustomAlert } from './src/components/CustomAlert';
 import {
   requestPermissionAndGetToken,
   onForegroundMessage,
@@ -182,6 +183,7 @@ function App() {
           onDismiss={handleDismiss}
           onPress={handleNotificationPress}
         />
+        <CustomAlert />
       </SafeAreaProvider>
     </Provider>
   );

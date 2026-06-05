@@ -1,4 +1,4 @@
-import { Dimensions, PixelRatio } from 'react-native';
+import { Dimensions, PixelRatio, Platform } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,10 +31,13 @@ const moderateScale = (size: number, factor = 0.5): number =>
 /**
  * Font-safe scale: applies moderateScale then snaps to the nearest
  * pixel boundary to avoid sub-pixel text rendering artefacts.
+ * iOS bold weights render visually heavier than Android at the same pt size,
+ * so we apply a 0.92 reduction on iOS so text matches the Android appearance.
  * Use for: all fontSize values.
  */
+const IOS_FONT_FACTOR = Platform.OS === 'ios' ? 0.92 : 1;
 const fontScale = (size: number, factor = 0.5): number =>
-  Math.round(PixelRatio.roundToNearestPixel(moderateScale(size, factor)));
+  Math.round(PixelRatio.roundToNearestPixel(moderateScale(size, factor) * IOS_FONT_FACTOR));
 
 // ─── Device dimensions ────────────────────────────────────────────────────────
 const SCREEN_WIDTH  = width;

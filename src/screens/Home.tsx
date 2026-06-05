@@ -95,7 +95,6 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
-  const [showRider, setShowRider] = useState(true); // rides across screen center once on load
   const headerBgRef = useRef<LottieView>(null);
 
   // Pending "rate your rider" prompt left over from a just-completed delivery.
@@ -225,7 +224,7 @@ const Home = () => {
               style={[styles.headerBg, { pointerEvents: 'none' }]}
               autoPlay
               loop
-              renderMode="HARDWARE"
+              renderMode="SOFTWARE"
               cacheComposition
               resizeMode="cover"
             />
@@ -390,10 +389,6 @@ const styles = StyleSheet.create({
   },
   // Rider ride-across overlay — fills the screen, contain keeps the rider
   // vertically centered as it travels left→right across the middle.
-  riderOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-  },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',

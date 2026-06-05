@@ -7,8 +7,8 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,7 +41,7 @@ const EditProfile = () => {
 
   const handleSave = async () => {
     if (!name || !email) {
-      Alert.alert('Error', 'Name and Email are required');
+      showAlert('Error', 'Name and Email are required');
       return;
     }
     setIsLoading(true);
@@ -50,12 +50,12 @@ const EditProfile = () => {
       await authApi.updateCustomerProfile(payload);
       await fetchProfile();
       setNeedsProfileSetup(false);
-      Alert.alert('Success', 'Profile updated successfully', [
+      showAlert('Success', 'Profile updated successfully', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error: any) {
       console.error('Update profile error:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to update profile');
+      showAlert('Error', error.response?.data?.message || 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
