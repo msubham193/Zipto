@@ -17,8 +17,15 @@ target 'Zipto' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # Firebase / Google fixes
-  pod 'GoogleUtilities', :modular_headers => true
+  # Modular headers required so FirebaseAuth (Swift) can import its ObjC
+  # dependencies, which in turn lets Xcode generate FirebaseAuth-Swift.h,
+  # and so that Xcode 26's explicit-modules build system can load FirebaseAuth
+  # as a proper module (without this, FIRAuth appears as a forward declaration).
+  pod 'GoogleUtilities',         :modular_headers => true
+  pod 'FirebaseAuth',            :modular_headers => true
+  pod 'FirebaseAuthInterop',     :modular_headers => true
+  pod 'FirebaseAppCheckInterop', :modular_headers => true
+  pod 'RecaptchaInterop',        :modular_headers => true
 
   post_install do |installer|
     react_native_post_install(
@@ -26,6 +33,46 @@ target 'Zipto' do
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
     )
+
+    # Ensure FirebaseAuth compiles before RNFBMessaging so its Swift
+    # compatibility header exists when the umbrella Firebase.h imports it.
+    messaging_target    = installer.pods_project.targets.find { |t| t.name == 'RNFBMessaging' }
+    firebase_auth_target = installer.pods_project.targets.find { |t| t.name == 'FirebaseAuth' }
+    if messaging_target && firebase_auth_target
+      messaging_target.add_dependency(firebase_auth_target)
+    end
+
+    # Firebase.h imports FirebaseAuth-Swift.h which Xcode generates during the
+    # FirebaseAuth Swift build phase. We place this file in the pod's public
+    # headers dir so the compiler finds it during ScanDependencies (before
+    # FirebaseAuth compiles). If a prior build has already generated it we copy
+    # the real file; otherwise we write a minimal stub that satisfies the
+    # preprocessor (the real one is written by Xcode on the first full build).
+    require 'fileutils'
+    swift_header_dir  = "#{installer.sandbox.root}/Headers/Public/FirebaseAuth"
+    swift_header_path = "#{swift_header_dir}/FirebaseAuth-Swift.h"
+    FileUtils.mkdir_p(swift_header_dir)
+    generated_path = "#{installer.sandbox.root}/../build/DerivedData/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h"
+    if File.exist?(generated_path)
+      FileUtils.cp(generated_path, swift_header_path)
+    else
+      File.write(swift_header_path, "// Bootstrap placeholder — replaced by Xcode when FirebaseAuth compiles.\n") unless File.exist?(swift_header_path) && File.size(swift_header_path) > 100
+    end
+
+    # Fix module name + umbrella clashes caused by RN 0.83.x pods sharing public-header
+    # directories. Each pair below has two pods both declaring the same module name with
+    # `umbrella header` pointing at the same directory, which LLVM rejects. The secondary
+    # pod in each pair is rewritten to use a plain `header` declaration and a distinct
+    # module name so the primary pod remains the sole umbrella owner of that directory.
+    {
+      "#{installer.sandbox.root}/Target Support Files/React-jsitooling/React-jsitooling.modulemap" =>
+        "module react_jsitooling {\n  header \"React-jsitooling-umbrella.h\"\n\n  export *\n}\n",
+      "#{installer.sandbox.root}/Target Support Files/React-RuntimeApple/React-RuntimeApple.modulemap" =>
+        "module React_RuntimeApple {\n  header \"React-RuntimeApple-umbrella.h\"\n\n  export *\n}\n",
+    }.each do |path, content|
+      next unless File.exist?(path)
+      File.write(path, content)
+    end
 
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
@@ -41,6 +88,17 @@ target 'Zipto' do
         # Ensure RNMapbox V11 Swift flags are present for Swift sources
         if ['rnmapbox-maps', 'MapboxMaps', 'MapboxCommon', 'MapboxCoreMaps', 'MapboxMobileEvents', 'Turf'].include?(target.name)
           config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)', '-D RNMBX_11']
+        end
+
+        # Fix: FirebaseAuth-Swift.h not found in RNFBMessaging during ScanDependencies.
+        # Append the derived-data location where Xcode places the generated Swift
+        # compatibility header. Using APPEND so the CocoaPods-set paths are preserved.
+        if target.name == 'RNFBMessaging'
+          config.build_settings['HEADER_SEARCH_PATHS'] = [
+            '$(inherited)',
+            '"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth/Swift Compatibility Header"',
+            '"${BUILT_PRODUCTS_DIR}/FirebaseAuth/Swift Compatibility Header"',
+          ]
         end
       end
     end

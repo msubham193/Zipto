@@ -93,7 +93,6 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
-  const [showRider, setShowRider] = useState(true); // rides across screen center once on load
   const headerBgRef = useRef<LottieView>(null);
 
   // Pause the looping header animation whenever Home isn't the active screen —
@@ -141,20 +140,16 @@ const Home = () => {
   }));
 
   // ── Location ─────────────────────────────────────────────────────────────
-  const needsLocationFetch = (addr: string) =>
-    !addr || addr === 'Current Location' || addr === 'Detecting address…' || isStale();
-
-  // Wait for AsyncStorage hydration, then fetch if no real address or stale.
+  // Wait for AsyncStorage hydration, then fetch only if no cached address or stale.
   useEffect(() => {
     if (!hydrated) return;
-    if (needsLocationFetch(address)) fetchLocation();
+    if (!address || isStale()) fetchLocation();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
-  // Screen focus: retry whenever address is missing, failed, or stale.
+  // Screen focus: silent background refresh only when stale (cached address stays visible)
   useEffect(() => {
-    if (!isFocused || !hydrated) return;
-    if (needsLocationFetch(address)) fetchLocation();
+    if (isFocused && hydrated && address && isStale()) fetchLocation();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused]);
 
@@ -220,7 +215,7 @@ const Home = () => {
               style={[styles.headerBg, { pointerEvents: 'none' }]}
               autoPlay
               loop
-              renderMode="HARDWARE"
+              renderMode="SOFTWARE"
               cacheComposition
               resizeMode="cover"
             />
@@ -316,23 +311,6 @@ const Home = () => {
       {/* 5. Fixed Bottom Tab */}
       <BottomTabBar />
 
-      {/* Rider rides across the screen center once on load.
-          Wrapped in a pointerEvents="none" View so the overlay never blocks
-          taps on the bottom tab bar / content underneath. */}
-      {showRider && (
-        <View style={styles.riderOverlay} pointerEvents="none">
-          <LottieView
-            source={require('../assets/animations/rider.json')}
-            style={StyleSheet.absoluteFillObject}
-            autoPlay
-            loop={false}
-            renderMode="HARDWARE"
-            cacheComposition
-            resizeMode="contain"
-            onAnimationFinish={() => setShowRider(false)}
-          />
-        </View>
-      )}
     </View>
   );
 };
@@ -376,10 +354,6 @@ const styles = StyleSheet.create({
   },
   // Rider ride-across overlay — fills the screen, contain keeps the rider
   // vertically centered as it travels left→right across the middle.
-  riderOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-  },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',

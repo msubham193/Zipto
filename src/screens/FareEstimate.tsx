@@ -915,7 +915,7 @@ const FareEstimate = () => {
             style={StyleSheet.absoluteFill}
             autoPlay
             loop={false}
-            renderMode="HARDWARE"
+            renderMode="SOFTWARE"
             cacheComposition
             resizeMode="cover"
             onAnimationFinish={() => setShowConfetti(false)}
