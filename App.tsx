@@ -36,6 +36,9 @@ textInputDefaultProps.style = [
 // Register background handler at module level (before app boots)
 registerBackgroundHandler();
 
+
+
+
 function navigateFromNotification(data?: Record<string, string>) {
   if (!data || !navigationRef.isReady()) return;
   const { type, bookingId } = data;
