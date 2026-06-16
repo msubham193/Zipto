@@ -7,6 +7,7 @@ import {
   Image,
   ScrollView,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -93,15 +94,29 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
+  const [showRider, setShowRider] = useState(Platform.OS !== 'ios');
   const headerBgRef = useRef<LottieView>(null);
+  const riderRef = useRef<LottieView>(null);
 
   // Pause the looping header animation whenever Home isn't the active screen —
   // a continuously-looping Lottie wastes CPU/GPU on low-end devices in the
   // background. Resume it when Home regains focus.
   useEffect(() => {
-    if (isFocused) headerBgRef.current?.resume();
-    else headerBgRef.current?.pause();
-  }, [isFocused]);
+    if (isFocused) {
+      headerBgRef.current?.resume();
+      if (showRider) riderRef.current?.play();
+    } else {
+      headerBgRef.current?.pause();
+      riderRef.current?.pause();
+    }
+  }, [isFocused, showRider]);
+
+  // Safety net: hide the rider overlay even if onAnimationFinish never fires (iOS edge case).
+  useEffect(() => {
+    if (!showRider) return;
+    const timer = setTimeout(() => setShowRider(false), 8000);
+    return () => clearTimeout(timer);
+  }, [showRider]);
 
   // ── Animation shared values ──────────────────────────────────────────────
   // IMPORTANT: opacity always starts (and stays) at 1, so content is NEVER
@@ -311,6 +326,24 @@ const Home = () => {
       {/* 5. Fixed Bottom Tab */}
       <BottomTabBar />
 
+      {/* Rider rides across the screen center once on load. */}
+      {showRider && (
+        <View style={styles.riderOverlay} pointerEvents="none">
+          <LottieView
+            ref={riderRef}
+            source={require('../assets/animations/rider.json')}
+            style={StyleSheet.absoluteFillObject}
+            autoPlay
+            loop={false}
+            renderMode="HARDWARE"
+            cacheComposition
+            resizeMode="contain"
+            onAnimationFinish={(isCancelled) => {
+              if (!isCancelled) setShowRider(false);
+            }}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -354,6 +387,10 @@ const styles = StyleSheet.create({
   },
   // Rider ride-across overlay — fills the screen, contain keeps the rider
   // vertically centered as it travels left→right across the middle.
+  riderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+  },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
