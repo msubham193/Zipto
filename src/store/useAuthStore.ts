@@ -46,6 +46,7 @@ interface AuthState {
   fetchProfile: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   clearError: () => void;
   setNeedsProfileSetup: (value: boolean) => void;
 }
@@ -279,6 +280,28 @@ export const useAuthStore = create<AuthState>()(
           // Continue with local logout even if API fails
         } finally {
           // Always clear local state
+          await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
+          set({
+            user: null,
+            profile: null,
+            token: null,
+            refreshToken: null,
+            isAuthenticated: false,
+            needsProfileSetup: false,
+            isNewUser: false,
+            error: null,
+          });
+        }
+      },
+
+      deleteAccount: async () => {
+        try {
+          await authApi.deleteAccount();
+        } catch (error: any) {
+          console.error('Delete account API error:', error);
+          // Re-throw so the UI can show an error message
+          throw error;
+        } finally {
           await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
           set({
             user: null,

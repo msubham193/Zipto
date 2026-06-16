@@ -37,9 +37,12 @@ const C = {
 const Profile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuthStore();
+  const { user, logout, deleteAccount } = useAuthStore();
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleLogout = () => setLogoutModal(true);
 
@@ -51,6 +54,22 @@ const Profile = () => {
     } catch (err) {
       console.error('Logout error:', err);
       setLoggingOut(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    setDeleteError(null);
+    setDeleteModal(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    try {
+      setDeleting(true);
+      setDeleteError(null);
+      await deleteAccount();
+    } catch (err: any) {
+      setDeleting(false);
+      setDeleteError(err.response?.data?.message || 'Failed to delete account. Please try again.');
     }
   };
 
@@ -219,6 +238,24 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
 
+        {/* ── Delete Account ── */}
+        <View style={[styles.section, { marginBottom: vs(8) }]}>
+          <TouchableOpacity
+            style={[styles.deleteAccountBtn, deleting && { opacity: 0.6 }]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.8}
+            disabled={deleting}
+          >
+            {deleting
+              ? <ActivityIndicator size="small" color="#7F1D1D" />
+              : <MaterialIcons name="delete-forever" size={ms(20)} color="#7F1D1D" />
+            }
+            <Text style={styles.deleteAccountText}>
+              {deleting ? 'Deleting...' : 'Delete Account'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Version ── */}
         <View style={styles.versionBlock}>
           <Text style={styles.versionText}>Zipto v1.0.0</Text>
@@ -227,6 +264,60 @@ const Profile = () => {
       </ScrollView>
 
       <BottomTabBar />
+
+      {/* ── Delete account confirmation modal ── */}
+      <Modal visible={deleteModal} transparent animationType="fade" onRequestClose={() => !deleting && setDeleteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={[styles.modalIconRing, styles.deleteIconRing]}>
+              <View style={[styles.modalIconInner, styles.deleteIconInner]}>
+                <MaterialIcons name="delete-forever" size={ms(28)} color="#B91C1C" />
+              </View>
+            </View>
+
+            <Text style={styles.modalTitle}>Delete Account?</Text>
+            <Text style={styles.modalSubtitle}>
+              This will permanently delete your account, order history, and all personal data. This action{' '}
+              <Text style={{ fontWeight: '700', color: '#B91C1C' }}>cannot be undone</Text>.
+            </Text>
+
+            {deleteError ? (
+              <View style={styles.deleteErrorBox}>
+                <MaterialIcons name="error-outline" size={ms(16)} color="#B91C1C" />
+                <Text style={styles.deleteErrorText}>{deleteError}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.modalDivider} />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalCancelBtn, deleting && { opacity: 0.5 }]}
+                onPress={() => setDeleteModal(false)}
+                activeOpacity={0.75}
+                disabled={deleting}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.deleteConfirmBtn, deleting && { opacity: 0.7 }]}
+                onPress={confirmDeleteAccount}
+                activeOpacity={0.8}
+                disabled={deleting}
+              >
+                {deleting
+                  ? <ActivityIndicator size="small" color="#FFFFFF" />
+                  : <MaterialIcons name="delete-forever" size={ms(16)} color="#FFFFFF" />
+                }
+                <Text style={styles.deleteConfirmText}>
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Logout confirmation modal ── */}
       <Modal visible={logoutModal} transparent animationType="fade" onRequestClose={() => setLogoutModal(false)}>
@@ -510,6 +601,24 @@ const styles = StyleSheet.create({
     color:      C.red,
   },
 
+  // ── Delete Account ────────────────────────────────────────────────────────
+  deleteAccountBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               hs(8),
+    backgroundColor:   '#FEF2F2',
+    paddingVertical:   vs(16),
+    borderRadius:      ms(14),
+    borderWidth:       1.5,
+    borderColor:       '#FECACA',
+  },
+  deleteAccountText: {
+    fontSize:   fs(16),
+    fontWeight: '700',
+    color:      '#7F1D1D',
+  },
+
   // ── Version ───────────────────────────────────────────────────────────────
   versionBlock: {
     alignItems:     'center',
@@ -623,6 +732,54 @@ const styles = StyleSheet.create({
     elevation:       4,
   },
   modalLogoutText: {
+    fontSize:   fs(15),
+    fontWeight: '700',
+    color:      '#FFFFFF',
+  },
+
+  // ── Delete modal ──────────────────────────────────────────────────────────
+  deleteIconRing: {
+    backgroundColor: '#FEF2F2',
+    borderColor:     '#FECACA',
+  },
+  deleteIconInner: {
+    backgroundColor: '#FEE2E2',
+  },
+  deleteErrorBox: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               hs(6),
+    backgroundColor:   '#FEF2F2',
+    borderRadius:      ms(8),
+    paddingHorizontal: hs(12),
+    paddingVertical:   vs(8),
+    marginTop:         vs(12),
+    borderWidth:       1,
+    borderColor:       '#FECACA',
+    alignSelf:         'stretch',
+  },
+  deleteErrorText: {
+    flex:       1,
+    fontSize:   fs(12),
+    color:      '#B91C1C',
+    lineHeight: fs(12) * 1.4,
+  },
+  deleteConfirmBtn: {
+    flex:            1,
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'center',
+    gap:             hs(6),
+    paddingVertical: vs(14),
+    borderRadius:    ms(14),
+    backgroundColor: '#DC2626',
+    shadowColor:     '#DC2626',
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.3,
+    shadowRadius:    8,
+    elevation:       4,
+  },
+  deleteConfirmText: {
     fontSize:   fs(15),
     fontWeight: '700',
     color:      '#FFFFFF',

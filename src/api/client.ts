@@ -239,6 +239,11 @@ export const authApi = {
     return response.data;
   },
 
+  deleteAccount: async () => {
+    const response = await client.delete('/customer/profile');
+    return response.data;
+  },
+
   refreshToken: async (refreshToken: string) => {
     const response = await client.post('/auth/refresh-token', {
       refresh_token: refreshToken,
