@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  RefreshControl,
   Platform,
+  Linking,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -94,7 +94,7 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
-  const [showRider, setShowRider] = useState(Platform.OS !== 'ios');
+  const [showRider, setShowRider] = useState(true);
   const headerBgRef = useRef<LottieView>(null);
   const riderRef = useRef<LottieView>(null);
 
@@ -223,14 +223,16 @@ const Home = () => {
         {/* 1. Animated Header */}
         <Animated.View style={[{ paddingHorizontal: sp(16) }, headerAnimStyle]}>
           <View style={[styles.header, { overflow: 'hidden' }]}>
-            {/* City skyline background — bottom-aligned to the header base */}
+            {/* City skyline background.
+                iOS: SOFTWARE (lottie-ios 4.6.1 fixes the 4.6.0 HARDWARE crash on iOS 26).
+                Android: HARDWARE for GPU-accelerated looping. */}
             <LottieView
               ref={headerBgRef}
               source={require('../assets/animations/header-bg.json')}
               style={[styles.headerBg, { pointerEvents: 'none' }]}
               autoPlay
               loop
-              renderMode="SOFTWARE"
+              renderMode={Platform.OS === 'ios' ? 'SOFTWARE' : 'HARDWARE'}
               cacheComposition
               resizeMode="cover"
             />
@@ -258,7 +260,13 @@ const Home = () => {
             </View>
             <TouchableOpacity
               style={styles.headerLocation}
-              onPress={() => fetchLocation(true)}
+              onPress={() => {
+                if (address === 'Location permission denied' || address === 'Location services disabled') {
+                  Linking.openSettings();
+                  return;
+                }
+                fetchLocation(true);
+              }}
               activeOpacity={0.6}
             >
               <MaterialIcons name="location-on" size={sp(20)} color="#1E3A8A" />
@@ -335,7 +343,7 @@ const Home = () => {
             style={StyleSheet.absoluteFillObject}
             autoPlay
             loop={false}
-            renderMode="HARDWARE"
+            renderMode={Platform.OS === 'ios' ? 'SOFTWARE' : 'HARDWARE'}
             cacheComposition
             resizeMode="contain"
             onAnimationFinish={(isCancelled) => {

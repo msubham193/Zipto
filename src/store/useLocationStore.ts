@@ -109,7 +109,11 @@ export const useLocationStore = create<LocationState>((set, get) => {
 
       const state = get();
 
-      const isFailedState = state.address === 'Current Location' || state.address === 'Detecting address…';
+      const isFailedState =
+        state.address === 'Current Location' ||
+        state.address === 'Detecting address…' ||
+        state.address === 'Location permission denied' ||
+        state.address === 'Location services disabled';
 
       // Use error-retry window: if last fetch failed, don't hammer — wait ERROR_RETRY_MS
       if (!force && state.fetchedAt && isFailedState) {
@@ -161,13 +165,20 @@ export const useLocationStore = create<LocationState>((set, get) => {
           set({ ...next });
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
 
-        } catch {
-          // GPS failed — mark fetchedAt so we don't retry immediately
+        } catch (err: any) {
+          // GPS failed — mark fetchedAt so we don't retry immediately.
+          // Geolocation error codes: 1 = permission denied, 2 = position unavailable (services off), 3 = timeout
           const hadAddress = get().address;
+          let errorAddress = hadAddress || 'Current Location';
+          if (err?.code === 1) {
+            errorAddress = 'Location permission denied';
+          } else if (err?.code === 2) {
+            errorAddress = 'Location services disabled';
+          }
           set({
             loading: false,
-            fetchedAt: Date.now(), // ← KEY FIX: stops infinite retry
-            address: hadAddress || 'Current Location',
+            fetchedAt: Date.now(),
+            address: errorAddress,
           });
         } finally {
           _fetchPromise = null;
