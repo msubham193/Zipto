@@ -240,7 +240,7 @@ export const authApi = {
   },
 
   deleteAccount: async () => {
-    const response = await client.delete('/customer/profile');
+    const response = await client.delete('/auth/account');
     return response.data;
   },
 

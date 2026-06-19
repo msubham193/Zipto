@@ -22,7 +22,10 @@ interface LocationState {
 }
 
 async function requestPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
+  if (Platform.OS === 'ios') {
+    const status = await Geolocation.requestAuthorization('whenInUse');
+    return status === 'granted';
+  }
   try {
     const already = await PermissionsAndroid.check(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,

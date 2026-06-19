@@ -25,6 +25,19 @@ android {
         versionCode 2
         versionName "1.0"
         manifestPlaceholders = [usesCleartextTraffic: "false"]
+
+        // Point CMake at our custom CMakeLists.txt which adds Folly error suppression flags.
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/jni/CMakeLists.txt"
+        }
     }
 
     aaptOptions {

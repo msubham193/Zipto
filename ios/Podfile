@@ -52,11 +52,15 @@ target 'Zipto' do
     swift_header_dir  = "#{installer.sandbox.root}/Headers/Public/FirebaseAuth"
     swift_header_path = "#{swift_header_dir}/FirebaseAuth-Swift.h"
     FileUtils.mkdir_p(swift_header_dir)
-    generated_path = "#{installer.sandbox.root}/../build/DerivedData/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h"
-    if File.exist?(generated_path)
-      FileUtils.cp(generated_path, swift_header_path)
+    derived_data_root = File.expand_path("~/Library/Developer/Xcode/DerivedData")
+    generated_candidates = Dir.glob("#{derived_data_root}/Zipto-*/Index.noindex/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h") +
+                           Dir.glob("#{derived_data_root}/Zipto-*/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h") +
+                           ["#{installer.sandbox.root}/../build/DerivedData/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h"]
+    real_header = generated_candidates.find { |p| File.exist?(p) && File.size(p) > 1000 }
+    if real_header
+      FileUtils.cp(real_header, swift_header_path)
     else
-      File.write(swift_header_path, "// Bootstrap placeholder — replaced by Xcode when FirebaseAuth compiles.\n") unless File.exist?(swift_header_path) && File.size(swift_header_path) > 100
+      File.write(swift_header_path, "// Bootstrap placeholder — replaced by Xcode when FirebaseAuth compiles.\n") unless File.exist?(swift_header_path) && File.size(swift_header_path) > 1000
     end
 
     # Fix module name + umbrella clashes caused by RN 0.83.x pods sharing public-header
@@ -93,7 +97,7 @@ target 'Zipto' do
         # Fix: FirebaseAuth-Swift.h not found in RNFBMessaging during ScanDependencies.
         # Append the derived-data location where Xcode places the generated Swift
         # compatibility header. Using APPEND so the CocoaPods-set paths are preserved.
-        if target.name == 'RNFBMessaging'
+        if ['RNFBMessaging', 'RNFBAuth'].include?(target.name)
           config.build_settings['HEADER_SEARCH_PATHS'] = [
             '$(inherited)',
             '"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth/Swift Compatibility Header"',
