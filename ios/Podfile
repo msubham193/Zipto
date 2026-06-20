@@ -53,14 +53,22 @@ target 'Zipto' do
     swift_header_path = "#{swift_header_dir}/FirebaseAuth-Swift.h"
     FileUtils.mkdir_p(swift_header_dir)
     derived_data_root = File.expand_path("~/Library/Developer/Xcode/DerivedData")
-    generated_candidates = Dir.glob("#{derived_data_root}/Zipto-*/Index.noindex/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h") +
-                           Dir.glob("#{derived_data_root}/Zipto-*/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h") +
-                           ["#{installer.sandbox.root}/../build/DerivedData/Build/Products/Debug-iphonesimulator/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h"]
-    real_header = generated_candidates.find { |p| File.exist?(p) && File.size(p) > 1000 }
+    %w[Debug-iphoneos Release-iphoneos Debug-iphonesimulator Release-iphonesimulator].each do |config|
+      Dir.glob("#{derived_data_root}/Zipto-*/Build/Intermediates.noindex/ArchiveIntermediates/Zipto/BuildProductsPath/#{config}/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h") +
+      Dir.glob("#{derived_data_root}/Zipto-*/Index.noindex/Build/Products/#{config}/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h") +
+      Dir.glob("#{derived_data_root}/Zipto-*/Build/Products/#{config}/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h")
+    end
+    generated_candidates = Dir.glob("#{derived_data_root}/Zipto-*/**/FirebaseAuth/Swift Compatibility Header/FirebaseAuth-Swift.h")
+    real_header = generated_candidates.select { |p| File.exist?(p) && File.size(p) > 1000 }
+                                      .max_by { |p| File.mtime(p) }
     if real_header
       FileUtils.cp(real_header, swift_header_path)
     else
-      File.write(swift_header_path, "// Bootstrap placeholder — replaced by Xcode when FirebaseAuth compiles.\n") unless File.exist?(swift_header_path) && File.size(swift_header_path) > 1000
+      # No real header found yet — only write a placeholder if nothing useful is there.
+      # (On the very first clean build the header won't exist; FirebaseAuth builds first
+      # via add_dependency and generates the real file in DerivedData.)
+      existing = File.exist?(swift_header_path) ? File.read(swift_header_path) : ''
+      File.write(swift_header_path, "// placeholder\n") if existing.empty?
     end
 
     # Fix module name + umbrella clashes caused by RN 0.83.x pods sharing public-header
@@ -76,6 +84,26 @@ target 'Zipto' do
     }.each do |path, content|
       next unless File.exist?(path)
       File.write(path, content)
+    end
+
+    # RNFBMessaging+AppDelegate.m imports <Firebase/Firebase.h> which does include
+    # <FirebaseAuth/FirebaseAuth.h> via __has_include — but Xcode 26 explicit-modules
+    # doesn't process that transitive include before it scans the file, so FIRAuth
+    # ends up as a bare @class forward declaration from FirebaseAuthInterop.
+    # Patch the file to add the explicit import directly, bypassing module ordering.
+    rnfb_appdelegate = File.expand_path(
+      "../../node_modules/@react-native-firebase/messaging/ios/RNFBMessaging/RNFBMessaging+AppDelegate.m",
+      installer.sandbox.root
+    )
+    if File.exist?(rnfb_appdelegate)
+      src = File.read(rnfb_appdelegate)
+      unless src.include?('#import <FirebaseAuth/FirebaseAuth.h>')
+        patched = src.sub(
+          '#import <Firebase/Firebase.h>',
+          "#import <Firebase/Firebase.h>\n#import <FirebaseAuth/FirebaseAuth.h>"
+        )
+        File.write(rnfb_appdelegate, patched) if patched != src
+      end
     end
 
     installer.pods_project.targets.each do |target|
@@ -95,14 +123,18 @@ target 'Zipto' do
         end
 
         # Fix: FirebaseAuth-Swift.h not found in RNFBMessaging during ScanDependencies.
-        # Append the derived-data location where Xcode places the generated Swift
-        # compatibility header. Using APPEND so the CocoaPods-set paths are preserved.
         if ['RNFBMessaging', 'RNFBAuth'].include?(target.name)
           config.build_settings['HEADER_SEARCH_PATHS'] = [
             '$(inherited)',
             '"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth/Swift Compatibility Header"',
             '"${BUILT_PRODUCTS_DIR}/FirebaseAuth/Swift Compatibility Header"',
           ]
+          config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        end
+
+        # Xcode 26: libtool fails for RNGestureHandler with explicit-modules object files.
+        if target.name == 'RNGestureHandler'
+          config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
         end
       end
     end
