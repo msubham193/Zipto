@@ -69,7 +69,11 @@ export interface FareEstimateResponse {
       surge_multiplier: number;
       minimum_fare: number;
       platform_fee?: number;
+      gst_percent?: number;
+      gst_amount?: number;
       platform_fee_gst?: number;
+      delivery_charge?: number;
+      total_payable?: number;
       multi_stop_charge?: number;
       subtotal?: number;
     };
@@ -95,6 +99,7 @@ export interface CreateBookingRequest {
   paid_by?: 'sender' | 'receiver';
   coins_to_redeem?: number;
   coupon_code?: string;
+  gstin?: string;
 }
 
 export interface CreateBookingResponse {

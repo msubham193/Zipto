@@ -288,6 +288,8 @@ const FareEstimate = () => {
         paid_by: paidBy as 'sender' | 'receiver',
         coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
         coupon_code: appliedCoupon?.code || undefined,
+        // B2B: business GSTIN for tax invoice / Input Tax Credit (15 chars).
+        gstin: confirmedGstin || undefined,
       };
       console.log('📦 [FareEstimate] Booking payload:', JSON.stringify({
         receiver_name: bookingData.receiver_name,
@@ -598,7 +600,22 @@ const FareEstimate = () => {
                 <Text style={styles.rowLabel}>Platform Fee</Text>
               </View>
               <Text style={styles.rowValue}>
-                ₹{((breakdown?.platform_fee || 0) + (breakdown?.platform_fee_gst || 0)).toFixed(0)}
+                ₹{(breakdown?.platform_fee || 0).toFixed(0)}
+              </Text>
+            </View>
+          )}
+          {((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0) > 0 && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FEF2F2' }]}>
+                  <Icon name="receipt-long" size={sp(13)} color="#DC2626" />
+                </View>
+                <Text style={styles.rowLabel}>
+                  GST{breakdown?.gst_percent ? ` (${breakdown.gst_percent}%)` : ''}
+                </Text>
+              </View>
+              <Text style={styles.rowValue}>
+                ₹{((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0).toFixed(2)}
               </Text>
             </View>
           )}

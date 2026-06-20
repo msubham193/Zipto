@@ -93,6 +93,8 @@ const Home = () => {
   const isFocused = useIsFocused();
   const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
+  // One-time rider intro animation that plays across the screen on load.
+  const [showRider, setShowRider] = useState(true);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
   const headerBgRef = useRef<LottieView>(null);
