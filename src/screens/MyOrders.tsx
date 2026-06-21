@@ -213,7 +213,7 @@ const MyOrders = () => {
         showAlert('Session expired', 'Please sign in again to download your invoice.');
         return;
       }
-      const url = `https://api.ridezipto.com/api/payment/invoice/${b.id}/view?token=${encodeURIComponent(token)}`;
+      const url = `https://api.ridezipto.com/api/payment/invoice/${b.id}/pdf?token=${encodeURIComponent(token)}`;
       const ok = await Linking.canOpenURL(url);
       if (ok) {
         await Linking.openURL(url);
