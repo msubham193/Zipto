@@ -11,6 +11,7 @@ import {
   TextInput,
   Animated,
   Easing,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -202,6 +203,27 @@ const MyOrders = () => {
   };
 
   const isActiveBooking = (b: BookingDetails) => ACTIVE_STATUSES.includes(b.status?.toLowerCase());
+
+  // Open the GST/tax invoice (print-ready HTML) in the device browser, where the
+  // customer can Save-as-PDF / share. Auth is the access token passed in the URL.
+  const handleDownloadInvoice = async (b: BookingDetails) => {
+    try {
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token) {
+        showAlert('Session expired', 'Please sign in again to download your invoice.');
+        return;
+      }
+      const url = `https://api.ridezipto.com/api/payment/invoice/${b.id}/view?token=${encodeURIComponent(token)}`;
+      const ok = await Linking.canOpenURL(url);
+      if (ok) {
+        await Linking.openURL(url);
+      } else {
+        showAlert('Unavailable', 'Could not open the invoice on this device.');
+      }
+    } catch {
+      showAlert('Something went wrong', 'Could not open the invoice. Please try again.');
+    }
+  };
 
   const handleTrack = (b: BookingDetails) => {
     const pickupCoords = b.pickup_location?.coordinates
@@ -516,6 +538,18 @@ const MyOrders = () => {
           >
             <MaterialIcons name="star-outline" size={ms(18)} color="#F59E0B" />
             <Text style={styles.rateButtonText}>Rate this delivery</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Download GST invoice — only for orders where a GSTIN was applied (B2B) */}
+        {isCompleted && !!booking.customer_gstin && (
+          <TouchableOpacity
+            style={styles.invoiceButton}
+            activeOpacity={0.7}
+            onPress={() => handleDownloadInvoice(booking)}
+          >
+            <MaterialIcons name="receipt-long" size={ms(18)} color="#16A34A" />
+            <Text style={styles.invoiceButtonText}>Download GST Invoice</Text>
           </TouchableOpacity>
         )}
 
@@ -1407,6 +1441,19 @@ const styles = StyleSheet.create({
     borderColor: '#FDE68A',
   },
   rateButtonText: { fontSize: fs(14), fontWeight: '600', color: '#92400E' },
+  invoiceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: hs(6),
+    paddingVertical: vs(10),
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(10),
+    marginTop: vs(8),
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  invoiceButtonText: { fontSize: fs(14), fontWeight: '600', color: '#16A34A' },
 
   // ── Rating Modal ──
   ratingModalContainer: {

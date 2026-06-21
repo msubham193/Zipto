@@ -199,6 +199,8 @@ export interface BookingDetails {
   receiver_phone?: string;
   alternative_phone?: string;
   vehicle_type?: string;
+  /** B2B customer GSTIN captured at checkout — present → show "Download GST Invoice". */
+  customer_gstin?: string | null;
   payments?: {
     id: string;
     amount: string;
