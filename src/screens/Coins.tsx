@@ -7,13 +7,13 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
 import EnterView from '../components/EnterView';
@@ -128,22 +128,12 @@ const Coins = () => {
         >
           {/* ── Balance Card ── */}
           <EnterView delay={40} style={styles.balanceCardContainer}>
-            <LinearGradient
-              colors={['#6366F1', '#8B5CF6', '#A855F7']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <ImageBackground
+              source={require('../assets/images/coins-bg.png')}
               style={styles.balanceCard}
+              imageStyle={styles.balanceCardImage}
+              resizeMode="cover"
             >
-              {/* Big star icon — top-right watermark */}
-              <View style={styles.coinsIconContainer}>
-                <MaterialIcons name="stars" size={ms(80)} color="#FCD34D" />
-              </View>
-
-              {/* Decorative circles */}
-              <View style={[styles.decorCircle, styles.decorCircle1]} />
-              <View style={[styles.decorCircle, styles.decorCircle2]} />
-              <View style={[styles.decorCircle, styles.decorCircle3]} />
-
               <View style={styles.balanceInfo}>
                 <Text style={styles.balanceLabel}>Available Coins</Text>
                 {balanceError ? (
@@ -162,7 +152,7 @@ const Coins = () => {
                   <Text style={styles.rateText}>{rate}</Text>
                 </View>
               ) : null}
-            </LinearGradient>
+            </ImageBackground>
           </EnterView>
 
           {/* ── Earn More Coins ── */}
@@ -262,12 +252,15 @@ const styles = StyleSheet.create({
     position:      'relative',
     overflow:      'hidden',
     minHeight:     vs(180),
+    justifyContent: 'space-between',
+    backgroundColor: '#1E40FF', // fallback while the image loads
     elevation:     8,
-    shadowColor:   '#6366F1',
+    shadowColor:   '#1E40FF',
     shadowOffset:  { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius:  8,
   },
+  balanceCardImage: { borderRadius: ms(20) },
   coinsIconContainer: {
     position: 'absolute',
     right:    hs(16),
