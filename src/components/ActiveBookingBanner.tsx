@@ -189,7 +189,7 @@ const ActiveBookingBanner: React.FC = () => {
         <View style={styles.right}>
           {fare > 0 && (
             <Text style={[styles.fare, { color: cfg.color }]}>
-              ₹{Math.round(fare)}
+              ₹{Number(fare).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
             </Text>
           )}
           <MaterialIcons name="chevron-right" size={22} color={cfg.color} />

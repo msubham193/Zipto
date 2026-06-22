@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
 import EnterView from '../components/EnterView';
@@ -134,6 +135,14 @@ const Coins = () => {
               imageStyle={styles.balanceCardImage}
               resizeMode="cover"
             >
+              {/* Dark overlay — heavier on the left so the text reads clearly,
+                  fading right so the coins stay visible. */}
+              <LinearGradient
+                colors={['rgba(8,15,70,0.86)', 'rgba(8,15,70,0.55)', 'rgba(8,15,70,0.20)']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.balanceCardOverlay}
+              />
               <View style={styles.balanceInfo}>
                 <Text style={styles.balanceLabel}>Available Coins</Text>
                 {balanceError ? (
@@ -261,6 +270,11 @@ const styles = StyleSheet.create({
     shadowRadius:  8,
   },
   balanceCardImage: { borderRadius: ms(20) },
+  balanceCardOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: ms(20),
+  },
   coinsIconContainer: {
     position: 'absolute',
     right:    hs(16),

@@ -242,10 +242,10 @@ const Wallet = () => {
                             : styles.txnAmountDebit,
                         ]}>
                         {txn.type === 'credit' ? '+' : '-'}₹
-                        {parseFloat(txn.amount as unknown as string).toFixed(0)}
+                        {parseFloat(txn.amount as unknown as string).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                       </Text>
                       <Text style={styles.txnBalance}>
-                        Bal: ₹{parseFloat(txn.balance_after as unknown as string).toFixed(0)}
+                        Bal: ₹{parseFloat(txn.balance_after as unknown as string).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                       </Text>
                     </View>
                   </View>

@@ -487,7 +487,7 @@ const MyOrders = () => {
             <Text style={styles.footerText}>{formatDate(booking.created_at)}</Text>
           </View>
           <Text style={styles.amountText}>
-            ₹{parseFloat(booking.estimated_fare || '0').toFixed(0)}
+            ₹{parseFloat(booking.estimated_fare || '0').toLocaleString('en-IN', { maximumFractionDigits: 2 })}
           </Text>
         </View>
 
@@ -522,7 +522,7 @@ const MyOrders = () => {
               <>
                 <MaterialIcons name="lock" size={ms(16)} color="#FFFFFF" />
                 <Text style={styles.payNowButtonText}>
-                  Pay ₹{parseFloat((booking as any).final_fare || booking.estimated_fare || '0').toFixed(0)}
+                  Pay ₹{parseFloat((booking as any).final_fare || booking.estimated_fare || '0').toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                 </Text>
               </>
             )}

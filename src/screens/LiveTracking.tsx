@@ -40,6 +40,10 @@ interface DriverInfo {
   profile_image?: string | null;
 }
 
+/** Money: show decimals only when present (₹59 stays ₹59, ₹59.28 shows fully). */
+const money = (n: number) =>
+  (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
 /** Haversine distance in km — for display only, no API call */
 function haversineKm(
   lat1: number, lon1: number,
@@ -618,7 +622,7 @@ const LiveTracking = () => {
       showAlert('Error', 'Booking not found. Please refresh and try again.');
       return;
     }
-    const payAmount = Math.round(liveFare);
+    const payAmount = Math.round((Number(liveFare) || 0) * 100) / 100; // exact ₹ (online pays exact decimal)
     if (!payAmount || payAmount <= 0) {
       showAlert('Error', 'Invalid payment amount. Please try again.');
       return;
@@ -1069,7 +1073,7 @@ const LiveTracking = () => {
                       <Text style={styles.paymentDueSub}>Complete your delivery payment</Text>
                     </View>
                   </View>
-                  <Text style={styles.paymentDueAmount}>₹{Math.round(liveFare)}</Text>
+                  <Text style={styles.paymentDueAmount}>₹{money(liveFare)}</Text>
                   <TouchableOpacity
                     style={styles.payNowBtnLarge}
                     onPress={handleOnlinePayment}
@@ -1080,7 +1084,7 @@ const LiveTracking = () => {
                       ? <ActivityIndicator size="small" color="#FFFFFF" />
                       : <>
                           <Icon name="lock" size={ms(16)} color="#FFFFFF" style={{ marginRight: ms(6) }} />
-                          <Text style={styles.payNowBtnLargeText}>Pay ₹{Math.round(liveFare)} Securely</Text>
+                          <Text style={styles.payNowBtnLargeText}>Pay ₹{money(liveFare)} Securely</Text>
                         </>
                     }
                   </TouchableOpacity>
@@ -1106,7 +1110,7 @@ const LiveTracking = () => {
                   <Icon name="check-circle" size={ms(28)} color="#059669" />
                   <View style={styles.paidCardText}>
                     <Text style={styles.paidCardTitle}>Payment Complete</Text>
-                    <Text style={styles.paidCardSub}>₹{Math.round(liveFare)} paid successfully</Text>
+                    <Text style={styles.paidCardSub}>₹{money(liveFare)} paid successfully</Text>
                   </View>
                 </View>
               )}
@@ -1123,7 +1127,7 @@ const LiveTracking = () => {
             <View style={styles.bottomActionsRow}>
               <View style={styles.fareContainerModern}>
                 <Text style={styles.fareLabelModern}>Fare</Text>
-                <Text style={styles.fareValueModern}>₹{Math.round(liveFare)}</Text>
+                <Text style={styles.fareValueModern}>₹{money(liveFare)}</Text>
               </View>
               <TouchableOpacity
                 style={styles.homeBtnModern}
@@ -1140,7 +1144,7 @@ const LiveTracking = () => {
                   {paidBy === 'receiver' ? 'Receiver Pays' : 'To Pay'}
                 </Text>
                 <View style={styles.fareAmountRow}>
-                  <Text style={styles.fareValueModern}>₹{Math.round(liveFare)}</Text>
+                  <Text style={styles.fareValueModern}>₹{money(liveFare)}</Text>
                   <View style={styles.paymentMethodBadge}>
                     <Text style={styles.paymentMethodModern}>
                       {paidBy === 'receiver' ? 'RECEIVER' : 'ONLINE'}
@@ -1178,12 +1182,12 @@ const LiveTracking = () => {
             <View style={styles.retryFareRow}>
               <View style={styles.retryFareBox}>
                 <Text style={styles.retryFareLabel}>Current Fare</Text>
-                <Text style={styles.retryFareOld}>₹{Math.round(currentFare)}</Text>
+                <Text style={styles.retryFareOld}>₹{money(currentFare)}</Text>
               </View>
               <Icon name="arrow-forward" size={ms(20)} color="#9CA3AF" />
               <View style={[styles.retryFareBox, styles.retryFareBoxNew]}>
                 <Text style={styles.retryFareLabel}>New Fare</Text>
-                <Text style={styles.retryFareNew}>₹{Math.round(suggestedFare)}</Text>
+                <Text style={styles.retryFareNew}>₹{money(suggestedFare)}</Text>
               </View>
             </View>
 
@@ -1194,7 +1198,7 @@ const LiveTracking = () => {
             >
               {retryLoading
                 ? <ActivityIndicator color="#FFFFFF" />
-                : <Text style={styles.retryAcceptText}>Search Again at ₹{Math.round(suggestedFare)}</Text>
+                : <Text style={styles.retryAcceptText}>Search Again at ₹{money(suggestedFare)}</Text>
               }
             </TouchableOpacity>
 
