@@ -434,16 +434,20 @@ const FareEstimate = () => {
   }
 
   const breakdown = estimateData?.breakdown;
-  const baseFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  // Keep exact decimals (e.g. ₹59.28) — GST makes fares non-whole. The rider
+  // collects a whole rupee in CASH (rounded up); online charges the exact value.
+  const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+  const money = (n: number | undefined | null) => `₹${round2(Number(n) || 0).toFixed(2)}`;
+  const baseFare = round2((estimateData?.estimated_fare || 0) + (helperCost || 0));
   const COINS_PER_REDEMPTION = 100;
   const RUPEES_PER_REDEMPTION = 2;
   const coinDiscount = useCoins ? RUPEES_PER_REDEMPTION : 0;
   const couponDiscount = appliedCoupon?.discount_amount ?? 0;
-  const totalFare = Math.max(0, baseFare - coinDiscount - couponDiscount);
+  const totalFare = round2(Math.max(0, baseFare - coinDiscount - couponDiscount));
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
   const surgeExtra = hasSurge && breakdown?.subtotal
-    ? Math.round((estimateData?.estimated_fare || 0) - breakdown.subtotal)
+    ? round2((estimateData?.estimated_fare || 0) - breakdown.subtotal)
     : 0;
 
   const getSurgeLabel = (multiplier: number): string => {
@@ -580,7 +584,7 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.rowLabel}>Base Fare</Text>
             </View>
-            <Text style={styles.rowValue}>₹{breakdown?.base_fare || 0}</Text>
+            <Text style={styles.rowValue}>{money(breakdown?.base_fare)}</Text>
           </View>
           <View style={styles.row}>
             <View style={styles.rowLabelWrap}>
@@ -589,7 +593,7 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.rowLabel}>Distance Charge</Text>
             </View>
-            <Text style={styles.rowValue}>₹{breakdown?.distance_charge || 0}</Text>
+            <Text style={styles.rowValue}>{money(breakdown?.distance_charge)}</Text>
           </View>
           {(breakdown?.platform_fee || 0) > 0 && (
             <View style={styles.row}>
@@ -600,7 +604,7 @@ const FareEstimate = () => {
                 <Text style={styles.rowLabel}>Platform Fee</Text>
               </View>
               <Text style={styles.rowValue}>
-                ₹{(breakdown?.platform_fee || 0).toFixed(0)}
+                {money(breakdown?.platform_fee)}
               </Text>
             </View>
           )}
@@ -628,7 +632,7 @@ const FareEstimate = () => {
                   </View>
                   <Text style={styles.rowLabel}>Subtotal (before surge)</Text>
                 </View>
-                <Text style={styles.rowValue}>₹{breakdown?.subtotal || 0}</Text>
+                <Text style={styles.rowValue}>{money(breakdown?.subtotal)}</Text>
               </View>
               <View style={styles.row}>
                 <View style={styles.rowLabelWrap}>
@@ -639,7 +643,7 @@ const FareEstimate = () => {
                     Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
                   </Text>
                 </View>
-                <Text style={[styles.rowValue, styles.surgeRowValue]}>+₹{surgeExtra}</Text>
+                <Text style={[styles.rowValue, styles.surgeRowValue]}>+{money(surgeExtra)}</Text>
               </View>
             </>
           )}
@@ -651,7 +655,7 @@ const FareEstimate = () => {
                 </View>
                 <Text style={styles.rowLabel}>Labour Charge ({helperCount}x)</Text>
               </View>
-              <Text style={styles.rowValue}>₹{helperCost || 0}</Text>
+              <Text style={styles.rowValue}>{money(helperCost)}</Text>
             </View>
           )}
           <View style={styles.divider} />
@@ -662,7 +666,7 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.totalLabel}>Subtotal</Text>
             </View>
-            <Text style={styles.totalValue}>₹{baseFare}</Text>
+            <Text style={styles.totalValue}>{money(baseFare)}</Text>
           </View>
           {useCoins && coinDiscount > 0 && (
             <View style={[styles.row, { marginTop: vs(4) }]}>
@@ -696,7 +700,7 @@ const FareEstimate = () => {
                   </View>
                   <Text style={styles.totalLabel}>Total Payable</Text>
                 </View>
-                <Text style={[styles.totalValue, { color: '#16A34A' }]}>₹{totalFare}</Text>
+                <Text style={[styles.totalValue, { color: '#16A34A' }]}>{money(totalFare)}</Text>
               </View>
             </>
           )}
@@ -903,7 +907,7 @@ const FareEstimate = () => {
             {(coinDiscount > 0 || couponDiscount > 0) ? 'Payable (after discounts)' : 'Total Fare'}
           </Text>
           {(coinDiscount > 0 || couponDiscount > 0) && (
-            <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>
+            <Text style={styles.finalPriceStrike}>{money(baseFare)}</Text>
           )}
           <Text
             style={[
@@ -913,7 +917,7 @@ const FareEstimate = () => {
             adjustsFontSizeToFit
             numberOfLines={1}
           >
-            ₹{totalFare}
+            {money(totalFare)}
           </Text>
         </View>
         <Button
