@@ -3,6 +3,7 @@ import {
   View,
   StyleSheet,
   Text,
+  Image,
   TouchableOpacity,
   ActivityIndicator,
   Linking,
@@ -36,6 +37,7 @@ interface DriverInfo {
   vehicle_number?: string;
   rating?: number;
   total_trips?: number;
+  profile_image?: string | null;
 }
 
 /** Haversine distance in km — for display only, no API call */
@@ -415,6 +417,10 @@ const LiveTracking = () => {
             vehicle_number: data.driver.vehicle_number,
             rating: (data as any).driver_stats?.average_rating ?? data.driver.rating,
             total_trips: (data as any).driver_stats?.total_trips,
+            profile_image:
+              (data as any).driver_stats?.profile_image ||
+              (data.driver as any).profile_image ||
+              null,
           });
         }
         if (data.delivery_otp)        setOtp(data.delivery_otp);
@@ -953,9 +959,17 @@ const LiveTracking = () => {
           {/* Driver Card (when assigned) */}
           {driver && bookingStatus !== 'searching' && (
             <View style={styles.driverCard}>
-              {/* Initials avatar */}
+              {/* Rider photo, with initials fallback */}
               <View style={styles.driverAvatarNew}>
-                <Text style={styles.driverInitial}>{driver.name.charAt(0).toUpperCase()}</Text>
+                {driver.profile_image ? (
+                  <Image
+                    source={{ uri: driver.profile_image }}
+                    style={styles.driverAvatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.driverInitial}>{driver.name.charAt(0).toUpperCase()}</Text>
+                )}
               </View>
 
               {/* Info column */}
@@ -1660,6 +1674,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: ms(6),
     elevation: 5,
+    overflow: 'hidden',
+  },
+  driverAvatarImage: {
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
   },
   driverInitial: {
     fontSize: fs(16),
