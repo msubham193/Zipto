@@ -313,7 +313,7 @@ const Home = () => {
             </View>
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoTitle}>We only handle pickup & delivery.</Text>
-              <Text style={styles.infoDesc}>Product quality is managed by the seller.</Text>
+              <Text style={styles.infoDesc}>Product quality is managed by the sender.</Text>
             </View>
           </View>
         </ScrollView>

@@ -38,16 +38,31 @@ async function requestPermission(): Promise<boolean> {
   );
 }
 
-function getGPS(): Promise<{ latitude: number; longitude: number }> {
+function getGPS(highAccuracy: boolean): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) =>
     Geolocation.getCurrentPosition(
       pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
       reject,
-      // maximumAge: use device-cached GPS if less than 2 min old — instant on most devices
-      // timeout reduced to 5s so the skeleton clears faster on first permission grant
-      { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 },
+      {
+        // High accuracy uses GPS (precise, ~5–15m) instead of coarse cell/wifi
+        // (~hundreds of m). Give GPS time to get a lock; only reuse a very fresh
+        // cached fix (10s) so we don't return a stale approximate position.
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 15000 : 10000,
+        maximumAge: 10000,
+      },
     ),
   );
+}
+
+// Precise GPS first; if it can't get a lock in time, fall back to a coarse fix
+// so the user is never left without a location.
+async function getPreciseGPS(): Promise<{ latitude: number; longitude: number }> {
+  try {
+    return await getGPS(true);
+  } catch {
+    return await getGPS(false);
+  }
 }
 
 function coordsMoved(lat1: number | null, lon1: number | null, lat2: number, lon2: number): boolean {
@@ -121,7 +136,7 @@ export const useLocationStore = create<LocationState>((set, get) => {
             return;
           }
 
-          const { latitude, longitude } = await getGPS();
+          const { latitude, longitude } = await getPreciseGPS();
 
           // Skip reverse geocode if device barely moved — reuse existing address
           const current = get();

@@ -107,7 +107,7 @@ const Login = () => {
           >
             <Text style={styles.title}>Welcome to Zipto</Text>
             <Text style={styles.subtitle}>
-              Enter your mobile number to access your rides quickly.
+              Enter your mobile number to access your deliveries quickly.
             </Text>
             <Text style={styles.helperText}>
               We will send a one-time password to this mobile number.
