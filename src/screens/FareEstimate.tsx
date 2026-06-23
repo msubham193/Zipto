@@ -446,9 +446,17 @@ const FareEstimate = () => {
   const totalFare = round2(Math.max(0, baseFare - coinDiscount - couponDiscount));
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
-  const surgeExtra = hasSurge && breakdown?.subtotal
-    ? round2((estimateData?.estimated_fare || 0) - breakdown.subtotal)
-    : 0;
+  // Surge applies ONLY to the delivery charge. backend `subtotal`/`delivery_charge`
+  // is the POST-surge delivery; the surge amount is the difference between that and
+  // the pre-surge components (base + distance + multi-stop), so the rows foot to
+  // the delivery charge: base + distance + surge = delivery.
+  const deliveryBeforeSurge = round2(
+    (breakdown?.base_fare || 0) +
+      (breakdown?.distance_charge || 0) +
+      (breakdown?.multi_stop_charge || 0),
+  );
+  const deliveryCharge = round2(breakdown?.delivery_charge ?? breakdown?.subtotal ?? 0);
+  const surgeAmount = hasSurge ? round2(deliveryCharge - deliveryBeforeSurge) : 0;
 
   const getSurgeLabel = (multiplier: number): string => {
     if (multiplier >= 1.6) return 'Peak Hour Surge';
@@ -595,6 +603,43 @@ const FareEstimate = () => {
             </View>
             <Text style={styles.rowValue}>{money(breakdown?.distance_charge)}</Text>
           </View>
+          {(breakdown?.multi_stop_charge || 0) > 0 && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#ECFEFF' }]}>
+                  <Icon name="add-location-alt" size={sp(13)} color="#0891B2" />
+                </View>
+                <Text style={styles.rowLabel}>Extra Stops</Text>
+              </View>
+              <Text style={styles.rowValue}>{money(breakdown?.multi_stop_charge)}</Text>
+            </View>
+          )}
+          {/* Surge applies to the delivery charge only — shown between the ride
+              components and GST so the rows foot: base + distance + surge = delivery. */}
+          {hasSurge && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FFF1F2' }]}>
+                  <Icon name="bolt" size={sp(13)} color="#DC2626" />
+                </View>
+                <Text style={[styles.rowLabel, styles.surgeRowLabel]}>
+                  Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
+                </Text>
+              </View>
+              <Text style={[styles.rowValue, styles.surgeRowValue]}>+{money(surgeAmount)}</Text>
+            </View>
+          )}
+          {hasSurge && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#F9FAFB' }]}>
+                  <Icon name="local-shipping" size={sp(13)} color="#6B7280" />
+                </View>
+                <Text style={styles.rowLabel}>Delivery Charge</Text>
+              </View>
+              <Text style={styles.rowValue}>{money(deliveryCharge)}</Text>
+            </View>
+          )}
           {((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0) > 0 && (
             <View style={styles.row}>
               <View style={styles.rowLabelWrap}>
@@ -622,30 +667,6 @@ const FareEstimate = () => {
                 {money(breakdown?.platform_fee)}
               </Text>
             </View>
-          )}
-          {hasSurge && (
-            <>
-              <View style={styles.row}>
-                <View style={styles.rowLabelWrap}>
-                  <View style={[styles.rowIconBox, { backgroundColor: '#F9FAFB' }]}>
-                    <Icon name="calculate" size={sp(13)} color="#6B7280" />
-                  </View>
-                  <Text style={styles.rowLabel}>Subtotal (before surge)</Text>
-                </View>
-                <Text style={styles.rowValue}>{money(breakdown?.subtotal)}</Text>
-              </View>
-              <View style={styles.row}>
-                <View style={styles.rowLabelWrap}>
-                  <View style={[styles.rowIconBox, { backgroundColor: '#FFF1F2' }]}>
-                    <Icon name="bolt" size={sp(13)} color="#DC2626" />
-                  </View>
-                  <Text style={[styles.rowLabel, styles.surgeRowLabel]}>
-                    Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
-                  </Text>
-                </View>
-                <Text style={[styles.rowValue, styles.surgeRowValue]}>+{money(surgeExtra)}</Text>
-              </View>
-            </>
           )}
           {(helperCount || 0) > 0 && (
             <View style={styles.row}>
