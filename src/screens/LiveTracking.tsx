@@ -360,7 +360,8 @@ const LiveTracking = () => {
         } else if (offerData?.status === 'timed_out') {
           const curFare = offerData.current_fare ?? liveFare;
           setCurrentFare(curFare);
-          setSuggestedFare(Math.round(curFare + 10));
+          // Bump by a true +₹10, preserving any decimal (₹73.44 → ₹83.44).
+          setSuggestedFare(Math.round((curFare + 10) * 100) / 100);
           setRetryCount(offerData.retry_count ?? 0);
           setLiveFare(curFare);
           setRetryModalVisible(true);
@@ -580,7 +581,8 @@ const LiveTracking = () => {
   };
 
   const handleIncreaseFare = async () => {
-    const newFare = Math.round(liveFare + 10);
+    // True +₹10 bump, keeping any decimal (₹73.44 → ₹83.44).
+    const newFare = Math.round((liveFare + 10) * 100) / 100;
     try {
       setFareIncreasing(true);
       await vehicleApi.updateOfferFare(bookingId, newFare);
