@@ -255,7 +255,10 @@ const FareEstimate = () => {
           params: {
             bookingId, pickup: pickup || '', drop: drop || '',
             pickupCoords, dropCoords, vehicleType: selectedVehicleType,
-            fare: Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0)),
+            // Exact amount to pay (decimals preserved + coin/coupon discounts
+            // applied) — LiveTracking shows this as "To Pay", so it must not be
+            // rounded (₹65.18, not ₹65).
+            fare: totalFare,
             showBookingSuccess, paidBy, helperCount, helperCost,
           },
         },
