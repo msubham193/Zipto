@@ -3,6 +3,7 @@ import {
   View,
   StyleSheet,
   Text,
+  Image,
   TouchableOpacity,
   ActivityIndicator,
   Linking,
@@ -24,6 +25,8 @@ import { googleMapsApi } from '../api/googleMaps';
 import { useBookingStore } from '../store/useBookingStore';
 import { connectSocket, onDriverLocation } from '../services/socketService';
 import { MAP_STYLE } from '../utils/mapStyle';
+import RatingModal from '../components/RatingModal';
+import { setPendingRating, clearPendingRating } from '../utils/pendingRating';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs, SCREEN_WIDTH, SCREEN_HEIGHT } from '../utils/metrics';
 
 type BookingStatus = 'searching' | 'assigned' | 'arriving' | 'in_progress' | 'completed' | 'cancelled';
@@ -34,7 +37,12 @@ interface DriverInfo {
   vehicle_number?: string;
   rating?: number;
   total_trips?: number;
+  profile_image?: string | null;
 }
+
+/** Money: show decimals only when present (₹59 stays ₹59, ₹59.28 shows fully). */
+const money = (n: number) =>
+  (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 /** Haversine distance in km — for display only, no API call */
 function haversineKm(
@@ -169,6 +177,9 @@ const LiveTracking = () => {
   // AnimatedRegion drives smooth gliding of the driver marker between fixes.
   const driverAnim = useRef<AnimatedRegion | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  // Rating prompt after delivery (shown once; reset guard so polling can't re-open it)
+  const [showRating, setShowRating] = useState(false);
+  const ratingHandledRef = useRef(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
   const [successModal, setSuccessModal] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -349,7 +360,8 @@ const LiveTracking = () => {
         } else if (offerData?.status === 'timed_out') {
           const curFare = offerData.current_fare ?? liveFare;
           setCurrentFare(curFare);
-          setSuggestedFare(Math.round(curFare + 10));
+          // Bump by a true +₹10, preserving any decimal (₹73.44 → ₹83.44).
+          setSuggestedFare(Math.round((curFare + 10) * 100) / 100);
           setRetryCount(offerData.retry_count ?? 0);
           setLiveFare(curFare);
           setRetryModalVisible(true);
@@ -377,6 +389,20 @@ const LiveTracking = () => {
         } else if (status === 'completed') {
           setBookingStatus('completed');
           clearActiveBooking();
+          // Prompt the customer to rate the rider (once), unless already rated.
+          if (!ratingHandledRef.current) {
+            ratingHandledRef.current = true;
+            const rateId = realBookingId || bookingId;
+            const rateDriver = data.driver?.name;
+            (async () => {
+              try {
+                const existing: any = await vehicleApi.getRatingByBooking(rateId);
+                if (existing?.rating) return; // already rated
+              } catch { /* still prompt */ }
+              await setPendingRating({ bookingId: rateId, driverName: rateDriver });
+              setShowRating(true);
+            })();
+          }
         } else if (status === 'in_progress' || status === 'picked_up' || status === 'ongoing') {
           // 'ongoing' is the real backend status after pickup OTP is verified
           setBookingStatus('in_progress');
@@ -396,6 +422,10 @@ const LiveTracking = () => {
             vehicle_number: data.driver.vehicle_number,
             rating: (data as any).driver_stats?.average_rating ?? data.driver.rating,
             total_trips: (data as any).driver_stats?.total_trips,
+            profile_image:
+              (data as any).driver_stats?.profile_image ||
+              (data.driver as any).profile_image ||
+              null,
           });
         }
         if (data.delivery_otp)        setOtp(data.delivery_otp);
@@ -551,7 +581,8 @@ const LiveTracking = () => {
   };
 
   const handleIncreaseFare = async () => {
-    const newFare = Math.round(liveFare + 10);
+    // True +₹10 bump, keeping any decimal (₹73.44 → ₹83.44).
+    const newFare = Math.round((liveFare + 10) * 100) / 100;
     try {
       setFareIncreasing(true);
       await vehicleApi.updateOfferFare(bookingId, newFare);
@@ -593,7 +624,7 @@ const LiveTracking = () => {
       showAlert('Error', 'Booking not found. Please refresh and try again.');
       return;
     }
-    const payAmount = Math.round(liveFare);
+    const payAmount = Math.round((Number(liveFare) || 0) * 100) / 100; // exact ₹ (online pays exact decimal)
     if (!payAmount || payAmount <= 0) {
       showAlert('Error', 'Invalid payment amount. Please try again.');
       return;
@@ -934,9 +965,17 @@ const LiveTracking = () => {
           {/* Driver Card (when assigned) */}
           {driver && bookingStatus !== 'searching' && (
             <View style={styles.driverCard}>
-              {/* Initials avatar */}
+              {/* Rider photo, with initials fallback */}
               <View style={styles.driverAvatarNew}>
-                <Text style={styles.driverInitial}>{driver.name.charAt(0).toUpperCase()}</Text>
+                {driver.profile_image ? (
+                  <Image
+                    source={{ uri: driver.profile_image }}
+                    style={styles.driverAvatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.driverInitial}>{driver.name.charAt(0).toUpperCase()}</Text>
+                )}
               </View>
 
               {/* Info column */}
@@ -1036,7 +1075,7 @@ const LiveTracking = () => {
                       <Text style={styles.paymentDueSub}>Complete your delivery payment</Text>
                     </View>
                   </View>
-                  <Text style={styles.paymentDueAmount}>₹{Math.round(liveFare)}</Text>
+                  <Text style={styles.paymentDueAmount}>₹{money(liveFare)}</Text>
                   <TouchableOpacity
                     style={styles.payNowBtnLarge}
                     onPress={handleOnlinePayment}
@@ -1047,7 +1086,7 @@ const LiveTracking = () => {
                       ? <ActivityIndicator size="small" color="#FFFFFF" />
                       : <>
                           <Icon name="lock" size={ms(16)} color="#FFFFFF" style={{ marginRight: ms(6) }} />
-                          <Text style={styles.payNowBtnLargeText}>Pay ₹{Math.round(liveFare)} Securely</Text>
+                          <Text style={styles.payNowBtnLargeText}>Pay ₹{money(liveFare)} Securely</Text>
                         </>
                     }
                   </TouchableOpacity>
@@ -1073,7 +1112,7 @@ const LiveTracking = () => {
                   <Icon name="check-circle" size={ms(28)} color="#059669" />
                   <View style={styles.paidCardText}>
                     <Text style={styles.paidCardTitle}>Payment Complete</Text>
-                    <Text style={styles.paidCardSub}>₹{Math.round(liveFare)} paid successfully</Text>
+                    <Text style={styles.paidCardSub}>₹{money(liveFare)} paid successfully</Text>
                   </View>
                 </View>
               )}
@@ -1090,7 +1129,7 @@ const LiveTracking = () => {
             <View style={styles.bottomActionsRow}>
               <View style={styles.fareContainerModern}>
                 <Text style={styles.fareLabelModern}>Fare</Text>
-                <Text style={styles.fareValueModern}>₹{Math.round(liveFare)}</Text>
+                <Text style={styles.fareValueModern}>₹{money(liveFare)}</Text>
               </View>
               <TouchableOpacity
                 style={styles.homeBtnModern}
@@ -1107,7 +1146,7 @@ const LiveTracking = () => {
                   {paidBy === 'receiver' ? 'Receiver Pays' : 'To Pay'}
                 </Text>
                 <View style={styles.fareAmountRow}>
-                  <Text style={styles.fareValueModern}>₹{Math.round(liveFare)}</Text>
+                  <Text style={styles.fareValueModern}>₹{money(liveFare)}</Text>
                   <View style={styles.paymentMethodBadge}>
                     <Text style={styles.paymentMethodModern}>
                       {paidBy === 'receiver' ? 'RECEIVER' : 'ONLINE'}
@@ -1145,12 +1184,12 @@ const LiveTracking = () => {
             <View style={styles.retryFareRow}>
               <View style={styles.retryFareBox}>
                 <Text style={styles.retryFareLabel}>Current Fare</Text>
-                <Text style={styles.retryFareOld}>₹{Math.round(currentFare)}</Text>
+                <Text style={styles.retryFareOld}>₹{money(currentFare)}</Text>
               </View>
               <Icon name="arrow-forward" size={ms(20)} color="#9CA3AF" />
               <View style={[styles.retryFareBox, styles.retryFareBoxNew]}>
                 <Text style={styles.retryFareLabel}>New Fare</Text>
-                <Text style={styles.retryFareNew}>₹{Math.round(suggestedFare)}</Text>
+                <Text style={styles.retryFareNew}>₹{money(suggestedFare)}</Text>
               </View>
             </View>
 
@@ -1161,7 +1200,7 @@ const LiveTracking = () => {
             >
               {retryLoading
                 ? <ActivityIndicator color="#FFFFFF" />
-                : <Text style={styles.retryAcceptText}>Search Again at ₹{Math.round(suggestedFare)}</Text>
+                : <Text style={styles.retryAcceptText}>Search Again at ₹{money(suggestedFare)}</Text>
               }
             </TouchableOpacity>
 
@@ -1363,6 +1402,16 @@ const LiveTracking = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Rate the rider after a completed delivery */}
+      <RatingModal
+        visible={showRating}
+        bookingId={realBookingId || bookingId}
+        driverName={driver?.name}
+        // Keep the pending flag on dismiss so Home can re-surface it; clear on submit.
+        onClose={() => setShowRating(false)}
+        onSubmitted={() => { clearPendingRating(); }}
+      />
     </View>
   );
 };
@@ -1631,6 +1680,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: ms(6),
     elevation: 5,
+    overflow: 'hidden',
+  },
+  driverAvatarImage: {
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
   },
   driverInitial: {
     fontSize: fs(16),

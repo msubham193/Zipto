@@ -218,8 +218,12 @@ const FieldInput = ({
   error?: string;
 }) => {
   const [focused, setFocused] = useState(false);
-  // Always render the same tree structure so the TextInput is never remounted
-  // when the error prop changes — remounting drops keyboard focus.
+  // IMPORTANT: keep this tree structure STABLE whether or not `error` is set.
+  // Previously the component returned the field <View> directly when there was
+  // no error and a wrapped <View> when there was — toggling that moved the
+  // TextInput into a new parent, remounting it and stealing focus (the cursor
+  // jumped to another field). Always render the wrapper; only the error Text
+  // appears/disappears as a sibling, so the TextInput is never remounted.
   return (
     <View>
       <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused, !!error && sub.fieldWrapError]}>
@@ -237,7 +241,7 @@ const FieldInput = ({
         />
         {rightNode}
       </View>
-      {error ? <Text style={sub.fieldErrorText}>{error}</Text> : null}
+      {!!error && <Text style={sub.fieldErrorText}>{error}</Text>}
     </View>
   );
 };

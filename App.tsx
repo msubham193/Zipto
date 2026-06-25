@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Platform, Text, TextInput } from 'react-native';
+import { Platform, Text, TextInput, AppState } from 'react-native';
 import { Provider } from 'react-redux';
 import { store } from './src/store';
 import './src/i18n';
 import RootNavigator from './src/navigation';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from './src/store/useAuthStore';
-import { notificationApi } from './src/api/client';
+import { notificationApi, authApi } from './src/api/client';
 import { navigationRef } from './src/navigation/navigationRef';
 import {
   InAppNotificationBanner,
@@ -137,6 +137,34 @@ function FcmInitializer({ onNotification }: FcmInitializerProps) {
   return null;
 }
 
+/**
+ * Signs the customer out if this number's active role was switched to a rider
+ * on the Rider app. Checks on mount and whenever the app returns to the
+ * foreground, so the logout is prompt (the 401-on-refresh path is the backstop).
+ */
+function SessionGuard() {
+  const { isAuthenticated, logout } = useAuthStore();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const check = async () => {
+      const me = await authApi.getMe();
+      if (me?.role && me.role !== 'customer') {
+        logout();
+      }
+    };
+
+    check();
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') check();
+    });
+    return () => sub.remove();
+  }, [isAuthenticated, logout]);
+
+  return null;
+}
+
 function App() {
   const [notification, setNotification] =
     useState<NotificationPayload | null>(null);
@@ -151,6 +179,7 @@ function App() {
     <Provider store={store}>
       <SafeAreaProvider>
         <RootNavigator />
+        <SessionGuard />
         <FcmInitializer onNotification={setNotification} />
         <InAppNotificationBanner
           notification={notification}

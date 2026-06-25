@@ -3,6 +3,7 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi } from '../api/googleMaps';
+import { requestPermissionSerialized } from '../utils/permissions';
 
 const STALE_MS = 10 * 60 * 1000;   // background refresh after 10 min
 const ERROR_RETRY_MS = 20 * 1000;  // retry after error in 20 sec (GPS warms up quickly)
@@ -26,37 +27,45 @@ async function requestPermission(): Promise<boolean> {
     const status = await Geolocation.requestAuthorization('whenInUse');
     return status === 'granted';
   }
-  try {
-    const already = await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-    );
-    if (already) return true;
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      {
-        title: 'Location Permission',
-        message: 'Zipto needs your location to show nearby services.',
-        buttonNeutral: 'Ask Me Later',
-        buttonNegative: 'Cancel',
-        buttonPositive: 'OK',
-      },
-    );
-    return result === PermissionsAndroid.RESULTS.GRANTED;
-  } catch {
-    return false;
-  }
+  // Serialized so it never races the notification-permission dialog on launch
+  // (Android shows only one permission dialog at a time).
+  return requestPermissionSerialized(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    {
+      title: 'Location Permission',
+      message: 'Zipto needs your location to show nearby services.',
+      buttonNeutral: 'Ask Me Later',
+      buttonNegative: 'Cancel',
+      buttonPositive: 'OK',
+    },
+  );
 }
 
-function getGPS(): Promise<{ latitude: number; longitude: number }> {
+function getGPS(highAccuracy: boolean): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) =>
     Geolocation.getCurrentPosition(
       pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
       reject,
-      // maximumAge: use device-cached GPS if less than 2 min old — instant on most devices
-      // timeout reduced to 5s so the skeleton clears faster on first permission grant
-      { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 },
+      {
+        // High accuracy uses GPS (precise, ~5–15m) instead of coarse cell/wifi
+        // (~hundreds of m). Give GPS time to get a lock; only reuse a very fresh
+        // cached fix (10s) so we don't return a stale approximate position.
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 15000 : 10000,
+        maximumAge: 10000,
+      },
     ),
   );
+}
+
+// Precise GPS first; if it can't get a lock in time, fall back to a coarse fix
+// so the user is never left without a location.
+async function getPreciseGPS(): Promise<{ latitude: number; longitude: number }> {
+  try {
+    return await getGPS(true);
+  } catch {
+    return await getGPS(false);
+  }
 }
 
 function coordsMoved(lat1: number | null, lon1: number | null, lat2: number, lon2: number): boolean {
@@ -134,7 +143,7 @@ export const useLocationStore = create<LocationState>((set, get) => {
             return;
           }
 
-          const { latitude, longitude } = await getGPS();
+          const { latitude, longitude } = await getPreciseGPS();
 
           // Skip reverse geocode if device barely moved — reuse existing address
           const current = get();

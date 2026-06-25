@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { showAlert } from '../components/CustomAlert';
 import LottieView from 'lottie-react-native';
-import EnterView from '../components/EnterView';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
@@ -209,6 +208,9 @@ const FareEstimate = () => {
         discount_amount: result.discount_amount,
       });
       setShowCouponSheet(false);
+      // Celebrate the applied discount with the same confetti used for coins.
+      setShowConfetti(true);
+      confettiRef.current?.play();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid coupon';
       showAlert('Coupon Error', Array.isArray(msg) ? msg.join('\n') : String(msg));
@@ -253,7 +255,10 @@ const FareEstimate = () => {
           params: {
             bookingId, pickup: pickup || '', drop: drop || '',
             pickupCoords, dropCoords, vehicleType: selectedVehicleType,
-            fare: Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0)),
+            // Exact amount to pay (decimals preserved + coin/coupon discounts
+            // applied) — LiveTracking shows this as "To Pay", so it must not be
+            // rounded (₹65.18, not ₹65).
+            fare: totalFare,
             showBookingSuccess, paidBy, helperCount, helperCost,
           },
         },
@@ -286,6 +291,8 @@ const FareEstimate = () => {
         paid_by: paidBy as 'sender' | 'receiver',
         coins_to_redeem: useCoins ? COINS_PER_REDEMPTION : 0,
         coupon_code: appliedCoupon?.code || undefined,
+        // B2B: business GSTIN for tax invoice / Input Tax Credit (15 chars).
+        gstin: confirmedGstin || undefined,
       };
       console.log('📦 [FareEstimate] Booking payload:', JSON.stringify({
         receiver_name: bookingData.receiver_name,
@@ -430,17 +437,29 @@ const FareEstimate = () => {
   }
 
   const breakdown = estimateData?.breakdown;
-  const baseFare = Math.round((estimateData?.estimated_fare || 0) + (helperCost || 0));
+  // Keep exact decimals (e.g. ₹59.28) — GST makes fares non-whole. The rider
+  // collects a whole rupee in CASH (rounded up); online charges the exact value.
+  const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+  const money = (n: number | undefined | null) => `₹${round2(Number(n) || 0).toFixed(2)}`;
+  const baseFare = round2((estimateData?.estimated_fare || 0) + (helperCost || 0));
   const COINS_PER_REDEMPTION = 100;
   const RUPEES_PER_REDEMPTION = 2;
   const coinDiscount = useCoins ? RUPEES_PER_REDEMPTION : 0;
   const couponDiscount = appliedCoupon?.discount_amount ?? 0;
-  const totalFare = Math.max(0, baseFare - coinDiscount - couponDiscount);
+  const totalFare = round2(Math.max(0, baseFare - coinDiscount - couponDiscount));
   const surgeMultiplier = breakdown?.surge_multiplier || 1;
   const hasSurge = surgeMultiplier > 1;
-  const surgeExtra = hasSurge && breakdown?.subtotal
-    ? Math.round((estimateData?.estimated_fare || 0) - breakdown.subtotal)
-    : 0;
+  // Surge applies ONLY to the delivery charge. backend `subtotal`/`delivery_charge`
+  // is the POST-surge delivery; the surge amount is the difference between that and
+  // the pre-surge components (base + distance + multi-stop), so the rows foot to
+  // the delivery charge: base + distance + surge = delivery.
+  const deliveryBeforeSurge = round2(
+    (breakdown?.base_fare || 0) +
+      (breakdown?.distance_charge || 0) +
+      (breakdown?.multi_stop_charge || 0),
+  );
+  const deliveryCharge = round2(breakdown?.delivery_charge ?? breakdown?.subtotal ?? 0);
+  const surgeAmount = hasSurge ? round2(deliveryCharge - deliveryBeforeSurge) : 0;
 
   const getSurgeLabel = (multiplier: number): string => {
     if (multiplier >= 1.6) return 'Peak Hour Surge';
@@ -481,7 +500,7 @@ const FareEstimate = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Route Card ── */}
-        <EnterView delay={40} style={styles.card}>
+        <View style={styles.card}>
           <View style={styles.vehicleInfoRow}>
             <Image
               source={
@@ -543,7 +562,7 @@ const FareEstimate = () => {
               </Text>
             </View>
           </View>
-        </EnterView>
+        </View>
 
         {/* ── Surge Banner ── */}
         {hasSurge && (
@@ -568,7 +587,7 @@ const FareEstimate = () => {
           </View>
           <Text style={styles.sectionTitle}>Fare Breakdown</Text>
         </View>
-        <EnterView delay={120} style={styles.card}>
+        <View style={styles.card}>
           <View style={styles.row}>
             <View style={styles.rowLabelWrap}>
               <View style={[styles.rowIconBox, { backgroundColor: '#EFF6FF' }]}>
@@ -576,7 +595,7 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.rowLabel}>Base Fare</Text>
             </View>
-            <Text style={styles.rowValue}>₹{breakdown?.base_fare || 0}</Text>
+            <Text style={styles.rowValue}>{money(breakdown?.base_fare)}</Text>
           </View>
           <View style={styles.row}>
             <View style={styles.rowLabelWrap}>
@@ -585,8 +604,60 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.rowLabel}>Distance Charge</Text>
             </View>
-            <Text style={styles.rowValue}>₹{breakdown?.distance_charge || 0}</Text>
+            <Text style={styles.rowValue}>{money(breakdown?.distance_charge)}</Text>
           </View>
+          {(breakdown?.multi_stop_charge || 0) > 0 && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#ECFEFF' }]}>
+                  <Icon name="add-location-alt" size={sp(13)} color="#0891B2" />
+                </View>
+                <Text style={styles.rowLabel}>Extra Stops</Text>
+              </View>
+              <Text style={styles.rowValue}>{money(breakdown?.multi_stop_charge)}</Text>
+            </View>
+          )}
+          {/* Surge applies to the delivery charge only — shown between the ride
+              components and GST so the rows foot: base + distance + surge = delivery. */}
+          {hasSurge && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FFF1F2' }]}>
+                  <Icon name="bolt" size={sp(13)} color="#DC2626" />
+                </View>
+                <Text style={[styles.rowLabel, styles.surgeRowLabel]}>
+                  Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
+                </Text>
+              </View>
+              <Text style={[styles.rowValue, styles.surgeRowValue]}>+{money(surgeAmount)}</Text>
+            </View>
+          )}
+          {hasSurge && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#F9FAFB' }]}>
+                  <Icon name="local-shipping" size={sp(13)} color="#6B7280" />
+                </View>
+                <Text style={styles.rowLabel}>Delivery Charge</Text>
+              </View>
+              <Text style={styles.rowValue}>{money(deliveryCharge)}</Text>
+            </View>
+          )}
+          {((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0) > 0 && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FEF2F2' }]}>
+                  <Icon name="receipt-long" size={sp(13)} color="#DC2626" />
+                </View>
+                <Text style={styles.rowLabel}>
+                  GST{breakdown?.gst_percent ? ` (${breakdown.gst_percent}% on delivery)` : ''}
+                </Text>
+              </View>
+              <Text style={styles.rowValue}>
+                ₹{((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0).toFixed(2)}
+              </Text>
+            </View>
+          )}
           {(breakdown?.platform_fee || 0) > 0 && (
             <View style={styles.row}>
               <View style={styles.rowLabelWrap}>
@@ -596,33 +667,9 @@ const FareEstimate = () => {
                 <Text style={styles.rowLabel}>Platform Fee</Text>
               </View>
               <Text style={styles.rowValue}>
-                ₹{((breakdown?.platform_fee || 0) + (breakdown?.platform_fee_gst || 0)).toFixed(0)}
+                {money(breakdown?.platform_fee)}
               </Text>
             </View>
-          )}
-          {hasSurge && (
-            <>
-              <View style={styles.row}>
-                <View style={styles.rowLabelWrap}>
-                  <View style={[styles.rowIconBox, { backgroundColor: '#F9FAFB' }]}>
-                    <Icon name="calculate" size={sp(13)} color="#6B7280" />
-                  </View>
-                  <Text style={styles.rowLabel}>Subtotal (before surge)</Text>
-                </View>
-                <Text style={styles.rowValue}>₹{breakdown?.subtotal || 0}</Text>
-              </View>
-              <View style={styles.row}>
-                <View style={styles.rowLabelWrap}>
-                  <View style={[styles.rowIconBox, { backgroundColor: '#FFF1F2' }]}>
-                    <Icon name="bolt" size={sp(13)} color="#DC2626" />
-                  </View>
-                  <Text style={[styles.rowLabel, styles.surgeRowLabel]}>
-                    Surge ({surgeMultiplier}x · +{Math.round((surgeMultiplier - 1) * 100)}%)
-                  </Text>
-                </View>
-                <Text style={[styles.rowValue, styles.surgeRowValue]}>+₹{surgeExtra}</Text>
-              </View>
-            </>
           )}
           {(helperCount || 0) > 0 && (
             <View style={styles.row}>
@@ -632,7 +679,7 @@ const FareEstimate = () => {
                 </View>
                 <Text style={styles.rowLabel}>Labour Charge ({helperCount}x)</Text>
               </View>
-              <Text style={styles.rowValue}>₹{helperCost || 0}</Text>
+              <Text style={styles.rowValue}>{money(helperCost)}</Text>
             </View>
           )}
           <View style={styles.divider} />
@@ -643,12 +690,12 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.totalLabel}>Subtotal</Text>
             </View>
-            <Text style={styles.totalValue}>₹{baseFare}</Text>
+            <Text style={styles.totalValue}>{money(baseFare)}</Text>
           </View>
           {useCoins && coinDiscount > 0 && (
             <View style={[styles.row, { marginTop: vs(4) }]}>
               <View style={styles.coinDiscountLabel}>
-                <Icon name="toll" size={sp(14)} color="#D97706" />
+                <Icon name="stars" size={sp(14)} color="#D97706" />
                 <Text style={styles.coinDiscountText}>Coins Discount (100 coins)</Text>
               </View>
               <Text style={styles.coinDiscountValue}>−₹{coinDiscount.toFixed(2)}</Text>
@@ -677,25 +724,25 @@ const FareEstimate = () => {
                   </View>
                   <Text style={styles.totalLabel}>Total Payable</Text>
                 </View>
-                <Text style={[styles.totalValue, { color: '#16A34A' }]}>₹{totalFare}</Text>
+                <Text style={[styles.totalValue, { color: '#16A34A' }]}>{money(totalFare)}</Text>
               </View>
             </>
           )}
-        </EnterView>
+        </View>
 
         {/* ── Zipto Coins ── */}
         {coinsBalance >= 100 && (
           <>
             <View style={styles.sectionTitleRow}>
               <View style={[styles.sectionIconBadge, { backgroundColor: '#F59E0B' }]}>
-                <Icon name="toll" size={sp(13)} color="#FFFFFF" />
+                <Icon name="stars" size={sp(13)} color="#FFFFFF" />
               </View>
               <Text style={styles.sectionTitle}>Zipto Coins</Text>
             </View>
             <View style={styles.coinsCard}>
               <View style={styles.coinsCardLeft}>
                 <View style={styles.coinsIconBox}>
-                  <Icon name="toll" size={sp(22)} color="#D97706" />
+                  <Icon name="stars" size={sp(22)} color="#D97706" />
                 </View>
                 <View style={styles.coinsTextBlock}>
                   <Text style={styles.coinsTitle}>
@@ -884,7 +931,7 @@ const FareEstimate = () => {
             {(coinDiscount > 0 || couponDiscount > 0) ? 'Payable (after discounts)' : 'Total Fare'}
           </Text>
           {(coinDiscount > 0 || couponDiscount > 0) && (
-            <Text style={styles.finalPriceStrike}>₹{baseFare}</Text>
+            <Text style={styles.finalPriceStrike}>{money(baseFare)}</Text>
           )}
           <Text
             style={[
@@ -894,7 +941,7 @@ const FareEstimate = () => {
             adjustsFontSizeToFit
             numberOfLines={1}
           >
-            ₹{totalFare}
+            {money(totalFare)}
           </Text>
         </View>
         <Button

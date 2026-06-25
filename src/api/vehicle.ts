@@ -69,7 +69,11 @@ export interface FareEstimateResponse {
       surge_multiplier: number;
       minimum_fare: number;
       platform_fee?: number;
+      gst_percent?: number;
+      gst_amount?: number;
       platform_fee_gst?: number;
+      delivery_charge?: number;
+      total_payable?: number;
       multi_stop_charge?: number;
       subtotal?: number;
     };
@@ -95,6 +99,7 @@ export interface CreateBookingRequest {
   paid_by?: 'sender' | 'receiver';
   coins_to_redeem?: number;
   coupon_code?: string;
+  gstin?: string;
 }
 
 export interface CreateBookingResponse {
@@ -194,6 +199,8 @@ export interface BookingDetails {
   receiver_phone?: string;
   alternative_phone?: string;
   vehicle_type?: string;
+  /** B2B customer GSTIN captured at checkout — present → show "Download GST Invoice". */
+  customer_gstin?: string | null;
   payments?: {
     id: string;
     amount: string;
@@ -456,7 +463,14 @@ export const vehicleApi = {
     final_fare: number;
   }> => {
     const response = await client.post('/booking/coupon/validate', payload);
-    return response.data?.data ?? response.data;
+    // Unwrap any depth of { success, data } envelopes (the endpoint was
+    // double-wrapped before) and stop at the actual coupon result.
+    let d: any = response.data;
+    let guard = 0;
+    while (d && d.discount_amount === undefined && d.data !== undefined && guard++ < 5) {
+      d = d.data;
+    }
+    return d;
   },
 
   getCoupons: async (vehicleType?: string): Promise<Coupon[]> => {

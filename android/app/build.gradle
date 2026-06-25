@@ -22,8 +22,8 @@ android {
         applicationId "com.ridezipto.customer"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.0"
+        versionCode 6
+        versionName "1.4"
         manifestPlaceholders = [usesCleartextTraffic: "false"]
 
         // Point CMake at our custom CMakeLists.txt which adds Folly error suppression flags.

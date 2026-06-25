@@ -17,6 +17,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import BottomTabBar from './BottomTabBar';
 import { vehicleApi, CoinTransaction } from '../api/vehicle';
 import EnterView from '../components/EnterView';
+import LinearGradient from 'react-native-linear-gradient';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
 const Coins = () => {
@@ -129,13 +130,19 @@ const Coins = () => {
           {/* ── Balance Card ── */}
           <EnterView delay={40} style={styles.balanceCardContainer}>
             <ImageBackground
-              source={require('../assets/images/coin.png')}
+              source={require('../assets/images/coins-bg.png')}
               style={styles.balanceCard}
               imageStyle={styles.balanceCardImage}
               resizeMode="cover"
             >
-              <View style={styles.heroOverlay} />
-
+              {/* Dark overlay — heavier on the left so the text reads clearly,
+                  fading right so the coins stay visible. */}
+              <LinearGradient
+                colors={['rgba(8,15,70,0.86)', 'rgba(8,15,70,0.55)', 'rgba(8,15,70,0.20)']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.balanceCardOverlay}
+              />
               <View style={styles.balanceInfo}>
                 <Text style={styles.balanceLabel}>Available Coins</Text>
                 {balanceError ? (
@@ -253,21 +260,19 @@ const styles = StyleSheet.create({
     padding:       ms(24),
     overflow:      'hidden',
     minHeight:     vs(180),
+    justifyContent: 'space-between',
+    backgroundColor: '#1E40FF', // fallback while the image loads
     elevation:     8,
-    shadowColor:   '#000',
+    shadowColor:   '#1E40FF',
     shadowOffset:  { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius:  8,
   },
   balanceCardImage: { borderRadius: ms(20) },
-  heroOverlay: {
-    position:        'absolute',
-    top:             0,
-    left:            0,
-    right:           0,
-    bottom:          0,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderRadius:    ms(20),
+  balanceCardOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: ms(20),
   },
   coinsIconContainer: {
     position: 'absolute',
