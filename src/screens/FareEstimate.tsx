@@ -695,7 +695,7 @@ const FareEstimate = () => {
           {useCoins && coinDiscount > 0 && (
             <View style={[styles.row, { marginTop: vs(4) }]}>
               <View style={styles.coinDiscountLabel}>
-                <Icon name="toll" size={sp(14)} color="#D97706" />
+                <Icon name="stars" size={sp(14)} color="#D97706" />
                 <Text style={styles.coinDiscountText}>Coins Discount (100 coins)</Text>
               </View>
               <Text style={styles.coinDiscountValue}>−₹{coinDiscount.toFixed(2)}</Text>
@@ -735,14 +735,14 @@ const FareEstimate = () => {
           <>
             <View style={styles.sectionTitleRow}>
               <View style={[styles.sectionIconBadge, { backgroundColor: '#F59E0B' }]}>
-                <Icon name="toll" size={sp(13)} color="#FFFFFF" />
+                <Icon name="stars" size={sp(13)} color="#FFFFFF" />
               </View>
               <Text style={styles.sectionTitle}>Zipto Coins</Text>
             </View>
             <View style={styles.coinsCard}>
               <View style={styles.coinsCardLeft}>
                 <View style={styles.coinsIconBox}>
-                  <Icon name="toll" size={sp(22)} color="#D97706" />
+                  <Icon name="stars" size={sp(22)} color="#D97706" />
                 </View>
                 <View style={styles.coinsTextBlock}>
                   <Text style={styles.coinsTitle}>
