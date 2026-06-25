@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -61,12 +62,13 @@ const EarnCoinsInfo = () => {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <EnterView delay={0}>
-          <LinearGradient
-            colors={['#F59E0B', '#D97706']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <ImageBackground
+            source={require('../assets/images/earn.jpeg')}
             style={styles.hero}
+            imageStyle={styles.heroImage}
+            resizeMode="cover"
           >
+            <View style={styles.heroOverlay} />
             <View style={styles.heroIconCircle}>
               <MaterialIcons name="stars" size={ms(30)} color="#FFFFFF" />
             </View>
@@ -75,7 +77,7 @@ const EarnCoinsInfo = () => {
               Complete a delivery and Zipto coins are added to your balance automatically — the
               farther and bigger the order, the more you earn.
             </Text>
-          </LinearGradient>
+          </ImageBackground>
         </EnterView>
 
         {/* How it's calculated */}
@@ -176,7 +178,14 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: fs(17), fontWeight: '700', color: '#111827' },
   scroll: { padding: ms(16), gap: ms(14) },
 
-  hero: { borderRadius: ms(20), padding: ms(20), alignItems: 'center' },
+  hero: { borderRadius: ms(20), padding: ms(20), alignItems: 'center', overflow: 'hidden', minHeight: ms(200) },
+  heroImage: { borderRadius: ms(20) },
+  heroOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(180, 90, 0, 0.55)',
+    borderRadius: ms(20),
+  },
   heroIconCircle: {
     width: ms(56),
     height: ms(56),

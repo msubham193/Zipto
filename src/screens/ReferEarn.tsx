@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Share,
   TextInput,
+  ImageBackground,
 } from 'react-native';
 import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -139,12 +140,13 @@ const ReferEarn = () => {
         >
           {/* Hero card */}
           <EnterView delay={0}>
-            <LinearGradient
-              colors={['#2563EB', '#1D4ED8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <ImageBackground
+              source={require('../assets/images/refer.jpeg')}
               style={styles.hero}
+              imageStyle={styles.heroImage}
+              resizeMode="cover"
             >
+              <View style={styles.heroOverlay} />
               <View style={styles.heroIconCircle}>
                 <MaterialIcons name="card-giftcard" size={ms(30)} color="#FFFFFF" />
               </View>
@@ -153,7 +155,7 @@ const ReferEarn = () => {
                 Invite a friend. They get {refereeCoins} coins on their first order — and you get{' '}
                 {referrerCoins} coins. 🎉
               </Text>
-            </LinearGradient>
+            </ImageBackground>
           </EnterView>
 
           {/* Code card */}
@@ -338,6 +340,15 @@ const styles = StyleSheet.create({
     borderRadius: ms(20),
     padding: ms(20),
     alignItems: 'center',
+    overflow: 'hidden',
+    minHeight: ms(200),
+  },
+  heroImage: { borderRadius: ms(20) },
+  heroOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(20, 50, 180, 0.60)',
+    borderRadius: ms(20),
   },
   heroIconCircle: {
     width: ms(56),
