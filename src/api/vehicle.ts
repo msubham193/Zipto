@@ -76,6 +76,10 @@ export interface FareEstimateResponse {
       total_payable?: number;
       multi_stop_charge?: number;
       subtotal?: number;
+      taxable_value?: number;
+      cgst_amount?: number;
+      sgst_amount?: number;
+      minimum_fare_applied?: boolean;
     };
   };
   timestamp: string;
