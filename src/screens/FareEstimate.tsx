@@ -643,21 +643,6 @@ const FareEstimate = () => {
               <Text style={styles.rowValue}>{money(deliveryCharge)}</Text>
             </View>
           )}
-          {((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0) > 0 && (
-            <View style={styles.row}>
-              <View style={styles.rowLabelWrap}>
-                <View style={[styles.rowIconBox, { backgroundColor: '#FEF2F2' }]}>
-                  <Icon name="receipt-long" size={sp(13)} color="#DC2626" />
-                </View>
-                <Text style={styles.rowLabel}>
-                  GST{breakdown?.gst_percent ? ` (${breakdown.gst_percent}% on delivery)` : ''}
-                </Text>
-              </View>
-              <Text style={styles.rowValue}>
-                ₹{((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0).toFixed(2)}
-              </Text>
-            </View>
-          )}
           {(breakdown?.platform_fee || 0) > 0 && (
             <View style={styles.row}>
               <View style={styles.rowLabelWrap}>
@@ -668,6 +653,21 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.rowValue}>
                 {money(breakdown?.platform_fee)}
+              </Text>
+            </View>
+          )}
+          {((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0) > 0 && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FEF2F2' }]}>
+                  <Icon name="receipt-long" size={sp(13)} color="#DC2626" />
+                </View>
+                <Text style={styles.rowLabel}>
+                  GST{breakdown?.gst_percent ? ` (${breakdown.gst_percent}% on delivery + platform)` : ''}
+                </Text>
+              </View>
+              <Text style={styles.rowValue}>
+                ₹{((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0).toFixed(2)}
               </Text>
             </View>
           )}
