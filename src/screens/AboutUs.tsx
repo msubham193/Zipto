@@ -31,40 +31,40 @@ const SOCIAL_LINKS = [
   {
     id:       'linkedin',
     label:    'LinkedIn',
-    handle:   'ridezipto',
+    handle:   'bookfleet',
     icon:     'logo-linkedin',
     xLogo:    false,
     iconBg:   '#E8F0FE',
     iconColor:'#0A66C2',
-    url:      'https://www.linkedin.com/company/zipto-com/',
+    url:      'https://www.linkedin.com/company/bookfleet-com/',
   },
   {
     id:       'instagram',
     label:    'Instagram',
-    handle:   '@ridezipto',
+    handle:   '@bookfleet',
     icon:     'logo-instagram',
     xLogo:    false,
     iconBg:   '#FDF2F8',
     iconColor:'#C2185B',
-    url:      'https://www.instagram.com/ridezipto?igsh=ZDNldGp6YjN2YXZx',
+    url:      'https://www.instagram.com/bookfleet.in?utm_source=qr&igsh=ZDNldGp6YjN2YXZx',
   },
   {
     id:       'twitter',
     label:    'X (Twitter)',
-    handle:   '@ridezipto',
+    handle:   '@bookfleet',
     icon:     null,
     xLogo:    true,
     iconBg:   '#000000',
     iconColor:'#FFFFFF',
-    url:      'https://x.com/ridezipto',
+    url:      'https://x.com/bookfleet',
   },
 ];
 
-// ─── Zipto Wordmark ───────────────────────────────────────────────────────────
-const ZiptoWordmark = () => (
+// ─── bookfleet Wordmark ───────────────────────────────────────────────────────────
+const BookfleetWordmark = () => (
   <View style={styles.wordmark}>
-    <Text style={styles.wordmarkZ}>Z</Text>
-    <Text style={styles.wordmarkRest}>ipto</Text>
+    <Text style={styles.wordmarkZ}>b</Text>
+    <Text style={styles.wordmarkRest}>ookfleet</Text>
   </View>
 );
 
@@ -120,7 +120,7 @@ const AboutUs = () => {
 
           {/* ── Hero ── */}
           <View style={styles.heroSection}>
-            <ZiptoWordmark />
+            <BookfleetWordmark />
             <Text style={styles.tagline}>Fast. Reliable. Everywhere.</Text>
             <View style={styles.taglineLine} />
           </View>
@@ -129,7 +129,7 @@ const AboutUs = () => {
           <View style={styles.section}>
             <SectionHeading icon="flag" color={BRAND_BLUE} title="Our Mission" />
             <Text style={styles.bodyText}>
-              We started Zipto to solve local delivery problems in India — making it faster, cheaper, and more reliable for everyday users and businesses.
+              We started bookfleet to solve local delivery problems in India — making it faster, cheaper, and more reliable for everyday users and businesses.
             </Text>
           </View>
 
@@ -161,7 +161,7 @@ const AboutUs = () => {
 
           {/* ── Why Choose Us ── */}
           <View style={styles.section}>
-            <SectionHeading icon="star" color="#8B5CF6" title="Why Choose Zipto?" />
+            <SectionHeading icon="star" color="#8B5CF6" title="Why Choose bookfleet?" />
             <View style={styles.featureList}>
               {features.map((f, i) => (
                 <View key={i} style={styles.featureRow}>
@@ -196,8 +196,8 @@ const AboutUs = () => {
                 icon="email"
                 iconColor={BRAND_BLUE}
                 label="Email"
-                value="contact@ridezipto.com"
-                onPress={() => Linking.openURL('mailto:contact@ridezipto.com')}
+                value="contact@bookfleet.com"
+                onPress={() => Linking.openURL('mailto:contact@bookfleet.com')}
               />
               <Divider />
               <ContactRow
@@ -253,8 +253,8 @@ const AboutUs = () => {
           {/* ── Footer ── */}
           <View style={styles.footer}>
             <View style={styles.footerLine} />
-            <Text style={styles.versionText}>Zipto v1.0.0</Text>
-            <Text style={styles.copyrightText}>© 2025 Zipto Technologies Pvt. Ltd.</Text>
+            <Text style={styles.versionText}>bookfleet v1.0.0</Text>
+            <Text style={styles.copyrightText}>© 2025 bookfleet Technologies Pvt. Ltd.</Text>
             <Text style={styles.copyrightText}>All rights reserved.</Text>
           </View>
 

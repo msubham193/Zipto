@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'https://api.ridezipto.com/api';
+const API_URL = 'https://api.bookfleet.com/api';
 
 const client = axios.create({
   baseURL: API_URL,
@@ -231,7 +231,7 @@ export const authApi = {
     return response.data;
   },
 
-  // Primary auth flow: Firebase idToken → Zipto JWT
+  // Primary auth flow: Firebase idToken → bookfleet JWT
   verifyFirebase: async (idToken: string, role = 'customer') => {
     const response = await client.post('/auth/verify-firebase', {
       idToken,

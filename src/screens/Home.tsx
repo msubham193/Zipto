@@ -98,7 +98,6 @@ const Home = () => {
   const [showRider, setShowRider] = useState(true);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
-  const [showRider, setShowRider] = useState(true);
   const headerBgRef = useRef<LottieView>(null);
   const riderRef = useRef<LottieView>(null);
 
@@ -248,7 +247,7 @@ const Home = () => {
               resizeMode="cover"
             />
             <View style={styles.headerTop}>
-              <Text style={styles.ziptoText}>zipto</Text>
+              <Text style={styles.bookfleetText}>bookfleet</Text>
               <View style={styles.headerActions}>
                 <TouchableOpacity
                   onPress={() => {
@@ -427,7 +426,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: sp(12),
   },
-  ziptoText: {
+  bookfleetText: {
     fontSize: fs(32),
     fontFamily: 'Cocon-Regular',
     color: '#0047C3',

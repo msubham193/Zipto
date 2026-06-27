@@ -8,7 +8,7 @@ import { requestPermissionSerialized } from '../utils/permissions';
 const STALE_MS = 10 * 60 * 1000;   // background refresh after 10 min
 const ERROR_RETRY_MS = 20 * 1000;  // retry after error in 20 sec (GPS warms up quickly)
 const COORD_THRESHOLD = 0.0005;    // ~50m — skip geocode if barely moved
-const STORAGE_KEY = '@zipto_location_v1';
+const STORAGE_KEY = '@bookfleet_location_v1';
 
 interface LocationState {
   address: string;
@@ -33,7 +33,7 @@ async function requestPermission(): Promise<boolean> {
     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
     {
       title: 'Location Permission',
-      message: 'Zipto needs your location to show nearby services.',
+      message: 'bookfleet needs your location to show nearby services.',
       buttonNeutral: 'Ask Me Later',
       buttonNegative: 'Cancel',
       buttonPositive: 'OK',

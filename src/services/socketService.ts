@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Same origin as the REST API, minus the /api suffix, on the `booking` namespace.
-const API_URL = 'https://api.ridezipto.com/api';
+const API_URL = 'https://api.bookfleet.com/api';
 const SOCKET_URL = `${API_URL.replace(/\/api\/?$/, '')}/booking`;
 
 export interface DriverLocation {

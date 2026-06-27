@@ -46,12 +46,12 @@ const LanguageSelection = () => {
       <View style={styles.contentWrapper}>
         <View style={styles.content}>
           <View style={styles.formSection}>
-            {/* Zipto Logo */}
+            {/* bookfleet Logo */}
             <View style={styles.iconWrapper}>
               <View style={[styles.glow, { opacity: 0.5 }]} />
               <View style={styles.iconContainer}>
                 <Image
-                  source={require('../assets/images/logo_zipto.png')}
+                  source={require('../assets/images/logo_bookfleet.png')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />

@@ -17,7 +17,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
-const REVIEW_SUBMITTED_KEY = 'zipto_review_submitted';
+const REVIEW_SUBMITTED_KEY = 'bookfleet_review_submitted';
 
 // ─── Derived responsive values ────────────────────────────────────────────────
 const backBtnSize = ms(40);

@@ -1,13 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const PENDING_CODE_KEY = 'zipto_pending_referral_code';
+const PENDING_CODE_KEY = 'bookfleet_pending_referral_code';
 
 /**
  * Extract a referral code from a deep link. Supports:
- *   zipto://refer?code=ABC123
- *   zipto://refer/ABC123
- *   https://ridezipto.com/refer/ABC123
- *   https://ridezipto.com/refer?code=ABC123
+ *   bookfleet://refer?code=ABC123
+ *   bookfleet://refer/ABC123
+ *   https://bookfleet.com/refer/ABC123
+ *   https://bookfleet.com/refer?code=ABC123
  */
 export function parseReferralCode(url?: string | null): string | null {
   if (!url) return null;

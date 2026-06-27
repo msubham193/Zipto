@@ -40,7 +40,7 @@ const PrivacyPolicy = () => {
             {/* Intro */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>
-                This Privacy Policy describes how ZIPTO HYPERLOGISTICS PRIVATE LIMITED ("Zipto", "Company", "we", "our", or "us") collects, processes, stores, uses, and protects user information through the Zipto mobile application, website, and related services ("Platform").{'\n\n'}
+                This Privacy Policy describes how ZIPTO HYPERLOGISTICS PRIVATE LIMITED ("bookfleet", "Company", "we", "our", or "us") collects, processes, stores, uses, and protects user information through the bookfleet mobile application, website, and related services ("Platform").{'\n\n'}
                 By accessing or using the Platform, users agree to the practices described in this Privacy Policy.
               </Text>
             </View>
@@ -74,7 +74,7 @@ const PrivacyPolicy = () => {
               <Text style={styles.bulletText}>• UPI details</Text>
               <Text style={styles.bulletText}>• Transaction history</Text>
               <Text style={styles.bulletText}>• Payment status</Text>
-              <Text style={styles.importantNote}>⚠️ Zipto does not store debit or credit card details on its own servers.</Text>
+              <Text style={styles.importantNote}>⚠️ bookfleet does not store debit or credit card details on its own servers.</Text>
 
               <Text style={styles.subSectionTitle}>e) Usage Information</Text>
               <Text style={styles.bulletText}>• Ride and booking history</Text>
@@ -101,7 +101,7 @@ const PrivacyPolicy = () => {
             {/* 3. Location Data Usage */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>3. LOCATION DATA USAGE</Text>
-              <Text style={styles.sectionText}>Zipto collects and processes precise location data to:</Text>
+              <Text style={styles.sectionText}>bookfleet collects and processes precise location data to:</Text>
               <Text style={styles.bulletText}>• Enable ride and delivery booking functionality</Text>
               <Text style={styles.bulletText}>• Match nearby rider and delivery partners</Text>
               <Text style={styles.bulletText}>• Provide real-time tracking</Text>
@@ -122,13 +122,13 @@ const PrivacyPolicy = () => {
             {/* 5. Information Sharing */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>5. INFORMATION SHARING</Text>
-              <Text style={styles.sectionText}>Zipto may share limited information with:</Text>
+              <Text style={styles.sectionText}>bookfleet may share limited information with:</Text>
               <Text style={styles.bulletText}>• Independent rider and delivery partners</Text>
               <Text style={styles.bulletText}>• Payment gateway providers</Text>
               <Text style={styles.bulletText}>• Cloud communication and storage providers</Text>
               <Text style={styles.bulletText}>• Government authorities or regulatory bodies where legally required</Text>
               <Text style={styles.bulletText}>• Customer support and operational teams</Text>
-              <Text style={styles.importantNote}>⚠️ Zipto does not sell user personal information to third parties.</Text>
+              <Text style={styles.importantNote}>⚠️ bookfleet does not sell user personal information to third parties.</Text>
             </View>
 
             {/* 6. Data Retention */}
@@ -146,7 +146,7 @@ const PrivacyPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>7. DATA SECURITY</Text>
               <Text style={styles.sectionText}>
-                Zipto implements commercially reasonable technical, administrative, and organizational security measures to protect user information from unauthorized access, misuse, alteration, disclosure, or destruction.{'\n\n'}
+                bookfleet implements commercially reasonable technical, administrative, and organizational security measures to protect user information from unauthorized access, misuse, alteration, disclosure, or destruction.{'\n\n'}
                 However, no digital platform can guarantee complete security.
               </Text>
             </View>
@@ -158,7 +158,7 @@ const PrivacyPolicy = () => {
               <Text style={styles.bulletText}>• Access and update profile information</Text>
               <Text style={styles.bulletText}>• Request account deletion</Text>
               <Text style={styles.bulletText}>• Contact customer support regarding privacy concerns</Text>
-              <Text style={styles.importantNote}>👉 Zipto reserves the right to retain certain information where legally required.</Text>
+              <Text style={styles.importantNote}>👉 bookfleet reserves the right to retain certain information where legally required.</Text>
             </View>
 
             {/* 9. Third-Party Services */}
@@ -177,7 +177,7 @@ const PrivacyPolicy = () => {
               <Text style={styles.sectionTitle}>10. CHILDREN'S PRIVACY</Text>
               <Text style={styles.sectionText}>
                 The Platform is intended only for individuals above 18 years of age.{'\n\n'}
-                Zipto does not knowingly collect personal information from minors.
+                bookfleet does not knowingly collect personal information from minors.
               </Text>
             </View>
 
@@ -185,7 +185,7 @@ const PrivacyPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>11. POLICY MODIFICATIONS</Text>
               <Text style={styles.sectionText}>
-                Zipto reserves the right to modify or update this Privacy Policy at any time without prior notice.{'\n\n'}
+                bookfleet reserves the right to modify or update this Privacy Policy at any time without prior notice.{'\n\n'}
                 Continued use of the Platform after such updates constitutes acceptance of the revised Privacy Policy.
               </Text>
             </View>
@@ -196,13 +196,13 @@ const PrivacyPolicy = () => {
               <Text style={styles.sectionText}>ZIPTO HYPERLOGISTICS PRIVATE LIMITED</Text>
               <Text style={styles.sectionText}>Registered Office:</Text>
               <Text style={styles.contactText}>📍 781, Saheed Nagar, Maharishi College Road,{'\n'}    Bhubaneswar, Khordha – 751007, Odisha, India</Text>
-              <Text style={styles.contactText}>📧 support@ridezipto.com</Text>
+              <Text style={styles.contactText}>📧 support@bookfleet.com</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="security" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
-                Your privacy is important to us. By using Zipto, you acknowledge that you have read and understood this Privacy Policy and consent to our data practices as described herein. © 2026 Zipto Hyperlogistics Pvt. Ltd.
+                Your privacy is important to us. By using bookfleet, you acknowledge that you have read and understood this Privacy Policy and consent to our data practices as described herein. © 2026 Zipto Hyperlogistics Pvt. Ltd.
               </Text>
             </View>
           </View>

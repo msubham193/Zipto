@@ -726,7 +726,7 @@ const LiveTracking = () => {
           border: '#BBF7D0',
           icon: 'check-circle',
           title: 'Ride completed',
-          subtitle: 'Thank you for riding with Zipto!',
+          subtitle: 'Thank you for riding with bookfleet!',
         };
       case 'cancelled':
         return {

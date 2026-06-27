@@ -32,7 +32,7 @@ const ProfileSetup = () => {
   const [referral, setReferral] = useState('');
   const [referralError, setReferralError] = useState('');
 
-  // Pre-fill a referral code captured from a deep link (zipto://refer?code=…)
+  // Pre-fill a referral code captured from a deep link (bookfleet://refer?code=…)
   useEffect(() => {
     popReferralCode().then(code => { if (code) setReferral(code); });
   }, []);

@@ -121,7 +121,7 @@ const FAQs = () => {
           id: 15,
           question: 'Are delivery partners verified?',
           answer:
-            'Yes, all delivery partners go through a verification and onboarding process before joining Zipto.',
+            'Yes, all delivery partners go through a verification and onboarding process before joining bookfleet.',
         },
         {
           id: 16,
@@ -167,7 +167,7 @@ const FAQs = () => {
           id: 21,
           question: 'Can I send fragile items?',
           answer:
-            'Yes, but proper packaging is required. Zipto is not responsible for damage due to poor packaging.',
+            'Yes, but proper packaging is required. bookfleet is not responsible for damage due to poor packaging.',
         },
       ],
     },
@@ -176,7 +176,7 @@ const FAQs = () => {
       faqs: [
         {
           id: 22,
-          question: 'How can I contact Zipto support?',
+          question: 'How can I contact bookfleet support?',
           answer:
             'You can reach us via in-app chat, phone support, or email support.',
         },
@@ -244,7 +244,7 @@ const FAQs = () => {
           <View style={styles.faqHeaderSection}>
             <Text style={styles.faqMainTitle}>Frequently Asked Questions</Text>
             <Text style={styles.faqSubtitle}>
-              Find answers to common questions about using Zipto
+              Find answers to common questions about using bookfleet
             </Text>
           </View>
 

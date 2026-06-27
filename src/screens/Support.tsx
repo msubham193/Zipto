@@ -102,10 +102,10 @@ const Support = () => {
     {
       id: 3, title: 'Email Us',
       icon: 'mail-outline',
-      desc: 'support@ridezipto.com',
+      desc: 'support@bookfleet.com',
       badge: '24/7', badgeColor: COLORS.amber,
       accent: COLORS.amber, light: COLORS.amberLight,
-      onPress: () => Linking.openURL('mailto:support@ridezipto.com'),
+      onPress: () => Linking.openURL('mailto:support@bookfleet.com'),
     },
     {
       id: 4, title: 'WhatsApp',
@@ -246,7 +246,7 @@ const Support = () => {
                 <Text style={styles.cardTitle}>Office Address</Text>
               </View>
               <View style={styles.addressBlock}>
-                <Text style={styles.addressLine}>Zipto Headquarters</Text>
+                <Text style={styles.addressLine}>bookfleet Headquarters</Text>
                 <Text style={styles.addressSub}>Bhubaneswar, Odisha – 751007, India</Text>
               </View>
               {/* <TouchableOpacity style={styles.directionsBtn} activeOpacity={0.75}>

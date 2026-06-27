@@ -108,10 +108,10 @@ const Profile = () => {
         { id: 10, title: 'About Us',     icon: 'info', color: '#6366F1', onPress: () => navigation.navigate('AboutUs') },
         { id: 11, title: 'Rate Our App', icon: 'star', color: '#F59E0B', onPress: () => {
           if (Platform.OS === 'ios') {
-            Linking.openURL('https://apps.apple.com/app/zipto/id6738934498');
+            Linking.openURL('https://apps.apple.com/app/bookfleet/id6738934498');
           } else {
-            const url = 'market://details?id=com.ridezipto.customer';
-            const fallback = 'https://play.google.com/store/apps/details?id=com.ridezipto.customer';
+            const url = 'market://details?id=com.bookfleet.customer';
+            const fallback = 'https://play.google.com/store/apps/details?id=com.bookfleet.customer';
             Linking.canOpenURL(url)
               .then(supported => Linking.openURL(supported ? url : fallback))
               .catch(() => Linking.openURL(fallback));
@@ -258,8 +258,8 @@ const Profile = () => {
 
         {/* ── Version ── */}
         <View style={styles.versionBlock}>
-          <Text style={styles.versionText}>Zipto v1.0.0</Text>
-          <Text style={styles.copyright}>© 2025 Zipto. All rights reserved.</Text>
+          <Text style={styles.versionText}>bookfleet v1.0.0</Text>
+          <Text style={styles.copyright}>© 2025 bookfleet. All rights reserved.</Text>
         </View>
       </ScrollView>
 

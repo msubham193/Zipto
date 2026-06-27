@@ -8,7 +8,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { verticalScale as vs, moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
-const ZIPTO_LETTERS = ['Z', 'i', 'p', 't', 'o'];
+const BOOKFLEET_LETTERS = ['b', 'o', 'o', 'k', 'f', 'l', 'e', 'e', 't'];
 
 const LetterPop = ({
   letter,
@@ -55,7 +55,7 @@ const LetterPop = ({
   return (
     <Animated.Text
       style={[
-        styles.ziptoLetter,
+        styles.bookfleetLetter,
         {
           opacity,
           transform: [{ scale }, { rotate: rotateInterpolate }],
@@ -73,7 +73,7 @@ const Splash = () => {
   const poweredOpacity = useRef(new Animated.Value(0)).current;
 
   const LETTER_STAGGER = 110;
-  const LAST_LETTER_DELAY = (ZIPTO_LETTERS.length - 1) * LETTER_STAGGER;
+  const LAST_LETTER_DELAY = (BOOKFLEET_LETTERS.length - 1) * LETTER_STAGGER;
   const TAGLINE_DELAY = LAST_LETTER_DELAY + 250;
   const POWERED_DELAY = LAST_LETTER_DELAY + 520;
 
@@ -112,7 +112,7 @@ const Splash = () => {
 
       <View style={styles.content}>
         <View style={styles.lettersRow}>
-          {ZIPTO_LETTERS.map((letter, index) => (
+          {BOOKFLEET_LETTERS.map((letter, index) => (
             <LetterPop
               key={letter + index}
               letter={letter}
@@ -130,7 +130,7 @@ const Splash = () => {
             },
           ]}
         >
-          Last-Mile Delivery
+          move anything anytime
         </Animated.Text>
       </View>
 
@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  ziptoLetter: {
-    fontSize: fs(92),
+  bookfleetLetter: {
+    fontSize: fs(52),
     fontWeight: 'normal',
     color: '#FFFFFF',
     fontFamily: 'Cocon-Regular',

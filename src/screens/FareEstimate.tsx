@@ -62,11 +62,11 @@ const BOOKING_NOTES = [
   'Extra waiting time may attract additional charges.',
   'Parking, toll, or entry charges (if any) are customer payable.',
   'Fragile & valuable items should be informed before booking.',
-  'Restricted or illegal items are strictly prohibited on Zipto.',
+  'Restricted or illegal items are strictly prohibited on bookfleet.',
   'COD amount and parcel details must be accurate.',
   'Rider safety & respectful communication are mandatory.',
   'Once rider is assigned, cancellation charges may apply.',
-  'Zipto moves your parcel with speed, safety & responsibility.',
+  'bookfleet moves your parcel with speed, safety & responsibility.',
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ const FareEstimate = () => {
   const [error, setError] = useState<string | null>(null);
   const [driversAvailable, setDriversAvailable] = useState<boolean>(true);
 
-  // Zipto Coins
+  // bookfleet Coins
   const [coinsBalance, setCoinsBalance] = useState(0);
   const [useCoins, setUseCoins] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -389,7 +389,7 @@ const FareEstimate = () => {
 
         {/* Subtitle */}
         <Text style={styles.noDriversSub}>
-          No active ZIPTO riders near your pickup right now. Try again or change your location.
+          No active BOOKFLEET riders near your pickup right now. Try again or change your location.
         </Text>
 
         {/* Tip cards */}
@@ -730,14 +730,14 @@ const FareEstimate = () => {
           )}
         </View>
 
-        {/* ── Zipto Coins ── */}
+        {/* ── bookfleet Coins ── */}
         {coinsBalance >= 100 && (
           <>
             <View style={styles.sectionTitleRow}>
               <View style={[styles.sectionIconBadge, { backgroundColor: '#F59E0B' }]}>
                 <Icon name="stars" size={sp(13)} color="#FFFFFF" />
               </View>
-              <Text style={styles.sectionTitle}>Zipto Coins</Text>
+              <Text style={styles.sectionTitle}>bookfleet Coins</Text>
             </View>
             <View style={styles.coinsCard}>
               <View style={styles.coinsCardLeft}>

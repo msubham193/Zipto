@@ -10,6 +10,7 @@ import {
   Share,
   TextInput,
   ImageBackground,
+  Clipboard,
 } from 'react-native';
 import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,20 +23,13 @@ import EnterView from '../components/EnterView';
 import { referralApi, ReferralInfo, MyReferrals, ReferralRow } from '../api/referral';
 import { moderateScale as ms, fontScale as fs } from '../utils/metrics';
 
-/** Best-effort copy: uses the clipboard module if present, else opens Share. */
-async function copyText(text: string): Promise<boolean> {
+function copyText(text: string): boolean {
   try {
-    // Avoid a hard dependency — only used if the lib is installed.
-    const mod = require('@react-native-clipboard/clipboard');
-    const Clipboard = mod?.default ?? mod;
-    if (Clipboard?.setString) {
-      Clipboard.setString(text);
-      return true;
-    }
+    Clipboard.setString(text);
+    return true;
   } catch {
-    /* clipboard not available */
+    return false;
   }
-  return false;
 }
 
 const STATUS_META: Record<ReferralRow['status'], { label: string; color: string; bg: string }> = {
@@ -78,7 +72,7 @@ const ReferEarn = () => {
   const handleShare = async () => {
     if (!info) return;
     try {
-      await Share.share({ message: info.share_message, title: 'Refer Zipto' });
+      await Share.share({ message: info.share_message, title: 'Refer bookfleet' });
     } catch {
       /* user dismissed */
     }
@@ -86,7 +80,7 @@ const ReferEarn = () => {
 
   const handleCopy = async () => {
     if (!info) return;
-    const ok = await copyText(info.code);
+    const ok = copyText(info.code);
     if (ok) showAlert('Copied', `Referral code ${info.code} copied to clipboard`);
     else handleShare();
   };

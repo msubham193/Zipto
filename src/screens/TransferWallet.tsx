@@ -285,7 +285,7 @@ const TransferToWalletScreen = () => {
             <View style={styles.infoBannerContent}>
               <Text style={styles.infoBannerText}>• {rate || '50 coins = ₹1'}</Text>
               <Text style={styles.infoBannerText}>
-                • Transferred amount is added to your Zipto wallet instantly
+                • Transferred amount is added to your bookfleet wallet instantly
               </Text>
               <Text style={styles.infoBannerText}>
                 • Wallet balance can be used for future bookings

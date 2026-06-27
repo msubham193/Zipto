@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const KEY = 'zipto_pending_rating';
+const KEY = 'bookfleet_pending_rating';
 
 export interface PendingRating {
   bookingId: string;

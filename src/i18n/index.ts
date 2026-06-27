@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // English Translations
 const en = {
     translation: {
-        welcome: 'Welcome to Zipto',
+        welcome: 'Welcome to bookfleet',
         selectLanguage: 'Select Language',
         login: 'Login',
         enterMobile: 'Enter Mobile Number',
@@ -31,7 +31,7 @@ const en = {
 // Odia Translations (Romanized placeholders for now, can perform actual script later)
 const or = {
     translation: {
-        welcome: 'Zipto ku Swagata',
+        welcome: 'bookfleet ku Swagata',
         selectLanguage: 'Bhasha Chayan Karantu',
         login: 'Login',
         enterMobile: 'Mobile Number Dia',

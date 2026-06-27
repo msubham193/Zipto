@@ -42,7 +42,7 @@ export const useBookingStore = create<BookingStore>()(
       clearActiveBooking: () => set({ activeBooking: null }),
     }),
     {
-      name: 'zipto-booking-store',
+      name: 'bookfleet-booking-store',
       storage: createJSONStorage(() => AsyncStorage),
     },
   ),

@@ -54,7 +54,7 @@ const EarnCoinsInfo = () => {
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <MaterialIcons name="arrow-back" size={ms(22)} color="#1F2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Earn Zipto Coins</Text>
+          <Text style={styles.headerTitle}>Earn bookfleet Coins</Text>
           <View style={{ width: ms(40) }} />
         </View>
       </SafeAreaView>
@@ -74,7 +74,7 @@ const EarnCoinsInfo = () => {
             </View>
             <Text style={styles.heroTitle}>Coins on every order</Text>
             <Text style={styles.heroSub}>
-              Complete a delivery and Zipto coins are added to your balance automatically — the
+              Complete a delivery and bookfleet coins are added to your balance automatically — the
               farther and bigger the order, the more you earn.
             </Text>
           </ImageBackground>

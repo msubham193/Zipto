@@ -10,4 +10,6 @@ project(Zipto)
 # including react_codegen_rnscreens and react_codegen_safeareacontext built by ReactNative-application.cmake.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error -Wno-implicit-int-float-conversion")
 
-include($ENV{REACT_NATIVE_PATH}/ReactAndroid/cmake-utils/ReactNative-application.cmake)
+# Derive React Native path from this file's location (jni/ → main/ → src/ → app/ → android/ → project root)
+set(REACT_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../node_modules/react-native")
+include(${REACT_NATIVE_PATH}/ReactAndroid/cmake-utils/ReactNative-application.cmake)

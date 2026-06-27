@@ -40,7 +40,7 @@ const TermsAndConditions = () => {
             {/* Intro */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>
-                These Terms & Conditions ("Terms") govern the access and use of the Zipto mobile application, website, and related services ("Platform") operated by ZIPTO HYPERLOGISTICS PRIVATE LIMITED ("Zipto", "Company", "we", "our", or "us").{'\n\n'}
+                These Terms & Conditions ("Terms") govern the access and use of the bookfleet mobile application, website, and related services ("Platform") operated by ZIPTO HYPERLOGISTICS PRIVATE LIMITED ("bookfleet", "Company", "we", "our", or "us").{'\n\n'}
                 By accessing or using the Platform, users agree to comply with these Terms.
               </Text>
             </View>
@@ -49,9 +49,9 @@ const TermsAndConditions = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>1. NATURE OF PLATFORM</Text>
               <Text style={styles.sectionText}>
-                Zipto is a technology-enabled platform facilitating connections between users and independent rider partners, delivery partners, merchants, and local service providers.
+                bookfleet is a technology-enabled platform facilitating connections between users and independent rider partners, delivery partners, merchants, and local service providers.
               </Text>
-              <Text style={styles.importantNote}>👉 Zipto does not directly provide transportation, delivery, courier, or logistics services.</Text>
+              <Text style={styles.importantNote}>👉 bookfleet does not directly provide transportation, delivery, courier, or logistics services.</Text>
             </View>
 
             {/* 2. Services Offered */}
@@ -72,7 +72,7 @@ const TermsAndConditions = () => {
               <Text style={styles.sectionTitle}>3. USER ELIGIBILITY</Text>
               <Text style={styles.sectionText}>
                 Users must be at least 18 years of age and legally competent to use the Platform.{'\n\n'}
-                By using Zipto, users confirm that all information provided is accurate and valid.
+                By using bookfleet, users confirm that all information provided is accurate and valid.
               </Text>
             </View>
 
@@ -108,7 +108,7 @@ const TermsAndConditions = () => {
               <Text style={styles.bulletText}>• Flammable substances</Text>
               <Text style={styles.bulletText}>• Counterfeit or stolen goods</Text>
               <Text style={styles.bulletText}>• Any item prohibited under Indian law</Text>
-              <Text style={styles.importantNote}>🚫 Zipto reserves the right to cancel such orders immediately without refund.</Text>
+              <Text style={styles.importantNote}>🚫 bookfleet reserves the right to cancel such orders immediately without refund.</Text>
             </View>
 
             {/* 7. Bookings & Cancellations */}
@@ -149,7 +149,7 @@ const TermsAndConditions = () => {
             {/* 10. Rider & Delivery Partner Clause */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>10. RIDER & DELIVERY PARTNER CLAUSE</Text>
-              <Text style={styles.importantNote}>👉 Rider and delivery partners available on Zipto operate independently and are not employees, agents, or representatives of Zipto.</Text>
+              <Text style={styles.importantNote}>👉 Rider and delivery partners available on bookfleet operate independently and are not employees, agents, or representatives of bookfleet.</Text>
             </View>
 
             {/* 11. Service Availability */}
@@ -161,13 +161,13 @@ const TermsAndConditions = () => {
               <Text style={styles.bulletText}>• Weather conditions</Text>
               <Text style={styles.bulletText}>• Technical limitations</Text>
               <Text style={styles.bulletText}>• Operational area restrictions</Text>
-              <Text style={styles.sectionText}>Zipto does not guarantee uninterrupted or error-free services.</Text>
+              <Text style={styles.sectionText}>bookfleet does not guarantee uninterrupted or error-free services.</Text>
             </View>
 
             {/* 12. Limitation of Liability */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>12. LIMITATION OF LIABILITY</Text>
-              <Text style={styles.sectionText}>Zipto shall not be liable for:</Text>
+              <Text style={styles.sectionText}>bookfleet shall not be liable for:</Text>
               <Text style={styles.bulletText}>• Delays caused by weather, traffic, or unforeseen circumstances</Text>
               <Text style={styles.bulletText}>• Losses arising from user negligence</Text>
               <Text style={styles.bulletText}>• Indirect or consequential damages</Text>
@@ -177,7 +177,7 @@ const TermsAndConditions = () => {
             {/* 13. Account Suspension & Termination */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>13. ACCOUNT SUSPENSION & TERMINATION</Text>
-              <Text style={styles.sectionText}>Zipto reserves the right to suspend or terminate accounts involved in:</Text>
+              <Text style={styles.sectionText}>bookfleet reserves the right to suspend or terminate accounts involved in:</Text>
               <Text style={styles.bulletText}>• Fraudulent activity</Text>
               <Text style={styles.bulletText}>• Fake bookings</Text>
               <Text style={styles.bulletText}>• Abuse or misconduct</Text>
@@ -189,7 +189,7 @@ const TermsAndConditions = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>14. INTELLECTUAL PROPERTY RIGHTS</Text>
               <Text style={styles.sectionText}>
-                All trademarks, logos, graphics, software, application interfaces, and branding associated with Zipto are the exclusive properties of ZIPTO HYPERLOGISTICS PRIVATE LIMITED.
+                All trademarks, logos, graphics, software, application interfaces, and branding associated with bookfleet are the exclusive properties of ZIPTO HYPERLOGISTICS PRIVATE LIMITED.
               </Text>
               <Text style={styles.importantNote}>🚫 Unauthorized reproduction or misuse is strictly prohibited.</Text>
             </View>
@@ -207,7 +207,7 @@ const TermsAndConditions = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>16. MODIFICATIONS TO TERMS</Text>
               <Text style={styles.sectionText}>
-                Zipto reserves the right to update or modify these Terms at any time without prior notice.{'\n\n'}
+                bookfleet reserves the right to update or modify these Terms at any time without prior notice.{'\n\n'}
                 Continued use of the Platform constitutes acceptance of the revised Terms & Conditions.
               </Text>
             </View>
@@ -215,7 +215,7 @@ const TermsAndConditions = () => {
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="info-outline" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
-                By using Zipto's services, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. © 2026 Zipto Hyperlogistics Pvt. Ltd.
+                By using bookfleet's services, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. © 2026 Zipto Hyperlogistics Pvt. Ltd.
               </Text>
             </View>
           </View>

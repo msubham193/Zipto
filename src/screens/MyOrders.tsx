@@ -29,7 +29,7 @@ import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontSc
 const ACTIVE_STATUSES = ['pending', 'searching', 'accepted', 'assigned', 'driver_assigned', 'driver_arriving', 'arriving', 'in_progress', 'ongoing', 'picked_up'];
 const COMPLETED_STATUSES = ['completed', 'delivered'];
 const CANCELLED_STATUSES = ['cancelled'];
-const RATED_BOOKINGS_KEY = 'zipto_rated_bookings';
+const RATED_BOOKINGS_KEY = 'bookfleet_rated_bookings';
 
 type PaymentFilter = 'all' | 'paid' | 'unpaid';
 
@@ -213,7 +213,7 @@ const MyOrders = () => {
         showAlert('Session expired', 'Please sign in again to download your invoice.');
         return;
       }
-      const url = `https://api.ridezipto.com/api/payment/invoice/${b.id}/pdf?token=${encodeURIComponent(token)}`;
+      const url = `https://api.bookfleet.com/api/payment/invoice/${b.id}/pdf?token=${encodeURIComponent(token)}`;
       const ok = await Linking.canOpenURL(url);
       if (ok) {
         await Linking.openURL(url);

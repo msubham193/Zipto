@@ -105,7 +105,7 @@ const Login = () => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.title}>Welcome to Zipto</Text>
+            <Text style={styles.title}>Welcome to bookfleet</Text>
             <Text style={styles.subtitle}>
               Enter your mobile number to access your deliveries quickly.
             </Text>
@@ -142,14 +142,14 @@ const Login = () => {
                 I agree to the{' '}
                 <Text
                   style={styles.checkboxLink}
-                  onPress={() => Linking.openURL('https://ridezipto.com/terms-of-service')}
+                  onPress={() => Linking.openURL('https://bookfleet.com/terms-of-service')}
                 >
                   Terms of Service
                 </Text>
                 {' '}and{' '}
                 <Text
                   style={styles.checkboxLink}
-                  onPress={() => Linking.openURL('https://ridezipto.com/privacy-policy')}
+                  onPress={() => Linking.openURL('https://bookfleet.com/privacy-policy')}
                 >
                   Privacy Policy
                 </Text>

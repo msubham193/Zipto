@@ -17,6 +17,9 @@ target 'Zipto' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Override auto-linked react-native-maps to include Google Maps subspec
+  pod 'react-native-maps', :path => '../node_modules/react-native-maps', :subspecs => ['Maps', 'Google']
+
   # Modular headers required so FirebaseAuth (Swift) can import its ObjC
   # dependencies, which in turn lets Xcode generate FirebaseAuth-Swift.h,
   # and so that Xcode 26's explicit-modules build system can load FirebaseAuth

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const INSTALL_ID_KEY = 'zipto_install_id';
+const INSTALL_ID_KEY = 'bookfleet_install_id';
 
 let cached: string | null = null;
 
