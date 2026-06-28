@@ -98,8 +98,11 @@ const Profile = () => {
     {
       title: 'Legal',
       items: [
-        { id: 8, title: 'Terms & Conditions', icon: 'description',  color: '#0EA5E9', onPress: () => navigation.navigate('TermsAndConditions') },
-        { id: 9, title: 'Privacy Policy',     icon: 'privacy-tip',  color: '#14B8A6', onPress: () => navigation.navigate('PrivacyPolicy') },
+        { id: 8, title: 'Terms & Conditions',       icon: 'description',     color: '#0EA5E9', onPress: () => navigation.navigate('TermsAndConditions') },
+        { id: 9, title: 'Privacy Policy',           icon: 'privacy-tip',     color: '#14B8A6', onPress: () => navigation.navigate('PrivacyPolicy') },
+        { id: 12, title: 'Cancellation & Refund',   icon: 'assignment-return', color: '#F97316', onPress: () => navigation.navigate('CancellationPolicy') },
+        { id: 13, title: 'Data Deletion Policy',    icon: 'delete-outline',    color: '#EF4444', onPress: () => navigation.navigate('DataDeletionPolicy') },
+        { id: 14, title: 'Prohibited Items',        icon: 'block',             color: '#DC2626', onPress: () => navigation.navigate('ProhibitedItemsPolicy') },
       ],
     },
     {

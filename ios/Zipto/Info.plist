@@ -10,7 +10,7 @@
 	<string>en</string>
 
 	<key>CFBundleDisplayName</key>
-	<string>Zipto</string>
+	<string>bookfleet</string>
 
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>

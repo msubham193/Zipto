@@ -55,13 +55,13 @@ const C = {
 
 // ─── Vehicle Images ───────────────────────────────────────────────────────────
 const VEHICLE_IMAGES: Record<string, any> = {
-  bike:       require('../assets/images/bike_img.png'),
-  scooty:     require('../assets/images/scooter_img.png'),
-  auto:       require('../assets/images/auto_img.png'),
-  pickup:     require('../assets/images/pickup_img.png'),
-  mini_truck: require('../assets/images/truck_img.png'),
-  tata_ace:   require('../assets/images/vehicle3.png'),
-  tata_407:   require('../assets/images/vehicle3.png'),
+  bike:       require('../assets/images/bike.png'),
+  scooty:     require('../assets/images/scooty.png'),
+  auto:       require('../assets/images/auto.png'),
+  pickup:     require('../assets/images/pickup.png'),
+  mini_truck: require('../assets/images/truck.png'),
+  tata_ace:   require('../assets/images/truck.png'),
+  tata_407:   require('../assets/images/truck.png'),
 };
 
 // ─── ETA ranges per vehicle type ─────────────────────────────────────────────

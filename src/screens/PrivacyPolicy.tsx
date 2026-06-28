@@ -34,175 +34,205 @@ const PrivacyPolicy = () => {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.legalContent}>
-            <Text style={styles.legalTitle}>Privacy Policy</Text>
-            <Text style={styles.legalUpdate}>Last Updated: May 2026</Text>
+            <Text style={styles.legalTitle}>bookfleet Customer Privacy Policy</Text>
+            <Text style={styles.legalUpdate}>Last Updated: June 2026</Text>
 
-            {/* Intro */}
+            {/* 1. Introduction */}
             <View style={styles.section}>
+              <Text style={styles.sectionTitle}>1. Introduction</Text>
               <Text style={styles.sectionText}>
-                This Privacy Policy describes how ZIPTO HYPERLOGISTICS PRIVATE LIMITED ("bookfleet", "Company", "we", "our", or "us") collects, processes, stores, uses, and protects user information through the bookfleet mobile application, website, and related services ("Platform").{'\n\n'}
-                By accessing or using the Platform, users agree to the practices described in this Privacy Policy.
+                Welcome to bookfleet.{'\n\n'}
+                bookfleet is a technology platform owned and operated by Zipto Hyperlogistics Private Limited ("bookfleet", "Company", "we", "our", or "us"). We are committed to protecting your privacy and ensuring that your personal information is handled responsibly, securely, and transparently.{'\n\n'}
+                This Privacy Policy explains how we collect, use, store, process, share, and protect your personal information when you access or use the bookfleet Customer App, bookfleet Website, and any related products or services offered by bookfleet.{'\n\n'}
+                By accessing or using the bookfleet Platform, you acknowledge that you have read, understood, and agreed to this Privacy Policy.
               </Text>
             </View>
 
-            {/* 1. Information We Collect */}
+            {/* 2. Company Details */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>1. INFORMATION WE COLLECT</Text>
-              <Text style={styles.sectionText}>We may collect the following categories of information:</Text>
+              <Text style={styles.sectionTitle}>2. Company Details</Text>
+              <Text style={styles.subSectionTitle}>Legal Entity</Text>
+              <Text style={styles.sectionText}>Zipto Hyperlogistics Private Limited</Text>
+              <Text style={styles.subSectionTitle}>Brand Name</Text>
+              <Text style={styles.sectionText}>bookfleet</Text>
+              <Text style={styles.subSectionTitle}>Registered Office</Text>
+              <Text style={styles.sectionText}>781, Shaheed Nagar,{'\n'}780 Maharishi College Road,{'\n'}Bhubaneswar, Khordha,{'\n'}Odisha – 751007, India</Text>
+              <Text style={styles.subSectionTitle}>Website</Text>
+              <Text style={styles.contactText}>🌐 www.bookfleet.in</Text>
+              <Text style={styles.subSectionTitle}>Support Email</Text>
+              <Text style={styles.contactText}>📧 support@bookfleet.in</Text>
+            </View>
 
-              <Text style={styles.subSectionTitle}>a) Personal Information</Text>
+            {/* 3. Scope */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>3. Scope of this Privacy Policy</Text>
+              <Text style={styles.sectionText}>This Privacy Policy applies to:</Text>
+              <Text style={styles.bulletText}>• bookfleet Customer App</Text>
+              <Text style={styles.bulletText}>• bookfleet Website</Text>
+              <Text style={styles.bulletText}>• Customer Support Services</Text>
+              <Text style={styles.bulletText}>• Online Booking Platform</Text>
+              <Text style={styles.bulletText}>• Payment Services</Text>
+              <Text style={styles.bulletText}>• Promotional Communications</Text>
+              <Text style={styles.bulletText}>• Any other services provided by bookfleet</Text>
+            </View>
+
+            {/* 4. Information We Collect */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>4. Information We Collect</Text>
+              <Text style={styles.sectionText}>To provide reliable logistics services, we may collect the following information:</Text>
+
+              <Text style={styles.subSectionTitle}>Personal Information</Text>
               <Text style={styles.bulletText}>• Full Name</Text>
               <Text style={styles.bulletText}>• Mobile Number</Text>
-              <Text style={styles.bulletText}>• Email Address (if required)</Text>
-              <Text style={styles.bulletText}>• Government-issued identification details where required</Text>
+              <Text style={styles.bulletText}>• Email Address (if provided)</Text>
+              <Text style={styles.bulletText}>• Profile Photo (optional)</Text>
 
-              <Text style={styles.subSectionTitle}>b) Location Information</Text>
-              <Text style={styles.bulletText}>• Precise GPS location</Text>
-              <Text style={styles.bulletText}>• Pickup and drop locations</Text>
-              <Text style={styles.bulletText}>• Saved addresses</Text>
-              <Text style={styles.bulletText}>• Route and navigation information</Text>
+              <Text style={styles.subSectionTitle}>Location Information</Text>
+              <Text style={styles.bulletText}>• Pickup Address</Text>
+              <Text style={styles.bulletText}>• Delivery Address</Text>
+              <Text style={styles.bulletText}>• Live GPS Location (during active bookings)</Text>
+              <Text style={styles.bulletText}>• Saved Addresses</Text>
 
-              <Text style={styles.subSectionTitle}>c) Device & Technical Information</Text>
-              <Text style={styles.bulletText}>• Device type and model</Text>
-              <Text style={styles.bulletText}>• Operating system version</Text>
-              <Text style={styles.bulletText}>• IP address</Text>
-              <Text style={styles.bulletText}>• Device identifiers</Text>
-              <Text style={styles.bulletText}>• App version</Text>
-              <Text style={styles.bulletText}>• Mobile network information</Text>
+              <Text style={styles.subSectionTitle}>Booking Information</Text>
+              <Text style={styles.bulletText}>• Booking ID</Text>
+              <Text style={styles.bulletText}>• Vehicle Category</Text>
+              <Text style={styles.bulletText}>• Delivery Details</Text>
+              <Text style={styles.bulletText}>• Order History</Text>
+              <Text style={styles.bulletText}>• Delivery Status</Text>
 
-              <Text style={styles.subSectionTitle}>d) Payment Information</Text>
-              <Text style={styles.bulletText}>• UPI details</Text>
-              <Text style={styles.bulletText}>• Transaction history</Text>
-              <Text style={styles.bulletText}>• Payment status</Text>
-              <Text style={styles.importantNote}>⚠️ bookfleet does not store debit or credit card details on its own servers.</Text>
+              <Text style={styles.subSectionTitle}>Payment Information</Text>
+              <Text style={styles.bulletText}>• Payment Method</Text>
+              <Text style={styles.bulletText}>• Transaction Details</Text>
+              <Text style={styles.bulletText}>• Invoice Details</Text>
+              <Text style={styles.bulletText}>• Refund Information</Text>
+              <Text style={styles.importantNote}>⚠️ bookfleet does not store complete debit or credit card information.</Text>
 
-              <Text style={styles.subSectionTitle}>e) Usage Information</Text>
-              <Text style={styles.bulletText}>• Ride and booking history</Text>
-              <Text style={styles.bulletText}>• Delivery activity</Text>
-              <Text style={styles.bulletText}>• Search preferences</Text>
-              <Text style={styles.bulletText}>• Customer support interactions</Text>
-              <Text style={styles.bulletText}>• App usage analytics</Text>
+              <Text style={styles.subSectionTitle}>Device Information</Text>
+              <Text style={styles.bulletText}>• Device Model</Text>
+              <Text style={styles.bulletText}>• Device Identifier</Text>
+              <Text style={styles.bulletText}>• Operating System</Text>
+              <Text style={styles.bulletText}>• App Version</Text>
+              <Text style={styles.bulletText}>• IP Address</Text>
+              <Text style={styles.bulletText}>• Diagnostic Information</Text>
+              <Text style={styles.bulletText}>• Crash Reports</Text>
+
+              <Text style={styles.subSectionTitle}>Communication Information</Text>
+              <Text style={styles.bulletText}>• Customer Support Requests</Text>
+              <Text style={styles.bulletText}>• Ratings & Reviews</Text>
+              <Text style={styles.bulletText}>• Feedback</Text>
+              <Text style={styles.bulletText}>• Complaint Details</Text>
             </View>
 
-            {/* 2. Purpose of Data Collection */}
+            {/* 5. How We Use Your Information */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>2. PURPOSE OF DATA COLLECTION</Text>
-              <Text style={styles.sectionText}>User information may be collected and processed for the following purposes:</Text>
-              <Text style={styles.bulletText}>• Providing transportation and delivery services</Text>
-              <Text style={styles.bulletText}>• Connecting users with nearby rider or delivery partners</Text>
-              <Text style={styles.bulletText}>• Processing bookings and payments</Text>
-              <Text style={styles.bulletText}>• Improving platform functionality and customer experience</Text>
-              <Text style={styles.bulletText}>• Fraud detection and prevention</Text>
-              <Text style={styles.bulletText}>• Customer support and dispute resolution</Text>
-              <Text style={styles.bulletText}>• Sending OTPs, alerts, notifications, and service updates</Text>
-              <Text style={styles.bulletText}>• Compliance with applicable legal obligations</Text>
-            </View>
-
-            {/* 3. Location Data Usage */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>3. LOCATION DATA USAGE</Text>
-              <Text style={styles.sectionText}>bookfleet collects and processes precise location data to:</Text>
-              <Text style={styles.bulletText}>• Enable ride and delivery booking functionality</Text>
-              <Text style={styles.bulletText}>• Match nearby rider and delivery partners</Text>
+              <Text style={styles.sectionTitle}>5. How We Use Your Information</Text>
+              <Text style={styles.sectionText}>We use your information to:</Text>
+              <Text style={styles.bulletText}>• Process bookings</Text>
+              <Text style={styles.bulletText}>• Assign delivery partners</Text>
               <Text style={styles.bulletText}>• Provide real-time tracking</Text>
-              <Text style={styles.bulletText}>• Calculate fares and estimated arrival times</Text>
-              <Text style={styles.bulletText}>• Improve service availability and operational efficiency</Text>
-              <Text style={styles.importantNote}>📍 Location access may continue while the application is running in foreground for active service tracking purposes.</Text>
+              <Text style={styles.bulletText}>• Calculate delivery charges</Text>
+              <Text style={styles.bulletText}>• Process payments</Text>
+              <Text style={styles.bulletText}>• Generate invoices</Text>
+              <Text style={styles.bulletText}>• Improve customer support</Text>
+              <Text style={styles.bulletText}>• Prevent fraud and misuse</Text>
+              <Text style={styles.bulletText}>• Enhance platform security</Text>
+              <Text style={styles.bulletText}>• Improve our products and services</Text>
+              <Text style={styles.bulletText}>• Send important service notifications</Text>
+              <Text style={styles.bulletText}>• Comply with applicable laws and regulations</Text>
             </View>
 
-            {/* 4. Camera, Storage & Media Access */}
+            {/* 6. Permissions We Request */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>4. CAMERA, STORAGE & MEDIA ACCESS</Text>
-              <Text style={styles.sectionText}>The Platform may request access to:</Text>
-              <Text style={styles.bulletText}>• Gallery or storage for image uploads</Text>
-              <Text style={styles.bulletText}>• Documents for customer support or verification purposes</Text>
-              <Text style={styles.bulletText}>• Delivery proof uploads</Text>
+              <Text style={styles.sectionTitle}>6. Permissions We Request</Text>
+              <Text style={styles.sectionText}>bookfleet may request access to:</Text>
+              <Text style={styles.bulletText}>• Device Location</Text>
+              <Text style={styles.bulletText}>• Camera</Text>
+              <Text style={styles.bulletText}>• Photos & Media</Text>
+              <Text style={styles.bulletText}>• Notifications</Text>
+              <Text style={styles.bulletText}>• Phone (where required)</Text>
+              <Text style={styles.sectionText}>These permissions are requested only to enable platform features and improve your experience.</Text>
             </View>
 
-            {/* 5. Information Sharing */}
+            {/* 7. Sharing of Information */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>5. INFORMATION SHARING</Text>
+              <Text style={styles.sectionTitle}>7. Sharing of Information</Text>
               <Text style={styles.sectionText}>bookfleet may share limited information with:</Text>
-              <Text style={styles.bulletText}>• Independent rider and delivery partners</Text>
-              <Text style={styles.bulletText}>• Payment gateway providers</Text>
-              <Text style={styles.bulletText}>• Cloud communication and storage providers</Text>
-              <Text style={styles.bulletText}>• Government authorities or regulatory bodies where legally required</Text>
-              <Text style={styles.bulletText}>• Customer support and operational teams</Text>
-              <Text style={styles.importantNote}>⚠️ bookfleet does not sell user personal information to third parties.</Text>
+              <Text style={styles.bulletText}>• Delivery Partners</Text>
+              <Text style={styles.bulletText}>• Payment Service Providers</Text>
+              <Text style={styles.bulletText}>• Technology Service Providers</Text>
+              <Text style={styles.bulletText}>• Government Authorities (where required by law)</Text>
+              <Text style={styles.importantNote}>⚠️ bookfleet does not sell your personal information to third parties.</Text>
             </View>
 
-            {/* 6. Data Retention */}
+            {/* 8. Data Security */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>6. DATA RETENTION</Text>
-              <Text style={styles.sectionText}>User information may be retained for as long as necessary to:</Text>
-              <Text style={styles.bulletText}>• Provide services</Text>
-              <Text style={styles.bulletText}>• Maintain legal compliance</Text>
-              <Text style={styles.bulletText}>• Resolve disputes</Text>
-              <Text style={styles.bulletText}>• Prevent fraudulent activities</Text>
-              <Text style={styles.bulletText}>• Enforce company policies</Text>
-            </View>
-
-            {/* 7. Data Security */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>7. DATA SECURITY</Text>
+              <Text style={styles.sectionTitle}>8. Data Security</Text>
               <Text style={styles.sectionText}>
-                bookfleet implements commercially reasonable technical, administrative, and organizational security measures to protect user information from unauthorized access, misuse, alteration, disclosure, or destruction.{'\n\n'}
-                However, no digital platform can guarantee complete security.
+                We use appropriate technical, administrative, and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, loss, or misuse.
               </Text>
             </View>
 
-            {/* 8. User Rights */}
+            {/* 9. Data Retention */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>8. USER RIGHTS</Text>
-              <Text style={styles.sectionText}>Users may:</Text>
-              <Text style={styles.bulletText}>• Access and update profile information</Text>
-              <Text style={styles.bulletText}>• Request account deletion</Text>
-              <Text style={styles.bulletText}>• Contact customer support regarding privacy concerns</Text>
-              <Text style={styles.importantNote}>👉 bookfleet reserves the right to retain certain information where legally required.</Text>
-            </View>
-
-            {/* 9. Third-Party Services */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>9. THIRD-PARTY SERVICES</Text>
-              <Text style={styles.sectionText}>The Platform may integrate with third-party services including:</Text>
-              <Text style={styles.bulletText}>• Payment gateways</Text>
-              <Text style={styles.bulletText}>• Maps and navigation providers</Text>
-              <Text style={styles.bulletText}>• Analytics providers</Text>
-              <Text style={styles.bulletText}>• Communication service providers</Text>
-              <Text style={styles.sectionText}>Such third-party services may operate under their own privacy policies.</Text>
-            </View>
-
-            {/* 10. Children's Privacy */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>10. CHILDREN'S PRIVACY</Text>
+              <Text style={styles.sectionTitle}>9. Data Retention</Text>
               <Text style={styles.sectionText}>
-                The Platform is intended only for individuals above 18 years of age.{'\n\n'}
-                bookfleet does not knowingly collect personal information from minors.
+                We retain your information only for as long as necessary to provide our services, comply with legal obligations, resolve disputes, and enforce our policies.
               </Text>
             </View>
 
-            {/* 11. Policy Modifications */}
+            {/* 10. Your Rights */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>11. POLICY MODIFICATIONS</Text>
+              <Text style={styles.sectionTitle}>10. Your Rights</Text>
+              <Text style={styles.sectionText}>Depending on applicable laws, you may have the right to:</Text>
+              <Text style={styles.bulletText}>• Access your information</Text>
+              <Text style={styles.bulletText}>• Update your information</Text>
+              <Text style={styles.bulletText}>• Request correction of inaccurate information</Text>
+              <Text style={styles.bulletText}>• Request deletion of your account</Text>
+              <Text style={styles.bulletText}>• Withdraw consent where applicable</Text>
+            </View>
+
+            {/* 11. Account Deletion */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>11. Account Deletion</Text>
               <Text style={styles.sectionText}>
-                bookfleet reserves the right to modify or update this Privacy Policy at any time without prior notice.{'\n\n'}
-                Continued use of the Platform after such updates constitutes acceptance of the revised Privacy Policy.
+                You may request deletion of your bookfleet account by contacting our support team.{'\n\n'}
+                Certain information may be retained where required by law or for legitimate business purposes.
               </Text>
             </View>
 
-            {/* 12. Contact Information */}
+            {/* 12. Children's Privacy */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>12. CONTACT INFORMATION</Text>
-              <Text style={styles.sectionText}>ZIPTO HYPERLOGISTICS PRIVATE LIMITED</Text>
+              <Text style={styles.sectionTitle}>12. Children's Privacy</Text>
+              <Text style={styles.sectionText}>
+                bookfleet services are intended only for individuals who are legally eligible to use our platform.{'\n\n'}
+                We do not knowingly collect personal information from children.
+              </Text>
+            </View>
+
+            {/* 13. Changes to this Privacy Policy */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>13. Changes to this Privacy Policy</Text>
+              <Text style={styles.sectionText}>
+                We may update this Privacy Policy from time to time.{'\n\n'}
+                Any changes will be published on our website and/or application and will become effective immediately upon publication unless otherwise stated.
+              </Text>
+            </View>
+
+            {/* 14. Contact Us */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>14. Contact Us</Text>
+              <Text style={styles.sectionText}>If you have any questions regarding this Privacy Policy or your personal information, please contact us:</Text>
+              <Text style={styles.sectionText}>bookfleet Support</Text>
+              <Text style={styles.contactText}>📧 support@bookfleet.in</Text>
+              <Text style={styles.contactText}>🌐 www.bookfleet.in</Text>
               <Text style={styles.sectionText}>Registered Office:</Text>
-              <Text style={styles.contactText}>📍 781, Saheed Nagar, Maharishi College Road,{'\n'}    Bhubaneswar, Khordha – 751007, Odisha, India</Text>
-              <Text style={styles.contactText}>📧 support@bookfleet.com</Text>
+              <Text style={styles.contactText}>📍 Zipto Hyperlogistics Private Limited{'\n'}    781, Shaheed Nagar,{'\n'}    780 Maharishi College Road,{'\n'}    Bhubaneswar, Khordha, Odisha – 751007, India</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="security" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
-                Your privacy is important to us. By using bookfleet, you acknowledge that you have read and understood this Privacy Policy and consent to our data practices as described herein. © 2026 Zipto Hyperlogistics Pvt. Ltd.
+                Your privacy is important to us. By using bookfleet, you acknowledge that you have read and understood this Privacy Policy and consent to our data practices as described herein. © 2026 Zipto Hyperlogistics Private Limited.
               </Text>
             </View>
           </View>

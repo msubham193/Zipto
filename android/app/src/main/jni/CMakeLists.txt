@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(Zipto)
+project(appmodules)
 
 # Fix Folly dynamic.h template deduction error on Windows with NDK 27.1 Clang.
 # The codegen-generated specs for rnscreens and safeareacontext use Folly's dynamic::dynamic(T)

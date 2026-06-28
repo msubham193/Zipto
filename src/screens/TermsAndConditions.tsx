@@ -34,188 +34,195 @@ const TermsAndConditions = () => {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.legalContent}>
-            <Text style={styles.legalTitle}>Terms and Conditions</Text>
-            <Text style={styles.legalUpdate}>Last Updated: May 2026</Text>
+            <Text style={styles.legalTitle}>bookfleet Customer Terms & Conditions</Text>
+            <Text style={styles.legalUpdate}>Last Updated: June 2026</Text>
 
-            {/* Intro */}
+            {/* 1. Introduction */}
             <View style={styles.section}>
+              <Text style={styles.sectionTitle}>1. Introduction</Text>
               <Text style={styles.sectionText}>
-                These Terms & Conditions ("Terms") govern the access and use of the bookfleet mobile application, website, and related services ("Platform") operated by ZIPTO HYPERLOGISTICS PRIVATE LIMITED ("bookfleet", "Company", "we", "our", or "us").{'\n\n'}
-                By accessing or using the Platform, users agree to comply with these Terms.
+                Welcome to bookfleet.{'\n\n'}
+                These Terms & Conditions ("Terms") govern your access to and use of the bookfleet Customer App, website, and all related services operated by Zipto Hyperlogistics Private Limited ("bookfleet", "Company", "we", "our", or "us").{'\n\n'}
+                By accessing or using the bookfleet Platform, you agree to be legally bound by these Terms & Conditions. If you do not agree with these Terms, please do not use our Platform.
               </Text>
             </View>
 
-            {/* 1. Nature of Platform */}
+            {/* 2. About bookfleet */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>1. NATURE OF PLATFORM</Text>
+              <Text style={styles.sectionTitle}>2. About bookfleet</Text>
               <Text style={styles.sectionText}>
-                bookfleet is a technology-enabled platform facilitating connections between users and independent rider partners, delivery partners, merchants, and local service providers.
+                bookfleet is a technology-enabled logistics platform that connects customers with independent delivery partners for on-demand transportation and delivery services.{'\n\n'}
+                bookfleet provides access to multiple vehicle categories including, but not limited to:
               </Text>
-              <Text style={styles.importantNote}>👉 bookfleet does not directly provide transportation, delivery, courier, or logistics services.</Text>
+              <Text style={styles.bulletText}>• Bike Delivery</Text>
+              <Text style={styles.bulletText}>• Scooter Delivery</Text>
+              <Text style={styles.bulletText}>• Auto Delivery</Text>
+              <Text style={styles.bulletText}>• Pickup Delivery</Text>
+              <Text style={styles.bulletText}>• Mini Truck Delivery</Text>
+              <Text style={styles.bulletText}>• Goods Transportation</Text>
+              <Text style={styles.bulletText}>• Parcel & Document Delivery</Text>
+              <Text style={styles.importantNote}>👉 bookfleet acts only as a technology platform facilitating bookings between customers and independent delivery partners.</Text>
             </View>
 
-            {/* 2. Services Offered */}
+            {/* 3. Eligibility */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>2. SERVICES OFFERED</Text>
-              <Text style={styles.sectionText}>The Platform may provide or facilitate:</Text>
-              <Text style={styles.bulletText}>• Bike Taxi Services</Text>
-              <Text style={styles.bulletText}>• Parcel Delivery Services</Text>
-              <Text style={styles.bulletText}>• Courier Services</Text>
-              <Text style={styles.bulletText}>• Hyperlocal Transportation</Text>
-              <Text style={styles.bulletText}>• Local Commerce Services</Text>
-              <Text style={styles.bulletText}>• Integrations including food delivery, pharmacy, and other on-demand services</Text>
-              <Text style={styles.sectionText}>Services may vary depending on operational city and availability.</Text>
+              <Text style={styles.sectionTitle}>3. Eligibility</Text>
+              <Text style={styles.sectionText}>To use bookfleet services, you must:</Text>
+              <Text style={styles.bulletText}>• Be at least 18 years of age.</Text>
+              <Text style={styles.bulletText}>• Provide accurate and complete information.</Text>
+              <Text style={styles.bulletText}>• Use a valid mobile number for verification.</Text>
+              <Text style={styles.bulletText}>• Comply with all applicable laws and these Terms.</Text>
+              <Text style={styles.sectionText}>bookfleet reserves the right to refuse or terminate services if incorrect, misleading, or fraudulent information is provided.</Text>
             </View>
 
-            {/* 3. User Eligibility */}
+            {/* 4. Customer Account */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>3. USER ELIGIBILITY</Text>
-              <Text style={styles.sectionText}>
-                Users must be at least 18 years of age and legally competent to use the Platform.{'\n\n'}
-                By using bookfleet, users confirm that all information provided is accurate and valid.
-              </Text>
+              <Text style={styles.sectionTitle}>4. Customer Account</Text>
+              <Text style={styles.sectionText}>You are responsible for maintaining the confidentiality of your account and OTP verification.{'\n\n'}You agree to:</Text>
+              <Text style={styles.bulletText}>• Keep your account information accurate.</Text>
+              <Text style={styles.bulletText}>• Protect your login credentials.</Text>
+              <Text style={styles.bulletText}>• Immediately report unauthorized access.</Text>
+              <Text style={styles.bulletText}>• Be responsible for all activities conducted through your account.</Text>
+              <Text style={styles.importantNote}>⚠️ bookfleet shall not be liable for losses arising from unauthorized use of your account.</Text>
             </View>
 
-            {/* 4. User Account Responsibilities */}
+            {/* 5. Booking Services */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>4. USER ACCOUNT RESPONSIBILITIES</Text>
-              <Text style={styles.sectionText}>Users are responsible for:</Text>
-              <Text style={styles.bulletText}>• Maintaining confidentiality of account credentials</Text>
-              <Text style={styles.bulletText}>• Protecting OTPs and login details</Text>
-              <Text style={styles.bulletText}>• Providing accurate booking information</Text>
-              <Text style={styles.bulletText}>• Using the Platform lawfully and responsibly</Text>
-              <Text style={styles.importantNote}>⚠️ Users shall not misuse the Platform in any unlawful or fraudulent manner.</Text>
+              <Text style={styles.sectionTitle}>5. Booking Services</Text>
+              <Text style={styles.sectionText}>Customers may book available logistics services through the bookfleet Platform.{'\n\n'}Bookings are subject to:</Text>
+              <Text style={styles.bulletText}>• Vehicle availability</Text>
+              <Text style={styles.bulletText}>• Rider availability</Text>
+              <Text style={styles.bulletText}>• Serviceable locations</Text>
+              <Text style={styles.bulletText}>• Operational hours</Text>
+              <Text style={styles.bulletText}>• Safety guidelines</Text>
+              <Text style={styles.sectionText}>bookfleet does not guarantee immediate availability of delivery partners.</Text>
             </View>
 
-            {/* 5. Prohibited Activities */}
+            {/* 6. Pricing */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>5. PROHIBITED ACTIVITIES</Text>
-              <Text style={styles.sectionText}>Users are strictly prohibited from:</Text>
-              <Text style={styles.bulletText}>• Sending illegal or restricted items</Text>
-              <Text style={styles.bulletText}>• Engaging in abusive, threatening, or fraudulent conduct</Text>
-              <Text style={styles.bulletText}>• Misusing rider or delivery partner information</Text>
-              <Text style={styles.bulletText}>• Attempting unauthorized access to the Platform</Text>
-              <Text style={styles.bulletText}>• Disrupting platform operations or services</Text>
-            </View>
-
-            {/* 6. Restricted Items */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>6. RESTRICTED ITEMS</Text>
-              <Text style={styles.sectionText}>The following items are prohibited on the Platform:</Text>
-              <Text style={styles.bulletText}>• Illegal drugs or narcotics</Text>
-              <Text style={styles.bulletText}>• Weapons and explosives</Text>
-              <Text style={styles.bulletText}>• Hazardous chemicals</Text>
-              <Text style={styles.bulletText}>• Flammable substances</Text>
-              <Text style={styles.bulletText}>• Counterfeit or stolen goods</Text>
-              <Text style={styles.bulletText}>• Any item prohibited under Indian law</Text>
-              <Text style={styles.importantNote}>🚫 bookfleet reserves the right to cancel such orders immediately without refund.</Text>
-            </View>
-
-            {/* 7. Bookings & Cancellations */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>7. BOOKINGS & CANCELLATIONS</Text>
-              <Text style={styles.sectionText}>Bookings may be cancelled subject to applicable cancellation policies.</Text>
-              <Text style={styles.sectionText}>Cancellation charges may apply depending on:</Text>
-              <Text style={styles.bulletText}>• Rider allocation status</Text>
-              <Text style={styles.bulletText}>• Distance travelled</Text>
-              <Text style={styles.bulletText}>• Operational stage of service</Text>
-              <Text style={styles.importantNote}>⚠️ Repeated fake or abusive bookings may result in permanent suspension.</Text>
-            </View>
-
-            {/* 8. Pricing & Payments */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>8. PRICING & PAYMENTS</Text>
-              <Text style={styles.sectionText}>Pricing may include:</Text>
-              <Text style={styles.bulletText}>• Base Fare</Text>
-              <Text style={styles.bulletText}>• Distance Charges</Text>
-              <Text style={styles.bulletText}>• Platform Fees</Text>
+              <Text style={styles.sectionTitle}>6. Pricing</Text>
+              <Text style={styles.sectionText}>Delivery charges may vary based on factors including:</Text>
+              <Text style={styles.bulletText}>• Distance</Text>
+              <Text style={styles.bulletText}>• Vehicle Type</Text>
+              <Text style={styles.bulletText}>• Estimated Time</Text>
+              <Text style={styles.bulletText}>• Traffic Conditions</Text>
+              <Text style={styles.bulletText}>• Demand & Supply</Text>
               <Text style={styles.bulletText}>• Waiting Charges</Text>
-              <Text style={styles.bulletText}>• Taxes</Text>
-              <Text style={styles.bulletText}>• Surge or Peak-Time Pricing</Text>
-              <Text style={styles.sectionText}>Final pricing may vary depending on traffic conditions, route changes, waiting time, or operational factors.</Text>
+              <Text style={styles.bulletText}>• Toll Charges (where applicable)</Text>
+              <Text style={styles.bulletText}>• Platform Fee</Text>
+              <Text style={styles.bulletText}>• Applicable Taxes</Text>
+              <Text style={styles.sectionText}>The total payable amount will be displayed before confirming your booking.</Text>
             </View>
 
-            {/* 9. Payment Methods */}
+            {/* 7. Payments */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>9. PAYMENT METHODS</Text>
-              <Text style={styles.sectionText}>Payments may be completed through:</Text>
+              <Text style={styles.sectionTitle}>7. Payments</Text>
+              <Text style={styles.sectionText}>Customers may pay using available payment methods including:</Text>
               <Text style={styles.bulletText}>• UPI</Text>
               <Text style={styles.bulletText}>• Debit/Credit Cards</Text>
               <Text style={styles.bulletText}>• Net Banking</Text>
+              <Text style={styles.bulletText}>• Wallets</Text>
               <Text style={styles.bulletText}>• Cash (where available)</Text>
-              <Text style={styles.sectionText}>All transactions are processed through authorized payment service providers.</Text>
+              <Text style={styles.sectionText}>Payment processing may be handled by authorized third-party payment providers.</Text>
+              <Text style={styles.importantNote}>⚠️ bookfleet does not store complete card or banking credentials.</Text>
             </View>
 
-            {/* 10. Rider & Delivery Partner Clause */}
+            {/* 8. Customer Responsibilities */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>10. RIDER & DELIVERY PARTNER CLAUSE</Text>
-              <Text style={styles.importantNote}>👉 Rider and delivery partners available on bookfleet operate independently and are not employees, agents, or representatives of bookfleet.</Text>
+              <Text style={styles.sectionTitle}>8. Customer Responsibilities</Text>
+              <Text style={styles.sectionText}>Customers agree to:</Text>
+              <Text style={styles.bulletText}>• Provide accurate pickup and delivery information.</Text>
+              <Text style={styles.bulletText}>• Ensure lawful shipment contents.</Text>
+              <Text style={styles.bulletText}>• Cooperate with delivery partners.</Text>
+              <Text style={styles.bulletText}>• Be available during pickup and delivery.</Text>
+              <Text style={styles.bulletText}>• Not misuse the platform.</Text>
+              <Text style={styles.bulletText}>• Comply with all applicable laws.</Text>
+              <Text style={styles.sectionText}>Customers remain solely responsible for the contents of every shipment.</Text>
             </View>
 
-            {/* 11. Service Availability */}
+            {/* 9. Prohibited Items */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>11. SERVICE AVAILABILITY</Text>
-              <Text style={styles.sectionText}>Services are subject to:</Text>
-              <Text style={styles.bulletText}>• Rider availability</Text>
-              <Text style={styles.bulletText}>• Traffic conditions</Text>
-              <Text style={styles.bulletText}>• Weather conditions</Text>
-              <Text style={styles.bulletText}>• Technical limitations</Text>
-              <Text style={styles.bulletText}>• Operational area restrictions</Text>
-              <Text style={styles.sectionText}>bookfleet does not guarantee uninterrupted or error-free services.</Text>
+              <Text style={styles.sectionTitle}>9. Prohibited Items</Text>
+              <Text style={styles.sectionText}>Customers must not book or transport prohibited items including but not limited to:</Text>
+              <Text style={styles.bulletText}>• Illegal goods</Text>
+              <Text style={styles.bulletText}>• Explosives</Text>
+              <Text style={styles.bulletText}>• Firearms</Text>
+              <Text style={styles.bulletText}>• Narcotics</Text>
+              <Text style={styles.bulletText}>• Hazardous chemicals</Text>
+              <Text style={styles.bulletText}>• Live animals (unless specifically permitted)</Text>
+              <Text style={styles.bulletText}>• Counterfeit goods</Text>
+              <Text style={styles.bulletText}>• Stolen property</Text>
+              <Text style={styles.bulletText}>• Items prohibited by Indian law</Text>
+              <Text style={styles.importantNote}>🚫 bookfleet reserves the right to refuse any booking involving prohibited goods.</Text>
             </View>
 
-            {/* 12. Limitation of Liability */}
+            {/* 10. Cancellation */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>12. LIMITATION OF LIABILITY</Text>
-              <Text style={styles.sectionText}>bookfleet shall not be liable for:</Text>
-              <Text style={styles.bulletText}>• Delays caused by weather, traffic, or unforeseen circumstances</Text>
-              <Text style={styles.bulletText}>• Losses arising from user negligence</Text>
+              <Text style={styles.sectionTitle}>10. Cancellation</Text>
+              <Text style={styles.sectionText}>
+                Customers may cancel bookings in accordance with the bookfleet Cancellation Policy.{'\n\n'}
+                Cancellation charges may apply depending on the booking stage.{'\n\n'}
+                bookfleet reserves the right to cancel bookings due to operational, safety, legal, or technical reasons.
+              </Text>
+            </View>
+
+            {/* 11. Limitation of Liability */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>11. Limitation of Liability</Text>
+              <Text style={styles.sectionText}>bookfleet acts solely as a technology platform connecting customers with independent delivery partners.{'\n\n'}To the maximum extent permitted by law, bookfleet shall not be liable for:</Text>
+              <Text style={styles.bulletText}>• Delay caused by traffic or weather</Text>
+              <Text style={styles.bulletText}>• Incorrect addresses</Text>
+              <Text style={styles.bulletText}>• Customer errors</Text>
+              <Text style={styles.bulletText}>• Force majeure events</Text>
               <Text style={styles.bulletText}>• Indirect or consequential damages</Text>
-              <Text style={styles.bulletText}>• Actions or omissions of independent rider or delivery partners</Text>
             </View>
 
-            {/* 13. Account Suspension & Termination */}
+            {/* 12. Suspension & Termination */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>13. ACCOUNT SUSPENSION & TERMINATION</Text>
-              <Text style={styles.sectionText}>bookfleet reserves the right to suspend or terminate accounts involved in:</Text>
+              <Text style={styles.sectionTitle}>12. Suspension & Termination</Text>
+              <Text style={styles.sectionText}>bookfleet may suspend or permanently terminate customer accounts for:</Text>
               <Text style={styles.bulletText}>• Fraudulent activity</Text>
-              <Text style={styles.bulletText}>• Fake bookings</Text>
-              <Text style={styles.bulletText}>• Abuse or misconduct</Text>
-              <Text style={styles.bulletText}>• Violation of applicable laws</Text>
-              <Text style={styles.bulletText}>• Breach of these Terms</Text>
+              <Text style={styles.bulletText}>• Misuse of the platform</Text>
+              <Text style={styles.bulletText}>• Abuse towards delivery partners</Text>
+              <Text style={styles.bulletText}>• Illegal activities</Text>
+              <Text style={styles.bulletText}>• Violation of these Terms</Text>
             </View>
 
-            {/* 14. Intellectual Property Rights */}
+            {/* 13. Changes to Terms */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>14. INTELLECTUAL PROPERTY RIGHTS</Text>
+              <Text style={styles.sectionTitle}>13. Changes to Terms</Text>
               <Text style={styles.sectionText}>
-                All trademarks, logos, graphics, software, application interfaces, and branding associated with bookfleet are the exclusive properties of ZIPTO HYPERLOGISTICS PRIVATE LIMITED.
-              </Text>
-              <Text style={styles.importantNote}>🚫 Unauthorized reproduction or misuse is strictly prohibited.</Text>
-            </View>
-
-            {/* 15. Governing Law & Jurisdiction */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>15. GOVERNING LAW & JURISDICTION</Text>
-              <Text style={styles.sectionText}>
-                These Terms shall be governed in accordance with the laws of India.{'\n\n'}
-                Any disputes arising shall be subject to the jurisdiction of competent courts in Odisha, India.
+                bookfleet may revise these Terms from time to time.{'\n\n'}
+                Updated Terms become effective immediately upon publication unless otherwise stated.{'\n\n'}
+                Continued use of the Platform constitutes acceptance of the revised Terms.
               </Text>
             </View>
 
-            {/* 16. Modifications to Terms */}
+            {/* 14. Governing Law */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>16. MODIFICATIONS TO TERMS</Text>
+              <Text style={styles.sectionTitle}>14. Governing Law</Text>
               <Text style={styles.sectionText}>
-                bookfleet reserves the right to update or modify these Terms at any time without prior notice.{'\n\n'}
-                Continued use of the Platform constitutes acceptance of the revised Terms & Conditions.
+                These Terms shall be governed by and interpreted in accordance with the laws of India.{'\n\n'}
+                Any disputes shall be subject to the exclusive jurisdiction of the competent courts of Bhubaneswar, Odisha.
               </Text>
+            </View>
+
+            {/* 15. Contact Us */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>15. Contact Us</Text>
+              <Text style={styles.sectionText}>For questions regarding these Terms & Conditions, please contact:</Text>
+              <Text style={styles.sectionText}>bookfleet</Text>
+              <Text style={styles.contactText}>📧 support@bookfleet.in</Text>
+              <Text style={styles.contactText}>🌐 www.bookfleet.in</Text>
+              <Text style={styles.sectionText}>Legal Entity: Zipto Hyperlogistics Private Limited</Text>
+              <Text style={styles.sectionText}>Registered Office:</Text>
+              <Text style={styles.contactText}>📍 781, Shaheed Nagar,{'\n'}    780 Maharishi College Road,{'\n'}    Bhubaneswar,{'\n'}    Khordha, Odisha – 751007, India</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="info-outline" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
-                By using bookfleet's services, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. © 2026 Zipto Hyperlogistics Pvt. Ltd.
+                By using bookfleet's services, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. © 2026 Zipto Hyperlogistics Private Limited.
               </Text>
             </View>
           </View>

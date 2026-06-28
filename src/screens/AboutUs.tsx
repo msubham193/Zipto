@@ -61,7 +61,7 @@ const SOCIAL_LINKS = [
 ];
 
 // ─── bookfleet Wordmark ───────────────────────────────────────────────────────────
-const BookfleetWordmark = () => (
+const bookfleetWordmark = () => (
   <View style={styles.wordmark}>
     <Text style={styles.wordmarkZ}>b</Text>
     <Text style={styles.wordmarkRest}>ookfleet</Text>
@@ -120,7 +120,7 @@ const AboutUs = () => {
 
           {/* ── Hero ── */}
           <View style={styles.heroSection}>
-            <BookfleetWordmark />
+            <bookfleetWordmark />
             <Text style={styles.tagline}>Fast. Reliable. Everywhere.</Text>
             <View style={styles.taglineLine} />
           </View>

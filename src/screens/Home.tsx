@@ -28,7 +28,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useLocationStore } from '../store/useLocationStore';
 import { notificationApi } from '../api/client';
 import { horizontalScale as hs, fontScale as fs, SCREEN_WIDTH } from '../utils/metrics';
-import { HomeLocationSkeleton } from '../components/Skeleton';
+import { HomeLocationSkeleton, HomeBannerSkeleton } from '../components/Skeleton';
 import RatingModal from '../components/RatingModal';
 import { getPendingRating, clearPendingRating, PendingRating } from '../utils/pendingRating';
 
@@ -96,6 +96,7 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   // One-time rider intro animation that plays across the screen on load.
   const [showRider, setShowRider] = useState(true);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
   const headerBgRef = useRef<LottieView>(null);
@@ -302,8 +303,10 @@ const Home = () => {
             <Image
               source={require('../assets/images/banner.png')}
               style={styles.heroBannerImage}
-              resizeMode="contain"
+              resizeMode="cover"
+              onLoad={() => setBannerLoaded(true)}
             />
+            {!bannerLoaded && <HomeBannerSkeleton />}
           </Animated.View>
 
           {/* 3. Animated Section Title */}
@@ -475,13 +478,15 @@ const styles = StyleSheet.create({
   // Hero Banner
   heroBanner: {
     marginBottom: sp(24),
-    width: '100%',
+    width: SCREEN_WIDTH - sp(16),
+    marginLeft: -sp(8),
     aspectRatio: 16 / 8,
+    borderRadius: sp(24),
+    overflow: 'hidden',
   },
   heroBannerImage: {
     width: '100%',
     height: '100%',
-    borderRadius: sp(16),
   },
 
   // Services

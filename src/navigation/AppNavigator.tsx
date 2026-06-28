@@ -32,6 +32,9 @@ import NotificationSettings from '../screens/NotificationSettings';
 import Notifications from '../screens/Notifications';
 import TermsAndConditions from '../screens/TermsAndConditions';
 import PrivacyPolicy from '../screens/PrivacyPolicy';
+import CancellationPolicy from '../screens/CancellationPolicy';
+import DataDeletionPolicy from '../screens/DataDeletionPolicy';
+import ProhibitedItemsPolicy from '../screens/ProhibitedItemsPolicy';
 import AboutUs from '../screens/AboutUs';
 
 // Placeholder for screens not yet implemented
@@ -76,6 +79,9 @@ export type AppStackParamList = {
   Settings: undefined;
   TermsAndConditions: undefined;
   PrivacyPolicy: undefined;
+  CancellationPolicy: undefined;
+  DataDeletionPolicy: undefined;
+  ProhibitedItemsPolicy: undefined;
   AboutUs: undefined;
   Notifications: undefined;
   ScheduleDelivery: undefined;
@@ -211,6 +217,27 @@ const AppNavigator = () => {
       <Stack.Screen
         name="PrivacyPolicy"
         component={PrivacyPolicy}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="CancellationPolicy"
+        component={CancellationPolicy}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="DataDeletionPolicy"
+        component={DataDeletionPolicy}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="ProhibitedItemsPolicy"
+        component={ProhibitedItemsPolicy}
         options={{
           animation: 'slide_from_right',
         }}

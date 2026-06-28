@@ -89,9 +89,9 @@ export const HomeServiceCardSkeleton: React.FC = () => (
 export const HomeBannerSkeleton: React.FC = () => (
   <Skeleton
     width="100%"
-    height={undefined}
-    borderRadius={ms(16)}
-    style={{ aspectRatio: 16 / 8, marginBottom: vs(24) }}
+    height="100%"
+    borderRadius={0}
+    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
   />
 );
 

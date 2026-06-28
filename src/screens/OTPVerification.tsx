@@ -118,7 +118,7 @@ const OTPVerification = () => {
       {/* Hero — absolutely pinned, unaffected by keyboard */}
       <View style={styles.hero} pointerEvents="none">
         <Image
-          source={require('../assets/images/otp_screen.png')}
+          source={require('../assets/images/oto_screen.jpeg')}
           style={styles.heroImage}
           resizeMode="contain"
         />
