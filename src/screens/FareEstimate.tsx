@@ -617,6 +617,27 @@ const FareEstimate = () => {
               <Text style={styles.rowValue}>{money(breakdown?.multi_stop_charge)}</Text>
             </View>
           )}
+          {/* Minimum fare top-up — when base+distance is below the vehicle's
+              minimum, the delivery charge is floored to it. Shown so the rows
+              foot. (When there's a surge, the surge row already absorbs this.) */}
+          {breakdown?.minimum_fare_applied && !hasSurge && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FEF9C3' }]}>
+                  <Icon name="trending-up" size={sp(13)} color="#CA8A04" />
+                </View>
+                <Text style={styles.rowLabel}>Minimum Fare Applied</Text>
+              </View>
+              <Text style={styles.rowValue}>
+                +{money(
+                  (breakdown?.delivery_charge || 0) -
+                    ((breakdown?.base_fare || 0) +
+                      (breakdown?.distance_charge || 0) +
+                      (breakdown?.multi_stop_charge || 0)),
+                )}
+              </Text>
+            </View>
+          )}
           {/* Surge applies to the delivery charge only — shown between the ride
               components and GST so the rows foot: base + distance + surge = delivery. */}
           {hasSurge && (
@@ -643,21 +664,6 @@ const FareEstimate = () => {
               <Text style={styles.rowValue}>{money(deliveryCharge)}</Text>
             </View>
           )}
-          {((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0) > 0 && (
-            <View style={styles.row}>
-              <View style={styles.rowLabelWrap}>
-                <View style={[styles.rowIconBox, { backgroundColor: '#FEF2F2' }]}>
-                  <Icon name="receipt-long" size={sp(13)} color="#DC2626" />
-                </View>
-                <Text style={styles.rowLabel}>
-                  GST{breakdown?.gst_percent ? ` (${breakdown.gst_percent}% on delivery)` : ''}
-                </Text>
-              </View>
-              <Text style={styles.rowValue}>
-                ₹{((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0).toFixed(2)}
-              </Text>
-            </View>
-          )}
           {(breakdown?.platform_fee || 0) > 0 && (
             <View style={styles.row}>
               <View style={styles.rowLabelWrap}>
@@ -668,6 +674,21 @@ const FareEstimate = () => {
               </View>
               <Text style={styles.rowValue}>
                 {money(breakdown?.platform_fee)}
+              </Text>
+            </View>
+          )}
+          {((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0) > 0 && (
+            <View style={styles.row}>
+              <View style={styles.rowLabelWrap}>
+                <View style={[styles.rowIconBox, { backgroundColor: '#FEF2F2' }]}>
+                  <Icon name="receipt-long" size={sp(13)} color="#DC2626" />
+                </View>
+                <Text style={styles.rowLabel}>
+                  GST{breakdown?.gst_percent ? ` (${breakdown.gst_percent}% on delivery + platform)` : ''}
+                </Text>
+              </View>
+              <Text style={styles.rowValue}>
+                ₹{((breakdown?.gst_amount ?? breakdown?.platform_fee_gst) || 0).toFixed(2)}
               </Text>
             </View>
           )}
