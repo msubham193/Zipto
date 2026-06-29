@@ -33,10 +33,10 @@ class MainApplication : Application(), ReactApplication {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val channel = NotificationChannel(
         "zipto_default",
-        "Zipto Notifications",
+        "Bookfleet Notifications",
         NotificationManager.IMPORTANCE_HIGH
       ).apply {
-        description = "Zipto app push notifications"
+        description = "Bookfleet app push notifications"
         enableLights(true)
         enableVibration(true)
       }
