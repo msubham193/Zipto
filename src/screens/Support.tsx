@@ -102,10 +102,10 @@ const Support = () => {
     {
       id: 3, title: 'Email Us',
       icon: 'mail-outline',
-      desc: 'support@bookfleet.com',
+      desc: 'support@bookfleet.in',
       badge: '24/7', badgeColor: COLORS.amber,
       accent: COLORS.amber, light: COLORS.amberLight,
-      onPress: () => Linking.openURL('mailto:support@bookfleet.com'),
+      onPress: () => Linking.openURL('mailto:support@bookfleet.in'),
     },
     {
       id: 4, title: 'WhatsApp',
