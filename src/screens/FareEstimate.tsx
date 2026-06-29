@@ -389,7 +389,7 @@ const FareEstimate = () => {
 
         {/* Subtitle */}
         <Text style={styles.noDriversSub}>
-          No active BOOKFLEET riders near your pickup right now. Try again or change your location.
+          No active bookfleet riders near your pickup right now. Try again or change your location.
         </Text>
 
         {/* Tip cards */}
