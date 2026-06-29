@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  RefreshControl,
   Platform,
   Linking,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,7 +19,6 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import LottieView from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -94,13 +95,16 @@ const Home = () => {
   const isFocused = useIsFocused();
   const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
-  // One-time rider intro animation that plays across the screen on load.
-  const [showRider, setShowRider] = useState(true);
   const [bannerLoaded, setBannerLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { address, loading: locationLoading, hydrated, fetch: fetchLocation, isStale } = useLocationStore();
-  const headerBgRef = useRef<LottieView>(null);
-  const riderRef = useRef<LottieView>(null);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchLocation(true);
+    setRefreshing(false);
+  };
 
   // Pending "rate your rider" prompt left over from a just-completed delivery.
   const [pendingRating, setPendingRating] = useState<PendingRating | null>(null);
@@ -109,25 +113,6 @@ const Home = () => {
     getPendingRating().then(p => { if (p) setPendingRating(p); });
   }, [isFocused]);
 
-  // Pause the looping header animation whenever Home isn't the active screen —
-  // a continuously-looping Lottie wastes CPU/GPU on low-end devices in the
-  // background. Resume it when Home regains focus.
-  useEffect(() => {
-    if (isFocused) {
-      headerBgRef.current?.resume();
-      if (showRider) riderRef.current?.play();
-    } else {
-      headerBgRef.current?.pause();
-      riderRef.current?.pause();
-    }
-  }, [isFocused, showRider]);
-
-  // Safety net: hide the rider overlay even if onAnimationFinish never fires (iOS edge case).
-  useEffect(() => {
-    if (!showRider) return;
-    const timer = setTimeout(() => setShowRider(false), 8000);
-    return () => clearTimeout(timer);
-  }, [showRider]);
 
   // ── Animation shared values ──────────────────────────────────────────────
   // IMPORTANT: opacity always starts (and stays) at 1, so content is NEVER
@@ -234,15 +219,11 @@ const Home = () => {
         {/* 1. Animated Header */}
         <Animated.View style={[{ paddingHorizontal: sp(16) }, headerAnimStyle]}>
           <View style={[styles.header, { overflow: 'hidden' }]}>
-            {/* City skyline background.
-                iOS: SOFTWARE (lottie-ios 4.6.1 fixes the 4.6.0 HARDWARE crash on iOS 26).
-                Android: HARDWARE for GPU-accelerated looping. */}
             <LottieView
-              ref={headerBgRef}
               source={require('../assets/animations/header-bg.json')}
               style={[styles.headerBg, { pointerEvents: 'none' }]}
               autoPlay
-              loop
+              loop={false}
               renderMode={Platform.OS === 'ios' ? 'SOFTWARE' : 'HARDWARE'}
               cacheComposition
               resizeMode="cover"
@@ -296,7 +277,18 @@ const Home = () => {
           </View>
         </Animated.View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#1E22AD']}
+              tintColor="#1E22AD"
+            />
+          }
+        >
 
           {/* 2. Animated Hero Banner */}
           <Animated.View style={[styles.heroBanner, bannerAnimStyle]}>
@@ -347,26 +339,6 @@ const Home = () => {
       {/* 5. Fixed Bottom Tab */}
       <BottomTabBar />
 
-      {/* Rider rides across the screen center once on load.
-          Wrapped in a pointerEvents="none" View so the overlay never blocks
-          taps on the bottom tab bar / content underneath. */}
-      {showRider && (
-        <View style={styles.riderOverlay} pointerEvents="none">
-          <LottieView
-            ref={riderRef}
-            source={require('../assets/animations/rider.json')}
-            style={StyleSheet.absoluteFillObject}
-            autoPlay
-            loop={false}
-            renderMode={Platform.OS === 'ios' ? 'SOFTWARE' : 'HARDWARE'}
-            cacheComposition
-            resizeMode="contain"
-            onAnimationFinish={(isCancelled) => {
-              if (!isCancelled) setShowRider(false);
-            }}
-          />
-        </View>
-      )}
 
       {/* Rate your rider — surfaced if a just-completed delivery is still unrated */}
       <RatingModal
