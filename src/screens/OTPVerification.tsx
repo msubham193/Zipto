@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,15 @@ import {
   ScrollView,
   ActivityIndicator,
   StatusBar,
+  Keyboard,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
 } from 'react-native';
+import {
+  startOtpAutoRead,
+  readOtpFromClipboard,
+  logOtpHash,
+} from '../utils/otpAutoRead';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
@@ -45,11 +51,47 @@ const OTPVerification = () => {
   const [resending, setResending]     = useState(false);
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const autoFilledRef = useRef(false);
 
   useEffect(() => {
     setTimeout(() => inputRefs.current[0]?.focus(), 100);
     return () => { clearError(); };
   }, []);
+
+  // ── Auto-fetch OTP ──────────────────────────────────────────────────────────
+  // 1) Hands-free SMS auto-read (Android SMS Retriever), 2) clipboard fallback.
+  // OS autofill props on the boxes (oneTimeCode / sms-otp) cover the rest.
+  const submitOtp = useCallback(async (code: string) => {
+    if (code.length !== OTP_LENGTH) return;
+    setError('');
+    try {
+      await verifyOtp(mobile, code, undefined, confirmSwitch);
+    } catch {
+      autoFilledRef.current = false; // allow re-fill on failure
+      // error displayed via authError from store
+    }
+  }, [mobile, confirmSwitch, verifyOtp]);
+
+  const fillOtp = useCallback((code: string) => {
+    const arr = code.replace(/\D/g, '').slice(0, OTP_LENGTH).split('');
+    if (arr.length !== OTP_LENGTH || autoFilledRef.current) return;
+    autoFilledRef.current = true;
+    setDigits(arr);
+    setError('');
+    Keyboard.dismiss();
+    // Auto-submit once the code arrives on its own.
+    setTimeout(() => submitOtp(arr.join('')), 250);
+  }, [submitOtp]);
+
+  useEffect(() => {
+    logOtpHash(); // dev: prints the hash to append to the OTP SMS
+    const stop = startOtpAutoRead(fillOtp);
+    const t = setTimeout(async () => {
+      const fromClip = await readOtpFromClipboard();
+      if (fromClip) fillOtp(fromClip);
+    }, 400);
+    return () => { stop(); clearTimeout(t); };
+  }, [fillOtp]);
 
   useEffect(() => {
     if (resendTimer <= 0) return;
@@ -58,8 +100,23 @@ const OTPVerification = () => {
   }, [resendTimer]);
 
   const handleChange = (text: string, index: number) => {
-    // Accept only the last character typed (handles paste on Android)
-    const digit = text.replace(/[^0-9]/g, '').slice(-1);
+    const cleaned = text.replace(/[^0-9]/g, '');
+    // Autofill / paste delivers the whole code into one box — distribute it.
+    if (cleaned.length > 1) {
+      const updated = [...digits];
+      cleaned.slice(0, OTP_LENGTH - index).split('').forEach((d, i) => {
+        updated[index + i] = d;
+      });
+      setDigits(updated);
+      setError('');
+      const last = Math.min(index + cleaned.length - 1, OTP_LENGTH - 1);
+      inputRefs.current[last]?.focus();
+      if (updated.every(d => d !== '')) {
+        Keyboard.dismiss();
+      }
+      return;
+    }
+    const digit = cleaned.slice(-1);
     const updated = [...digits];
     updated[index] = digit;
     setDigits(updated);
@@ -87,12 +144,7 @@ const OTPVerification = () => {
 
   const handleVerify = async () => {
     if (!isComplete) { setError('Please enter the 6-digit OTP'); return; }
-    setError('');
-    try {
-      await verifyOtp(mobile, otp, undefined, confirmSwitch);
-    } catch {
-      // error displayed via authError from store
-    }
+    await submitOtp(otp);
   };
 
   const handleResend = async () => {
@@ -179,9 +231,12 @@ const OTPVerification = () => {
                   onFocus={() => setFocusedIndex(i)}
                   onBlur={() => setFocusedIndex(-1)}
                   keyboardType="number-pad"
-                  maxLength={1}
+                  maxLength={OTP_LENGTH}
                   textAlign="center"
                   selectionColor="#2563EB"
+                  textContentType="oneTimeCode"
+                  autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+                  importantForAutofill="yes"
                 />
               ))}
             </View>
