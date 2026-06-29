@@ -196,8 +196,8 @@ const AboutUs = () => {
                 icon="email"
                 iconColor={BRAND_BLUE}
                 label="Email"
-                value="contact@bookfleet.com"
-                onPress={() => Linking.openURL('mailto:contact@bookfleet.com')}
+                value="contact@bookfleet.in"
+                onPress={() => Linking.openURL('mailto:contact@bookfleet.in')}
               />
               <Divider />
               <ContactRow

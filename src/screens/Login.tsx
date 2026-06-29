@@ -142,14 +142,14 @@ const Login = () => {
                 I agree to the{' '}
                 <Text
                   style={styles.checkboxLink}
-                  onPress={() => Linking.openURL('https://bookfleet.com/terms-of-service')}
+                  onPress={() => Linking.openURL('https://bookfleet.in/terms-of-service')}
                 >
                   Terms of Service
                 </Text>
                 {' '}and{' '}
                 <Text
                   style={styles.checkboxLink}
-                  onPress={() => Linking.openURL('https://bookfleet.com/privacy-policy')}
+                  onPress={() => Linking.openURL('https://bookfleet.in/privacy-policy')}
                 >
                   Privacy Policy
                 </Text>
