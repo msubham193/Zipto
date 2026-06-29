@@ -12,8 +12,6 @@ import {
   ActivityIndicator,
   StatusBar,
   Keyboard,
-  NativeSyntheticEvent,
-  TextInputKeyPressEventData,
 } from 'react-native';
 import {
   startOtpAutoRead,
@@ -44,17 +42,17 @@ const OTPVerification = () => {
 
   const { verifyOtp, login, isLoading, error: authError, clearError } = useAuthStore();
 
-  const [digits, setDigits]           = useState<string[]>(Array(OTP_LENGTH).fill(''));
-  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [otp, setOtp]                 = useState('');
+  const [focused, setFocused]         = useState(false);
   const [error, setError]             = useState('');
   const [resendTimer, setResendTimer] = useState(RESEND_COOLDOWN);
   const [resending, setResending]     = useState(false);
 
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const inputRef = useRef<TextInput | null>(null);
   const autoFilledRef = useRef(false);
 
   useEffect(() => {
-    setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    setTimeout(() => inputRef.current?.focus(), 100);
     return () => { clearError(); };
   }, []);
 
@@ -73,14 +71,14 @@ const OTPVerification = () => {
   }, [mobile, confirmSwitch, verifyOtp]);
 
   const fillOtp = useCallback((code: string) => {
-    const arr = code.replace(/\D/g, '').slice(0, OTP_LENGTH).split('');
-    if (arr.length !== OTP_LENGTH || autoFilledRef.current) return;
+    const digits = code.replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (digits.length !== OTP_LENGTH || autoFilledRef.current) return;
     autoFilledRef.current = true;
-    setDigits(arr);
+    setOtp(digits);
     setError('');
     Keyboard.dismiss();
     // Auto-submit once the code arrives on its own.
-    setTimeout(() => submitOtp(arr.join('')), 250);
+    setTimeout(() => submitOtp(digits), 250);
   }, [submitOtp]);
 
   useEffect(() => {
@@ -99,47 +97,16 @@ const OTPVerification = () => {
     return () => clearInterval(id);
   }, [resendTimer]);
 
-  const handleChange = (text: string, index: number) => {
-    const cleaned = text.replace(/[^0-9]/g, '');
-    // Autofill / paste delivers the whole code into one box — distribute it.
-    if (cleaned.length > 1) {
-      const updated = [...digits];
-      cleaned.slice(0, OTP_LENGTH - index).split('').forEach((d, i) => {
-        updated[index + i] = d;
-      });
-      setDigits(updated);
-      setError('');
-      const last = Math.min(index + cleaned.length - 1, OTP_LENGTH - 1);
-      inputRefs.current[last]?.focus();
-      if (updated.every(d => d !== '')) {
-        Keyboard.dismiss();
-      }
-      return;
-    }
-    const digit = cleaned.slice(-1);
-    const updated = [...digits];
-    updated[index] = digit;
-    setDigits(updated);
+  // Single source of truth: one input holds the whole code. Autofill / SMS
+  // auto-read / clipboard / manual typing all flow through here, and the visual
+  // boxes render from `otp`, so a fetched code always shows.
+  const handleChange = (text: string) => {
+    const cleaned = text.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH);
+    setOtp(cleaned);
     setError('');
-
-    if (digit && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (cleaned.length === OTP_LENGTH) Keyboard.dismiss();
   };
 
-  const handleKeyPress = (
-    e: NativeSyntheticEvent<TextInputKeyPressEventData>,
-    index: number,
-  ) => {
-    if (e.nativeEvent.key === 'Backspace' && !digits[index] && index > 0) {
-      const updated = [...digits];
-      updated[index - 1] = '';
-      setDigits(updated);
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const otp = digits.join('');
   const isComplete = otp.length === OTP_LENGTH;
 
   const handleVerify = async () => {
@@ -152,10 +119,11 @@ const OTPVerification = () => {
     setResending(true);
     try {
       await login(mobile);
-      setDigits(Array(OTP_LENGTH).fill(''));
+      setOtp('');
+      autoFilledRef.current = false;
       setError('');
       setResendTimer(RESEND_COOLDOWN);
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 100);
     } catch {
       // error displayed via authError from store
     } finally {
@@ -214,32 +182,49 @@ const OTPVerification = () => {
 
             <Text style={styles.label}>Enter OTP</Text>
 
-            {/* 6 individual digit boxes */}
-            <View style={styles.boxRow}>
-              {Array(OTP_LENGTH).fill(null).map((_, i) => (
-                <TextInput
-                  key={i}
-                  ref={ref => { inputRefs.current[i] = ref; }}
-                  style={[
-                    styles.digitBox,
-                    focusedIndex === i && styles.digitBoxFocused,
-                    digits[i] ? styles.digitBoxFilled : null,
-                  ]}
-                  value={digits[i]}
-                  onChangeText={text => handleChange(text, i)}
-                  onKeyPress={e => handleKeyPress(e, i)}
-                  onFocus={() => setFocusedIndex(i)}
-                  onBlur={() => setFocusedIndex(-1)}
-                  keyboardType="number-pad"
-                  maxLength={OTP_LENGTH}
-                  textAlign="center"
-                  selectionColor="#2563EB"
-                  textContentType="oneTimeCode"
-                  autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
-                  importantForAutofill="yes"
-                />
-              ))}
-            </View>
+            {/* One real input (transparent, full-width) behind 6 visual boxes.
+                Tapping anywhere focuses it; autofill / SMS auto-read fill it and
+                the boxes render each digit from `otp`. */}
+            <TouchableOpacity
+              activeOpacity={1}
+              style={styles.boxRow}
+              onPress={() => inputRef.current?.focus()}
+            >
+              {Array(OTP_LENGTH).fill(null).map((_, i) => {
+                const char = otp[i] ?? '';
+                const isActive = focused && (i === otp.length || (otp.length === OTP_LENGTH && i === OTP_LENGTH - 1));
+                return (
+                  <View
+                    key={i}
+                    style={[
+                      styles.digitBox,
+                      isActive && styles.digitBoxFocused,
+                      char ? styles.digitBoxFilled : null,
+                    ]}
+                  >
+                    <Text style={styles.digitText}>{char}</Text>
+                  </View>
+                );
+              })}
+
+              <TextInput
+                ref={inputRef}
+                style={styles.hiddenInput}
+                value={otp}
+                onChangeText={handleChange}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                keyboardType="number-pad"
+                maxLength={OTP_LENGTH}
+                selectionColor="transparent"
+                underlineColorAndroid="transparent"
+                caretHidden
+                textContentType="oneTimeCode"
+                autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+                importantForAutofill="yes"
+                autoFocus
+              />
+            </TouchableOpacity>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
@@ -423,6 +408,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: hs(8),
+    position: 'relative',
   },
   digitBox: {
     flex: 1,
@@ -431,15 +417,31 @@ const styles = StyleSheet.create({
     borderRadius: ms(12),
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    fontSize: fs(20),
-    fontWeight: '700',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#0F172A',
     shadowOpacity: 0.04,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+  },
+  digitText: {
+    fontSize: fs(20),
+    fontWeight: '700',
+    fontFamily: 'Poppins-Regular',
+    color: '#0F172A',
+  },
+  hiddenInput: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    textAlign: 'center',
+    color: 'transparent',
+    backgroundColor: 'transparent',
+    fontSize: fs(20),
+    opacity: 0.02, // keep it focusable/visible to autofill without showing text
   },
   digitBoxFocused: {
     borderColor: '#2563EB',
