@@ -371,7 +371,7 @@
 				DEVELOPMENT_TEAM = 2Y47UV653U;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Zipto/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Zipto - quick delivery";
+				INFOPLIST_KEY_CFBundleDisplayName = Bookfleet;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -404,7 +404,7 @@
 				"CURRENT_PROJECT_VERSION[sdk=*]" = 3;
 				DEVELOPMENT_TEAM = 2Y47UV653U;
 				INFOPLIST_FILE = Zipto/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Zipto - quick delivery";
+				INFOPLIST_KEY_CFBundleDisplayName = Bookfleet;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (

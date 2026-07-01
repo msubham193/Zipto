@@ -1,8 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import Login from '../screens/Login';
-import OTPVerification from '../screens/OTPVerification';
+import Login from '../screens/auth/Login';
+import OTPVerification from '../screens/auth/OTPVerification';
 
 export type AuthStackParamList = {
     Login: undefined;

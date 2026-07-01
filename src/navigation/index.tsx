@@ -5,7 +5,7 @@ import AppNavigator from './AppNavigator';
 import { View, ActivityIndicator, Linking } from 'react-native';
 import { navigationRef } from './navigationRef';
 import { useAuthStore } from '../store/useAuthStore';
-import Splash from '../screens/Splash';
+import Splash from '../screens/auth/Splash';
 import { parseReferralCode, stashReferralCode } from '../utils/referral';
 
 const MIN_SPLASH_DURATION = 2800;
