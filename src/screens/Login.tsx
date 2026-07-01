@@ -105,7 +105,7 @@ const Login = () => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.title}>Welcome to bookfleet</Text>
+            <Text style={styles.title}>Welcome to Bookfleet</Text>
             <Text style={styles.subtitle}>
               Enter your mobile number to access your deliveries quickly.
             </Text>

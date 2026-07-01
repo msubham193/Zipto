@@ -66,7 +66,7 @@ const BOOKING_NOTES = [
   'COD amount and parcel details must be accurate.',
   'Rider safety & respectful communication are mandatory.',
   'Once rider is assigned, cancellation charges may apply.',
-  'bookfleet moves your parcel with speed, safety & responsibility.',
+  'Bookfleet moves your parcel with speed, safety & responsibility.',
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ const FareEstimate = () => {
   const [error, setError] = useState<string | null>(null);
   const [driversAvailable, setDriversAvailable] = useState<boolean>(true);
 
-  // bookfleet Coins
+  // Bookfleet Coins
   const [coinsBalance, setCoinsBalance] = useState(0);
   const [useCoins, setUseCoins] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -389,7 +389,7 @@ const FareEstimate = () => {
 
         {/* Subtitle */}
         <Text style={styles.noDriversSub}>
-          No active bookfleet riders near your pickup right now. Try again or change your location.
+          No active Bookfleet riders near your pickup right now. Try again or change your location.
         </Text>
 
         {/* Tip cards */}
@@ -751,14 +751,14 @@ const FareEstimate = () => {
           )}
         </View>
 
-        {/* ── bookfleet Coins ── */}
+        {/* ── Bookfleet Coins ── */}
         {coinsBalance >= 100 && (
           <>
             <View style={styles.sectionTitleRow}>
               <View style={[styles.sectionIconBadge, { backgroundColor: '#F59E0B' }]}>
                 <Icon name="stars" size={sp(13)} color="#FFFFFF" />
               </View>
-              <Text style={styles.sectionTitle}>bookfleet Coins</Text>
+              <Text style={styles.sectionTitle}>Bookfleet Coins</Text>
             </View>
             <View style={styles.coinsCard}>
               <View style={styles.coinsCardLeft}>

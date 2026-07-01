@@ -33,7 +33,7 @@ async function requestPermission(): Promise<boolean> {
     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
     {
       title: 'Location Permission',
-      message: 'bookfleet needs your location to show nearby services.',
+      message: 'Bookfleet needs your location to show nearby services.',
       buttonNeutral: 'Ask Me Later',
       buttonNegative: 'Cancel',
       buttonPositive: 'OK',

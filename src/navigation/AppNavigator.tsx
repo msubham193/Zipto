@@ -136,7 +136,7 @@ const AppNavigator = () => {
       {/* Refer & Earn */}
       <Stack.Screen name="ReferEarn" component={ReferEarn} />
 
-      {/* How to earn bookfleet coins */}
+      {/* How to earn Bookfleet coins */}
       <Stack.Screen name="EarnCoinsInfo" component={EarnCoinsInfo} />
 
       {/* Track Order Screen */}

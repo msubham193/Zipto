@@ -261,7 +261,7 @@ const Profile = () => {
 
         {/* ── Version ── */}
         <View style={styles.versionBlock}>
-          <Text style={styles.versionText}>bookfleet v1.0.0</Text>
+          <Text style={styles.versionText}>Bookfleet v1.0.0</Text>
           <Text style={styles.copyright}>© 2025 bookfleet. All rights reserved.</Text>
         </View>
       </ScrollView>

@@ -72,7 +72,7 @@ const ReferEarn = () => {
   const handleShare = async () => {
     if (!info) return;
     try {
-      await Share.share({ message: info.share_message, title: 'Refer bookfleet' });
+      await Share.share({ message: info.share_message, title: 'Refer Bookfleet' });
     } catch {
       /* user dismissed */
     }

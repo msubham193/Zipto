@@ -304,7 +304,7 @@ const Settings = () => {
             <MaterialIcons name="info-outline" size={ms(20)} color="#64748B" />
             <View style={styles.appInfoText}>
               <Text style={styles.appInfoTitle}>App Version</Text>
-              <Text style={styles.appInfoVersion}>bookfleet v1.0.0 (Build 100)</Text>
+              <Text style={styles.appInfoVersion}>Bookfleet v1.0.0 (Build 100)</Text>
             </View>
           </View>
 

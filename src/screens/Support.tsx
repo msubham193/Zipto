@@ -246,7 +246,7 @@ const Support = () => {
                 <Text style={styles.cardTitle}>Office Address</Text>
               </View>
               <View style={styles.addressBlock}>
-                <Text style={styles.addressLine}>bookfleet Headquarters</Text>
+                <Text style={styles.addressLine}>Bookfleet Headquarters</Text>
                 <Text style={styles.addressSub}>Bhubaneswar, Odisha – 751007, India</Text>
               </View>
               {/* <TouchableOpacity style={styles.directionsBtn} activeOpacity={0.75}>

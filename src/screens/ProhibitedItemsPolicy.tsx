@@ -33,14 +33,14 @@ const ProhibitedItemsPolicy = () => {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.legalContent}>
-            <Text style={styles.legalTitle}>bookfleet Prohibited Items Policy</Text>
+            <Text style={styles.legalTitle}>Bookfleet Prohibited Items Policy</Text>
             <Text style={styles.legalUpdate}>Last Updated: June 2026</Text>
 
             {/* 1. Introduction */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>1. Introduction</Text>
               <Text style={styles.sectionText}>
-                This Prohibited Items Policy outlines the categories of goods and materials that must not be booked, transported, or delivered through the bookfleet platform operated by Zipto Hyperlogistics Private Limited ("bookfleet", "Company", "we", "our", or "us").{'\n\n'}
+                This Prohibited Items Policy outlines the categories of goods and materials that must not be booked, transported, or delivered through the Bookfleet platform operated by Zipto Hyperlogistics Private Limited ("Bookfleet", "Company", "we", "our", or "us").{'\n\n'}
                 Customers are solely responsible for ensuring that every shipment complies with applicable laws and this Policy.
               </Text>
             </View>
@@ -48,7 +48,7 @@ const ProhibitedItemsPolicy = () => {
             {/* 2. Prohibited Items */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>2. Prohibited Items</Text>
-              <Text style={styles.sectionText}>The following items are strictly prohibited from being transported through bookfleet:</Text>
+              <Text style={styles.sectionText}>The following items are strictly prohibited from being transported through Bookfleet:</Text>
 
               <Text style={styles.subSectionTitle}>Illegal Goods</Text>
               <Text style={styles.bulletText}>• Narcotic drugs and psychotropic substances</Text>
@@ -120,11 +120,11 @@ const ProhibitedItemsPolicy = () => {
               <Text style={styles.bulletText}>• Any material prohibited under applicable laws</Text>
 
               <Text style={styles.subSectionTitle}>Other Restricted Items</Text>
-              <Text style={styles.bulletText}>• Perishable goods requiring special storage unless specifically supported by bookfleet</Text>
+              <Text style={styles.bulletText}>• Perishable goods requiring special storage unless specifically supported by Bookfleet</Text>
               <Text style={styles.bulletText}>• Items emitting strong odours</Text>
               <Text style={styles.bulletText}>• Leaking packages</Text>
               <Text style={styles.bulletText}>• Unsafe or improperly packed goods</Text>
-              <Text style={styles.bulletText}>• Any shipment considered unsafe by bookfleet</Text>
+              <Text style={styles.bulletText}>• Any shipment considered unsafe by Bookfleet</Text>
             </View>
 
             {/* 3. Customer Responsibility */}
@@ -141,12 +141,12 @@ const ProhibitedItemsPolicy = () => {
             {/* 4. Inspection Rights */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>4. Inspection Rights</Text>
-              <Text style={styles.sectionText}>bookfleet reserves the right to:</Text>
+              <Text style={styles.sectionText}>Bookfleet reserves the right to:</Text>
               <Text style={styles.bulletText}>• Refuse any shipment.</Text>
               <Text style={styles.bulletText}>• Cancel any booking.</Text>
               <Text style={styles.bulletText}>• Request additional shipment information.</Text>
               <Text style={styles.bulletText}>• Report suspicious shipments to appropriate authorities where required by law.</Text>
-              <Text style={styles.sectionText}>bookfleet may refuse transportation if it reasonably believes a shipment violates this Policy or applicable laws.</Text>
+              <Text style={styles.sectionText}>Bookfleet may refuse transportation if it reasonably believes a shipment violates this Policy or applicable laws.</Text>
             </View>
 
             {/* 5. Consequences */}
@@ -157,16 +157,16 @@ const ProhibitedItemsPolicy = () => {
               <Text style={styles.bulletText}>• Suspension or permanent termination of the customer account.</Text>
               <Text style={styles.bulletText}>• Refusal of future services.</Text>
               <Text style={styles.bulletText}>• Reporting to law enforcement or regulatory authorities where required.</Text>
-              <Text style={styles.bulletText}>• Recovery of any losses or damages suffered by bookfleet, where permitted by law.</Text>
+              <Text style={styles.bulletText}>• Recovery of any losses or damages suffered by Bookfleet, where permitted by law.</Text>
             </View>
 
             {/* 6. Limitation of Liability */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>6. Limitation of Liability</Text>
               <Text style={styles.sectionText}>
-                bookfleet is a technology platform that connects customers with independent delivery partners.{'\n\n'}
-                bookfleet does not verify the contents of every shipment and shall not be liable for any prohibited or illegal items submitted by customers.{'\n\n'}
-                Customers remain solely responsible for the legality, safety, and compliance of all items transported using the bookfleet platform.
+                Bookfleet is a technology platform that connects customers with independent delivery partners.{'\n\n'}
+                Bookfleet does not verify the contents of every shipment and shall not be liable for any prohibited or illegal items submitted by customers.{'\n\n'}
+                Customers remain solely responsible for the legality, safety, and compliance of all items transported using the Bookfleet platform.
               </Text>
             </View>
 
@@ -174,8 +174,8 @@ const ProhibitedItemsPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>7. Policy Updates</Text>
               <Text style={styles.sectionText}>
-                bookfleet may update this Prohibited Items Policy from time to time.{'\n\n'}
-                The latest version will always be available on the bookfleet website and applications.
+                Bookfleet may update this Prohibited Items Policy from time to time.{'\n\n'}
+                The latest version will always be available on the Bookfleet website and applications.
               </Text>
             </View>
 
@@ -183,7 +183,7 @@ const ProhibitedItemsPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>8. Contact Us</Text>
               <Text style={styles.sectionText}>For questions regarding this Prohibited Items Policy, please contact:</Text>
-              <Text style={styles.sectionText}>bookfleet Support</Text>
+              <Text style={styles.sectionText}>Bookfleet Support</Text>
               <Text style={styles.contactText}>📧 support@bookfleet.in</Text>
               <Text style={styles.contactText}>🌐 www.bookfleet.in</Text>
               <Text style={styles.sectionText}>Legal Entity: Zipto Hyperlogistics Private Limited</Text>
@@ -194,7 +194,7 @@ const ProhibitedItemsPolicy = () => {
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="block" size={ms(24)} color="#EF4444" />
               <Text style={styles.acknowledgementText}>
-                By using bookfleet's services, you agree to comply with this Prohibited Items Policy. Violations may result in immediate account termination and legal action. © 2026 Zipto Hyperlogistics Private Limited.
+                By using Bookfleet's services, you agree to comply with this Prohibited Items Policy. Violations may result in immediate account termination and legal action. © 2026 Zipto Hyperlogistics Private Limited.
               </Text>
             </View>
           </View>

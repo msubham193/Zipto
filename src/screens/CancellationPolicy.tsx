@@ -34,22 +34,22 @@ const CancellationPolicy = () => {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.legalContent}>
-            <Text style={styles.legalTitle}>bookfleet Cancellation & Refund Policy</Text>
+            <Text style={styles.legalTitle}>Bookfleet Cancellation & Refund Policy</Text>
             <Text style={styles.legalUpdate}>Last Updated: June 2026</Text>
 
             {/* 1. Introduction */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>1. Introduction</Text>
               <Text style={styles.sectionText}>
-                This Cancellation & Refund Policy outlines the rules governing booking cancellations, cancellation charges, refunds, and related processes for services offered through the bookfleet Customer App, website, and related platforms operated by Zipto Hyperlogistics Private Limited ("bookfleet", "Company", "we", "our", or "us").{'\n\n'}
-                By using bookfleet, you agree to this Cancellation & Refund Policy.
+                This Cancellation & Refund Policy outlines the rules governing booking cancellations, cancellation charges, refunds, and related processes for services offered through the Bookfleet Customer App, website, and related platforms operated by Zipto Hyperlogistics Private Limited ("Bookfleet", "Company", "we", "our", or "us").{'\n\n'}
+                By using Bookfleet, you agree to this Cancellation & Refund Policy.
               </Text>
             </View>
 
             {/* 2. Customer Cancellation */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>2. Customer Cancellation</Text>
-              <Text style={styles.sectionText}>Customers may cancel a booking at any time through the bookfleet App, subject to the following conditions:</Text>
+              <Text style={styles.sectionText}>Customers may cancel a booking at any time through the Bookfleet App, subject to the following conditions:</Text>
 
               <Text style={styles.subSectionTitle}>Before a Delivery Partner is Assigned</Text>
               <Text style={styles.bulletText}>• Cancellation is free of charge.</Text>
@@ -62,13 +62,13 @@ const CancellationPolicy = () => {
               <Text style={styles.bulletText}>• Operational costs incurred.</Text>
 
               <Text style={styles.subSectionTitle}>After Pickup</Text>
-              <Text style={styles.importantNote}>⚠️ Once the shipment has been picked up by the delivery partner, the booking generally cannot be cancelled unless approved by bookfleet under exceptional circumstances.</Text>
+              <Text style={styles.importantNote}>⚠️ Once the shipment has been picked up by the delivery partner, the booking generally cannot be cancelled unless approved by Bookfleet under exceptional circumstances.</Text>
             </View>
 
-            {/* 3. Cancellation by bookfleet */}
+            {/* 3. Cancellation by Bookfleet */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>3. Cancellation by bookfleet</Text>
-              <Text style={styles.sectionText}>bookfleet reserves the right to cancel any booking due to:</Text>
+              <Text style={styles.sectionTitle}>3. Cancellation by Bookfleet</Text>
+              <Text style={styles.sectionText}>Bookfleet reserves the right to cancel any booking due to:</Text>
               <Text style={styles.bulletText}>• Rider unavailability</Text>
               <Text style={styles.bulletText}>• Vehicle unavailability</Text>
               <Text style={styles.bulletText}>• Incorrect pickup or delivery details</Text>
@@ -76,7 +76,7 @@ const CancellationPolicy = () => {
               <Text style={styles.bulletText}>• Suspected fraudulent activity</Text>
               <Text style={styles.bulletText}>• Technical issues</Text>
               <Text style={styles.bulletText}>• Force majeure events</Text>
-              <Text style={styles.bulletText}>• Violation of bookfleet policies</Text>
+              <Text style={styles.bulletText}>• Violation of Bookfleet policies</Text>
               <Text style={styles.sectionText}>Where applicable, eligible refunds will be processed.</Text>
             </View>
 
@@ -89,7 +89,7 @@ const CancellationPolicy = () => {
               <Text style={styles.bulletText}>• Safety concerns</Text>
               <Text style={styles.bulletText}>• Incorrect booking details</Text>
               <Text style={styles.bulletText}>• Other valid operational reasons</Text>
-              <Text style={styles.sectionText}>bookfleet will make reasonable efforts to assign another available delivery partner.</Text>
+              <Text style={styles.sectionText}>Bookfleet will make reasonable efforts to assign another available delivery partner.</Text>
             </View>
 
             {/* 5. Refund Eligibility */}
@@ -101,7 +101,7 @@ const CancellationPolicy = () => {
               <Text style={styles.bulletText}>• Booking cancelled by bookfleet.</Text>
               <Text style={styles.bulletText}>• Service could not be provided.</Text>
               <Text style={styles.bulletText}>• Payment charged incorrectly.</Text>
-              <Text style={styles.bulletText}>• Any other case approved by bookfleet after review.</Text>
+              <Text style={styles.bulletText}>• Any other case approved by Bookfleet after review.</Text>
               <Text style={styles.importantNote}>👉 Refunds are not guaranteed for every cancelled booking.</Text>
             </View>
 
@@ -111,7 +111,7 @@ const CancellationPolicy = () => {
               <Text style={styles.sectionText}>Refunds may not be provided if:</Text>
               <Text style={styles.bulletText}>• The customer entered incorrect booking details.</Text>
               <Text style={styles.bulletText}>• The customer was unavailable at pickup or delivery.</Text>
-              <Text style={styles.bulletText}>• The shipment violated bookfleet policies.</Text>
+              <Text style={styles.bulletText}>• The shipment violated Bookfleet policies.</Text>
               <Text style={styles.bulletText}>• Cancellation occurred after pickup without valid reason.</Text>
               <Text style={styles.bulletText}>• The service was successfully completed.</Text>
             </View>
@@ -130,7 +130,7 @@ const CancellationPolicy = () => {
               <Text style={styles.sectionTitle}>8. Refund Method</Text>
               <Text style={styles.sectionText}>
                 Refunds will normally be issued to the original payment method used during booking.{'\n\n'}
-                Where this is not possible, bookfleet may process the refund through another suitable method permitted by law.
+                Where this is not possible, Bookfleet may process the refund through another suitable method permitted by law.
               </Text>
             </View>
 
@@ -139,7 +139,7 @@ const CancellationPolicy = () => {
               <Text style={styles.sectionTitle}>9. Failed or Pending Payments</Text>
               <Text style={styles.sectionText}>
                 If a payment fails or remains pending, customers should first verify the transaction with their bank or payment provider.{'\n\n'}
-                If the amount has been debited but the booking was not created, customers may contact bookfleet Support for assistance.
+                If the amount has been debited but the booking was not created, customers may contact Bookfleet Support for assistance.
               </Text>
             </View>
 
@@ -148,7 +148,7 @@ const CancellationPolicy = () => {
               <Text style={styles.sectionTitle}>10. Disputes</Text>
               <Text style={styles.sectionText}>
                 Any cancellation or refund dispute will be reviewed by bookfleet.{'\n\n'}
-                bookfleet's decision regarding refunds, after reviewing the relevant facts and applicable policies, shall be final to the extent permitted by law.
+                Bookfleet's decision regarding refunds, after reviewing the relevant facts and applicable policies, shall be final to the extent permitted by law.
               </Text>
             </View>
 
@@ -156,8 +156,8 @@ const CancellationPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>11. Policy Updates</Text>
               <Text style={styles.sectionText}>
-                bookfleet may modify this Cancellation & Refund Policy from time to time.{'\n\n'}
-                The latest version will always be available on the bookfleet website and application.
+                Bookfleet may modify this Cancellation & Refund Policy from time to time.{'\n\n'}
+                The latest version will always be available on the Bookfleet website and application.
               </Text>
             </View>
 
@@ -165,7 +165,7 @@ const CancellationPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>12. Contact Us</Text>
               <Text style={styles.sectionText}>For cancellation or refund-related assistance, please contact:</Text>
-              <Text style={styles.sectionText}>bookfleet Support</Text>
+              <Text style={styles.sectionText}>Bookfleet Support</Text>
               <Text style={styles.contactText}>📧 support@bookfleet.in</Text>
               <Text style={styles.contactText}>🌐 www.bookfleet.in</Text>
               <Text style={styles.sectionText}>Legal Entity: Zipto Hyperlogistics Private Limited</Text>
@@ -176,7 +176,7 @@ const CancellationPolicy = () => {
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="assignment-return" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
-                By using bookfleet's services, you acknowledge that you have read and understood this Cancellation & Refund Policy. © 2026 Zipto Hyperlogistics Private Limited.
+                By using Bookfleet's services, you acknowledge that you have read and understood this Cancellation & Refund Policy. © 2026 Zipto Hyperlogistics Private Limited.
               </Text>
             </View>
           </View>

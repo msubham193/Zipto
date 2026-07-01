@@ -229,7 +229,7 @@ const Home = () => {
               resizeMode="cover"
             />
             <View style={styles.headerTop}>
-              <Text style={styles.bookfleetText}>bookfleet</Text>
+              <Text style={styles.bookfleetText}>Bookfleet</Text>
               <View style={styles.headerActions}>
                 <TouchableOpacity
                   onPress={() => {

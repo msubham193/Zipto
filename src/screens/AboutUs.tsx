@@ -31,7 +31,7 @@ const SOCIAL_LINKS = [
   {
     id:       'linkedin',
     label:    'LinkedIn',
-    handle:   'bookfleet',
+    handle:   'Bookfleet',
     icon:     'logo-linkedin',
     xLogo:    false,
     iconBg:   '#E8F0FE',
@@ -56,11 +56,11 @@ const SOCIAL_LINKS = [
     xLogo:    true,
     iconBg:   '#000000',
     iconColor:'#FFFFFF',
-    url:      'https://x.com/bookfleet',
+    url:      'https://x.com/Bookfleet',
   },
 ];
 
-// ─── bookfleet Wordmark ───────────────────────────────────────────────────────────
+// ─── Bookfleet Wordmark ───────────────────────────────────────────────────────────
 const BookfleetWordmark = () => (
   <View style={styles.wordmark}>
     <Text style={styles.wordmarkZ}>b</Text>
@@ -129,7 +129,7 @@ const AboutUs = () => {
           <View style={styles.section}>
             <SectionHeading icon="flag" color={BRAND_BLUE} title="Our Mission" />
             <Text style={styles.bodyText}>
-              We started bookfleet to solve local delivery problems in India — making it faster, cheaper, and more reliable for everyday users and businesses.
+              We started Bookfleet to solve local delivery problems in India — making it faster, cheaper, and more reliable for everyday users and businesses.
             </Text>
           </View>
 
@@ -161,7 +161,7 @@ const AboutUs = () => {
 
           {/* ── Why Choose Us ── */}
           <View style={styles.section}>
-            <SectionHeading icon="star" color="#8B5CF6" title="Why Choose bookfleet?" />
+            <SectionHeading icon="star" color="#8B5CF6" title="Why Choose Bookfleet?" />
             <View style={styles.featureList}>
               {features.map((f, i) => (
                 <View key={i} style={styles.featureRow}>
@@ -253,8 +253,8 @@ const AboutUs = () => {
           {/* ── Footer ── */}
           <View style={styles.footer}>
             <View style={styles.footerLine} />
-            <Text style={styles.versionText}>bookfleet v1.0.0</Text>
-            <Text style={styles.copyrightText}>© 2025 bookfleet Technologies Pvt. Ltd.</Text>
+            <Text style={styles.versionText}>Bookfleet v1.0.0</Text>
+            <Text style={styles.copyrightText}>© 2025 Bookfleet Technologies Pvt. Ltd.</Text>
             <Text style={styles.copyrightText}>All rights reserved.</Text>
           </View>
 

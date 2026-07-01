@@ -10,7 +10,7 @@
 	<string>en</string>
 
 	<key>CFBundleDisplayName</key>
-	<string>bookfleet</string>
+	<string>Bookfleet</string>
 
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>

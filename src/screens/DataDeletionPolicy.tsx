@@ -34,14 +34,14 @@ const DataDeletionPolicy = () => {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.legalContent}>
-            <Text style={styles.legalTitle}>bookfleet Data Deletion Policy</Text>
+            <Text style={styles.legalTitle}>Bookfleet Data Deletion Policy</Text>
             <Text style={styles.legalUpdate}>Last Updated: June 2026</Text>
 
             {/* 1. Introduction */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>1. Introduction</Text>
               <Text style={styles.sectionText}>
-                This Data Deletion Policy explains how bookfleet, operated by Zipto Hyperlogistics Private Limited ("bookfleet", "Company", "we", "our", or "us"), handles requests for deletion of personal information and user accounts.{'\n\n'}
+                This Data Deletion Policy explains how Bookfleet, operated by Zipto Hyperlogistics Private Limited ("Bookfleet", "Company", "we", "our", or "us"), handles requests for deletion of personal information and user accounts.{'\n\n'}
                 We respect your privacy and provide users with the ability to request deletion of their personal information, subject to applicable laws and our legitimate business obligations.
               </Text>
             </View>
@@ -49,7 +49,7 @@ const DataDeletionPolicy = () => {
             {/* 2. Who Can Request */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>2. Who Can Request Data Deletion</Text>
-              <Text style={styles.sectionText}>The following users may request deletion of their bookfleet account and associated personal information:</Text>
+              <Text style={styles.sectionText}>The following users may request deletion of their Bookfleet account and associated personal information:</Text>
               <Text style={styles.bulletText}>• Customers</Text>
               <Text style={styles.bulletText}>• Delivery Partners (Riders)</Text>
             </View>
@@ -57,8 +57,8 @@ const DataDeletionPolicy = () => {
             {/* 3. How to Request */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>3. How to Request Data Deletion</Text>
-              <Text style={styles.sectionText}>You may request deletion of your bookfleet account by:</Text>
-              <Text style={styles.bulletText}>• Using the Delete Account option available within the bookfleet App (where available), or</Text>
+              <Text style={styles.sectionText}>You may request deletion of your Bookfleet account by:</Text>
+              <Text style={styles.bulletText}>• Using the Delete Account option available within the Bookfleet App (where available), or</Text>
               <Text style={styles.bulletText}>• Contacting our support team.</Text>
               <Text style={styles.contactText}>📧 support@bookfleet.in</Text>
               <Text style={styles.importantNote}>👉 Please include your registered mobile number and account details when submitting a request.</Text>
@@ -92,10 +92,10 @@ const DataDeletionPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>6. Effect of Account Deletion</Text>
               <Text style={styles.sectionText}>After account deletion:</Text>
-              <Text style={styles.bulletText}>• You will lose access to your bookfleet account.</Text>
+              <Text style={styles.bulletText}>• You will lose access to your Bookfleet account.</Text>
               <Text style={styles.bulletText}>• Booking history may no longer be accessible.</Text>
               <Text style={styles.bulletText}>• Saved addresses and preferences will be removed.</Text>
-              <Text style={styles.bulletText}>• Wallet balance (if applicable) may be forfeited unless otherwise required by law or bookfleet policy.</Text>
+              <Text style={styles.bulletText}>• Wallet balance (if applicable) may be forfeited unless otherwise required by law or Bookfleet policy.</Text>
               <Text style={styles.importantNote}>⚠️ The deletion process cannot generally be reversed.</Text>
             </View>
 
@@ -103,7 +103,7 @@ const DataDeletionPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>7. Processing Time</Text>
               <Text style={styles.sectionText}>
-                bookfleet will make reasonable efforts to process eligible data deletion requests within 30 days from successful identity verification, unless a longer period is required by applicable law or exceptional circumstances.
+                Bookfleet will make reasonable efforts to process eligible data deletion requests within 30 days from successful identity verification, unless a longer period is required by applicable law or exceptional circumstances.
               </Text>
             </View>
 
@@ -119,8 +119,8 @@ const DataDeletionPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>9. Policy Updates</Text>
               <Text style={styles.sectionText}>
-                bookfleet may update this Data Deletion Policy from time to time.{'\n\n'}
-                Any changes will be published on the bookfleet website and applications.
+                Bookfleet may update this Data Deletion Policy from time to time.{'\n\n'}
+                Any changes will be published on the Bookfleet website and applications.
               </Text>
             </View>
 
@@ -128,7 +128,7 @@ const DataDeletionPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>10. Contact Us</Text>
               <Text style={styles.sectionText}>For account deletion or privacy-related requests, please contact:</Text>
-              <Text style={styles.sectionText}>bookfleet Support</Text>
+              <Text style={styles.sectionText}>Bookfleet Support</Text>
               <Text style={styles.contactText}>📧 support@bookfleet.in</Text>
               <Text style={styles.contactText}>🌐 www.bookfleet.in</Text>
               <Text style={styles.sectionText}>Legal Entity: Zipto Hyperlogistics Private Limited</Text>
@@ -139,7 +139,7 @@ const DataDeletionPolicy = () => {
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="delete-outline" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
-                By using bookfleet's services, you acknowledge that you have read and understood this Data Deletion Policy. © 2026 Zipto Hyperlogistics Private Limited.
+                By using Bookfleet's services, you acknowledge that you have read and understood this Data Deletion Policy. © 2026 Zipto Hyperlogistics Private Limited.
               </Text>
             </View>
           </View>
