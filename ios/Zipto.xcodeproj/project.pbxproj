@@ -17,6 +17,7 @@
 		334403754389401AB010FEB1 /* Poppins-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CDA2AE3D26DE41CB82E14BE4 /* Poppins-ExtraBold.ttf */; };
 		37067883847E024C5FDEE555 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		4025A6EFE0214F069B2EBC86 /* Poppins-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CB4A601BE5914BDBBD22819A /* Poppins-SemiBoldItalic.ttf */; };
+		420E69DC2FF58C6000E8F660 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 420E69DB2FF58C6000E8F660 /* GoogleService-Info.plist */; };
 		44DFEC8E45C84383876565CB /* Poppins-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF9132DE6CDE43A2B229EAC7 /* Poppins-Italic.ttf */; };
 		59C6F892A4D743DEBB0AD073 /* Poppins-ExtraLightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 60BBD455EBC84254879CFA18 /* Poppins-ExtraLightItalic.ttf */; };
 		627EF41755724771B1F673A5 /* Poppins-Thin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 118C12E11A0A40F1A571FDFA /* Poppins-Thin.ttf */; };
@@ -44,6 +45,7 @@
 		23FE7A91CF2943259AD6888C /* Poppins-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Light.ttf"; path = "../src/assets/fonts/Poppins-Light.ttf"; sourceTree = "<group>"; };
 		2EDB60F06EC64D9B8B76B512 /* Poppins-ExtraLight.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraLight.ttf"; path = "../src/assets/fonts/Poppins-ExtraLight.ttf"; sourceTree = "<group>"; };
 		34A39F87FE2E4F838364ECC8 /* Poppins-BlackItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-BlackItalic.ttf"; path = "../src/assets/fonts/Poppins-BlackItalic.ttf"; sourceTree = "<group>"; };
+		420E69DB2FF58C6000E8F660 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		486C76F8954E4F23855C3711 /* Poppins-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-SemiBold.ttf"; path = "../src/assets/fonts/Poppins-SemiBold.ttf"; sourceTree = "<group>"; };
 		4A7E06B498E447319204463E /* Poppins-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Bold.ttf"; path = "../src/assets/fonts/Poppins-Bold.ttf"; sourceTree = "<group>"; };
 		4FEB20232C184EEB9BD9AA4C /* Poppins-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Regular.ttf"; path = "../src/assets/fonts/Poppins-Regular.ttf"; sourceTree = "<group>"; };
@@ -131,6 +133,7 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
+				420E69DB2FF58C6000E8F660 /* GoogleService-Info.plist */,
 				062C80C773355365DEBDF0BB /* Pods-Zipto.debug.xcconfig */,
 				9B53E2D01E929C7BC999AA5E /* Pods-Zipto.release.xcconfig */,
 			);
@@ -243,6 +246,7 @@
 				C261BBB6B5214AA5A7E89AAB /* Poppins-Regular.ttf in Resources */,
 				72DE9AA175C0424496DB29C7 /* Poppins-SemiBold.ttf in Resources */,
 				4025A6EFE0214F069B2EBC86 /* Poppins-SemiBoldItalic.ttf in Resources */,
+				420E69DC2FF58C6000E8F660 /* GoogleService-Info.plist in Resources */,
 				627EF41755724771B1F673A5 /* Poppins-Thin.ttf in Resources */,
 				07941F3FB7C84FC3B3E12E1A /* Poppins-ThinItalic.ttf in Resources */,
 				37067883847E024C5FDEE555 /* PrivacyInfo.xcprivacy in Resources */,
@@ -384,6 +388,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				CODE_SIGN_ENTITLEMENTS = "Zipto/Zipto.entitlements";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ridezipto.customer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.ridezipto.customer;
 				PRODUCT_NAME = Zipto;
@@ -417,6 +422,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				CODE_SIGN_ENTITLEMENTS = "Zipto/Zipto.entitlements";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ridezipto.customer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.ridezipto.customer;
 				PRODUCT_NAME = Zipto;

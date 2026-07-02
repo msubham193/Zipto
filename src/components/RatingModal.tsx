@@ -99,7 +99,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose} statusBarTranslucent>
       <KeyboardAvoidingView
         style={styles.backdrop}
-        behavior={Platform.OS === ‘ios’ ? ‘padding’ : ‘height’}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -114,7 +114,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
 
             <Text style={styles.title}>Rate your delivery</Text>
             <Text style={styles.subtitle}>
-              {driverName ? `How was ${driverName}’s service?` : "How was your rider’s service?"}
+              {driverName ? `How was ${driverName}'s service?` : "How was your rider's service?"}
             </Text>
 
             {/* Stars */}
@@ -122,13 +122,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
               {[1, 2, 3, 4, 5].map(n => (
                 <Pressable
                   key={n}
-                  onPress={() => { setRating(n); setError(‘’); }}
+                  onPress={() => { setRating(n); setError(''); }}
                   hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                 >
                   <MaterialIcons
-                    name={n <= rating ? ‘star’ : ‘star-border’}
+                    name={n <= rating ? 'star' : 'star-border'}
                     size={ms(38)}
-                    color={n <= rating ? ‘#F59E0B’ : ‘#D1D5DB’}
+                    color={n <= rating ? '#F59E0B' : '#D1D5DB'}
                   />
                 </Pressable>
               ))}
