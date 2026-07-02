@@ -6,6 +6,8 @@ import {
   Text,
   TouchableOpacity,
   SafeAreaView,
+  View,
+  Animated,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
@@ -24,10 +26,31 @@ export default function Payment({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState('Setting up payment…');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const resolvedRef = useRef(false);
   const pendingOrderRef = useRef<string | null>(null);
 
-  // Confirm the result with the backend (authoritative).
+  // Animation values for success screen
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const showSuccess = useCallback(() => {
+    setSuccess(true);
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 60,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [scaleAnim, fadeAnim]);
+
   const confirm = useCallback(async () => {
     if (resolvedRef.current) return;
     resolvedRef.current = true;
@@ -49,9 +72,7 @@ export default function Payment({ route, navigation }: Props) {
     } catch { /* fall through to failure */ }
 
     if (ok) {
-      Alert.alert('Payment Successful', `₹${amount} ${type === 'wallet' ? 'added to wallet' : 'paid successfully'}`, [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      showSuccess();
     } else {
       Alert.alert('Payment Not Confirmed', 'If money was debited it will reflect shortly. You can retry if needed.', [
         { text: 'Retry', onPress: () => { resolvedRef.current = false; initiate(); } },
@@ -59,7 +80,7 @@ export default function Payment({ route, navigation }: Props) {
       ]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, bookingId, amount, navigation]);
+  }, [type, bookingId, amount, navigation, showSuccess]);
 
   const onError = useCallback((message?: string) => {
     if (resolvedRef.current) return;
@@ -71,7 +92,6 @@ export default function Payment({ route, navigation }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation]);
 
-  // Register the Cashfree SDK callbacks once.
   useEffect(() => {
     try {
       CFPaymentGatewayService.setCallback({
@@ -105,7 +125,6 @@ export default function Payment({ route, navigation }: Props) {
       const session = new CFSession(data.payment_session_id, data.order_id, env);
       const dropPayment = new CFDropCheckoutPayment(session, null, null);
       setStatusMsg('Opening payment…');
-      // Launches the native Cashfree checkout (UPI apps via intent + cards).
       CFPaymentGatewayService.doPayment(dropPayment);
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || 'Failed to initiate payment');
@@ -118,6 +137,47 @@ export default function Payment({ route, navigation }: Props) {
     initiate();
   }, [initiate]);
 
+  // ── Success Screen ──────────────────────────────────────────────────────────
+  if (success) {
+    return (
+      <SafeAreaView style={styles.successContainer}>
+        <Animated.View style={[styles.successCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+          {/* Checkmark circle */}
+          <View style={styles.checkCircleOuter}>
+            <View style={styles.checkCircleInner}>
+              <Text style={styles.checkmark}>✓</Text>
+            </View>
+          </View>
+
+          {/* Badge */}
+          <View style={styles.confirmedBadge}>
+            <Text style={styles.confirmedBadgeText}>✦  PAYMENT CONFIRMED</Text>
+          </View>
+
+          {/* Amount */}
+          <Text style={styles.amount}>₹{Number(amount).toFixed(2)}</Text>
+
+          {/* Title & subtitle */}
+          <Text style={styles.successTitle}>Payment Successful!</Text>
+          <Text style={styles.successSubtitle}>
+            {type === 'wallet'
+              ? `₹${amount} has been added to your Bookfleet wallet.`
+              : 'Your payment was received. Your delivery is confirmed.'}
+          </Text>
+
+          {/* Divider */}
+          <View style={styles.divider} />
+
+          {/* Done button */}
+          <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.doneBtnText}>Done</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Error Screen ────────────────────────────────────────────────────────────
   if (error) {
     return (
       <SafeAreaView style={styles.center}>
@@ -134,6 +194,7 @@ export default function Payment({ route, navigation }: Props) {
     );
   }
 
+  // ── Loading Screen ──────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.center}>
       <ActivityIndicator size="large" color="#2563EB" />
@@ -146,6 +207,7 @@ export default function Payment({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  // ── Loading / Error ──
   center: {
     flex: 1,
     justifyContent: 'center',
@@ -169,4 +231,115 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   btnSecondary: { paddingVertical: 14, paddingHorizontal: 32, marginTop: 8 },
   btnSecondaryText: { color: '#6b7280', fontSize: 15 },
+
+  // ── Success ──
+  successContainer: {
+    flex: 1,
+    backgroundColor: '#f0fdf4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  successCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#dcfce7',
+  },
+  checkCircleOuter: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#dcfce7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  checkCircleInner: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#16a34a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmark: {
+    fontSize: 36,
+    color: '#ffffff',
+    fontWeight: '700',
+    lineHeight: 40,
+  },
+  confirmedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dcfce7',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  confirmedBadgeText: {
+    color: '#15803d',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    fontFamily: 'Poppins-Regular',
+  },
+  amount: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#16a34a',
+    fontFamily: 'Poppins-Regular',
+    marginBottom: 8,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#15803d',
+    fontFamily: 'Poppins-Regular',
+    marginBottom: 10,
+  },
+  successSubtitle: {
+    fontSize: 14,
+    color: '#4b5563',
+    textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
+    lineHeight: 22,
+    paddingHorizontal: 8,
+  },
+  divider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#dcfce7',
+    marginVertical: 24,
+  },
+  doneBtn: {
+    backgroundColor: '#16a34a',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  doneBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Poppins-Regular',
+  },
 });

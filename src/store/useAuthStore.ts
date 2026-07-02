@@ -168,13 +168,9 @@ export const useAuthStore = create<AuthState>()(
 
           const response = await authApi.getCustomerProfile();
 
-          // Safe check for response existance
           if (response?.success && response?.data) {
             const { user, ...profileData } = response.data;
-
-            // Sync needsProfileSetup from the latest profile data on app restart
             const profileIncomplete = user?.is_profile_complete === false;
-
             set({
               user,
               profile: profileData,
@@ -184,21 +180,16 @@ export const useAuthStore = create<AuthState>()(
             console.log('⚠️ Fetch profile returned invalid response:', response);
           }
         } catch (error: any) {
-
+          const status = error.response?.status;
           const apiMessage = error.response?.data?.message;
-          
-          // Check for various forms of 401 Unauthorized
-          const isUnauthorized = 
-            error.response?.status === 401 || 
-            error.response?.data?.statusCode === 401 ||
-            (error.message && error.message.includes('401'));
 
-          const isCustomerRoleMismatch =
-            error.response?.status === 403 &&
-            typeof apiMessage === 'string' &&
-            apiMessage.toLowerCase().includes('requires one of the following roles: customer');
-          
-          if (isUnauthorized) {
+          // Only logout on a confirmed HTTP 401 — the axios interceptor already
+          // attempted a token refresh before we get here, so a 401 at this
+          // point means both the access token AND the refresh token are invalid.
+          // Never logout on network errors (status === undefined), 5xx, or
+          // timeouts — those are transient and the user should stay logged in
+          // with their cached session.
+          if (status === 401) {
             await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
             set({
               user: null,
@@ -209,6 +200,12 @@ export const useAuthStore = create<AuthState>()(
             });
             return;
           }
+
+          // Wrong role — not a customer account
+          const isCustomerRoleMismatch =
+            status === 403 &&
+            typeof apiMessage === 'string' &&
+            apiMessage.toLowerCase().includes('requires one of the following roles: customer');
 
           if (isCustomerRoleMismatch) {
             const roleError = getCustomerRoleError(get().user?.role);
@@ -225,9 +222,9 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          set({
-            error: apiMessage || error.message || 'Failed to fetch profile',
-          });
+          // Network error, 5xx, or other transient failure — keep the user
+          // logged in with their persisted cached data and don't show an error.
+          console.log('⚠️ fetchProfile transient error (keeping session):', status, error.message);
         }
       },
 
