@@ -8,6 +8,9 @@ import {
   TextInput,
   ActivityIndicator,
   Pressable,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -94,69 +97,78 @@ const RatingModal: React.FC<RatingModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose} statusBarTranslucent>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          {/* Avatar */}
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === ‘ios’ ? ‘padding’ : ‘height’}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.card}>
+            {/* Avatar */}
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initial}</Text>
+            </View>
+
+            <Text style={styles.title}>Rate your delivery</Text>
+            <Text style={styles.subtitle}>
+              {driverName ? `How was ${driverName}’s service?` : "How was your rider’s service?"}
+            </Text>
+
+            {/* Stars */}
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <Pressable
+                  key={n}
+                  onPress={() => { setRating(n); setError(‘’); }}
+                  hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                >
+                  <MaterialIcons
+                    name={n <= rating ? ‘star’ : ‘star-border’}
+                    size={ms(38)}
+                    color={n <= rating ? ‘#F59E0B’ : ‘#D1D5DB’}
+                  />
+                </Pressable>
+              ))}
+            </View>
+            {rating > 0 && <Text style={styles.ratingLabel}>{RATING_LABELS[rating]}</Text>}
+
+            {/* Comment */}
+            <TextInput
+              style={styles.input}
+              placeholder="Add a comment (optional)"
+              placeholderTextColor="#9CA3AF"
+              value={comment}
+              onChangeText={setComment}
+              multiline
+              maxLength={1000}
+              textAlignVertical="top"
+            />
+
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+            {/* Submit */}
+            <TouchableOpacity
+              style={[styles.submitBtn, (rating < 1 || submitting) && styles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={rating < 1 || submitting}
+              activeOpacity={0.9}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitBtnText}>Submit Rating</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleClose} disabled={submitting} style={styles.laterBtn}>
+              <Text style={styles.laterBtnText}>Maybe later</Text>
+            </TouchableOpacity>
           </View>
-
-          <Text style={styles.title}>Rate your delivery</Text>
-          <Text style={styles.subtitle}>
-            {driverName ? `How was ${driverName}'s service?` : 'How was your rider’s service?'}
-          </Text>
-
-          {/* Stars */}
-          <View style={styles.starsRow}>
-            {[1, 2, 3, 4, 5].map(n => (
-              <Pressable
-                key={n}
-                onPress={() => { setRating(n); setError(''); }}
-                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-              >
-                <MaterialIcons
-                  name={n <= rating ? 'star' : 'star-border'}
-                  size={ms(38)}
-                  color={n <= rating ? '#F59E0B' : '#D1D5DB'}
-                />
-              </Pressable>
-            ))}
-          </View>
-          {rating > 0 && <Text style={styles.ratingLabel}>{RATING_LABELS[rating]}</Text>}
-
-          {/* Comment */}
-          <TextInput
-            style={styles.input}
-            placeholder="Add a comment (optional)"
-            placeholderTextColor="#9CA3AF"
-            value={comment}
-            onChangeText={setComment}
-            multiline
-            maxLength={1000}
-            textAlignVertical="top"
-          />
-
-          {!!error && <Text style={styles.errorText}>{error}</Text>}
-
-          {/* Submit */}
-          <TouchableOpacity
-            style={[styles.submitBtn, (rating < 1 || submitting) && styles.submitBtnDisabled]}
-            onPress={handleSubmit}
-            disabled={rating < 1 || submitting}
-            activeOpacity={0.9}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.submitBtnText}>Submit Rating</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleClose} disabled={submitting} style={styles.laterBtn}>
-            <Text style={styles.laterBtnText}>Maybe later</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -165,9 +177,13 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: ms(24),
+    paddingVertical: ms(24),
   },
   card: {
     width: '100%',
