@@ -9,9 +9,12 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi } from '../api/vehicle';
 import { moderateScale as ms, fontScale as fs } from '../utils/metrics';
+
+const RATED_BOOKINGS_KEY = 'bookfleet_rated_bookings';
 
 interface RatingModalProps {
   visible: boolean;
@@ -62,6 +65,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
         rating,
         comment: comment.trim() || undefined,
       });
+      // Persist so MyOrders never re-prompts for this booking
+      try {
+        const raw = await AsyncStorage.getItem(RATED_BOOKINGS_KEY);
+        const existing = raw ? JSON.parse(raw) : {};
+        existing[bookingId] = rating;
+        await AsyncStorage.setItem(RATED_BOOKINGS_KEY, JSON.stringify(existing));
+      } catch { /* non-critical */ }
       reset();
       onSubmitted?.();
       onClose();

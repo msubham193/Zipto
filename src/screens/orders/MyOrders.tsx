@@ -14,7 +14,7 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -113,18 +113,21 @@ const MyOrders = () => {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  // Seed ratedBookings from AsyncStorage on mount so the modal never reappears
-  // even if the API fetch fails on re-entry.
-  useEffect(() => {
-    AsyncStorage.getItem(RATED_BOOKINGS_KEY)
-      .then(raw => {
-        if (raw) {
-          const persisted = JSON.parse(raw) as Record<string, number>;
-          setRatedBookings(prev => ({ ...persisted, ...prev }));
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Reload rated bookings from AsyncStorage every time the screen is focused
+  // so ratings submitted via LiveTracking's RatingModal are reflected here
+  // without re-prompting the user.
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem(RATED_BOOKINGS_KEY)
+        .then(raw => {
+          if (raw) {
+            const persisted = JSON.parse(raw) as Record<string, number>;
+            setRatedBookings(prev => ({ ...persisted, ...prev }));
+          }
+        })
+        .catch(() => {});
+    }, [])
+  );
 
   const onRefresh = () => { setRefreshing(true); fetchBookings(true); };
 
