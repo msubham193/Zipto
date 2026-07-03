@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,11 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Image,
   ScrollView,
   ActivityIndicator,
   StatusBar,
   Keyboard,
-  Animated,
-  PanResponder,
 } from 'react-native';
 import {
   startOtpAutoRead,
@@ -20,8 +19,6 @@ import {
   logOtpHash,
 } from '../../utils/otpAutoRead';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
@@ -29,178 +26,47 @@ import {
   verticalScale as vs,
   moderateScale as ms,
   fontScale as fs,
+  SCREEN_HEIGHT,
 } from '../../utils/metrics';
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH      = 6;
 const RESEND_COOLDOWN = 30;
-const THUMB = ms(56);
+const HERO_HEIGHT     = Math.round(SCREEN_HEIGHT * 0.32);
+const CARD_OVERLAP    = ms(24);
+const CARD_RADIUS     = ms(24);
 
-// ─── Slide to Verify ──────────────────────────────────────────────────────────
-interface SlideButtonHandle {
-  reset: () => void;
-}
-
-interface SlideButtonProps {
-  onSlideComplete: () => void;
-  disabled: boolean;
-  loading: boolean;
-}
-
-const SlideButton = forwardRef<SlideButtonHandle, SlideButtonProps>(
-  ({ onSlideComplete, disabled, loading }, ref) => {
-    const panX = useRef(new Animated.Value(0)).current;
-    const trackWidth = useRef(0);
-    const completed = useRef(false);
-
-    const reset = useCallback(() => {
-      completed.current = false;
-      Animated.spring(panX, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 80,
-        friction: 10,
-      }).start();
-    }, [panX]);
-
-    useImperativeHandle(ref, () => ({ reset }), [reset]);
-
-    const panResponder = useRef(
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => !disabled && !loading,
-        onMoveShouldSetPanResponder: () => !disabled && !loading && !completed.current,
-        onPanResponderMove: (_, { dx }) => {
-          if (completed.current) return;
-          const max = Math.max(0, trackWidth.current - THUMB - ms(4));
-          panX.setValue(Math.max(0, Math.min(dx, max)));
-        },
-        onPanResponderRelease: (_, { dx }) => {
-          if (completed.current) return;
-          const max = Math.max(0, trackWidth.current - THUMB - ms(4));
-          if (dx >= max * 0.8) {
-            completed.current = true;
-            Animated.spring(panX, {
-              toValue: max,
-              useNativeDriver: true,
-              tension: 60,
-              friction: 8,
-            }).start(() => onSlideComplete());
-          } else {
-            reset();
-          }
-        },
-      })
-    ).current;
-
-    const labelOpacity = panX.interpolate({
-      inputRange: [0, 70],
-      outputRange: [1, 0],
-      extrapolate: 'clamp',
-    });
-
-    const isDisabled = disabled || loading;
-
-    return (
-      <View
-        style={[slide.track, isDisabled && slide.trackDisabled]}
-        onLayout={e => { trackWidth.current = e.nativeEvent.layout.width; }}
-      >
-        <Animated.Text style={[slide.label, { opacity: labelOpacity }]}>
-          Slide to verify
-        </Animated.Text>
-        <MaterialIcons
-          name="chevron-right"
-          size={ms(22)}
-          color="rgba(37,99,235,0.3)"
-          style={slide.arrow}
-        />
-        <Animated.View
-          style={[slide.thumb, isDisabled && slide.thumbDisabled, { transform: [{ translateX: panX }] }]}
-          {...panResponder.panHandlers}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#2563EB" />
-          ) : (
-            <MaterialIcons name="security" size={ms(24)} color={isDisabled ? '#94A3B8' : '#2563EB'} />
-          )}
-        </Animated.View>
-      </View>
-    );
-  }
-);
-
-const slide = StyleSheet.create({
-  track: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: ms(50),
-    height: ms(64),
-    paddingHorizontal: ms(4),
-    overflow: 'hidden',
-  },
-  trackDisabled: { opacity: 0.5 },
-  label: {
-    flex: 1,
-    textAlign: 'center',
-    color: '#475569',
-    fontSize: fs(14),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    marginLeft: THUMB,
-  },
-  arrow: {
-    position: 'absolute',
-    right: ms(18),
-  },
-  thumb: {
-    position: 'absolute',
-    left: ms(4),
-    width: THUMB,
-    height: THUMB,
-    borderRadius: THUMB / 2,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  thumbDisabled: { shadowOpacity: 0, elevation: 0 },
-});
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
 const OTPVerification = () => {
   const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const route      = useRoute<any>();
   const { mobile, confirmSwitch } = route.params ?? {};
 
   const { verifyOtp, login, isLoading, error: authError, clearError } = useAuthStore();
 
-  const [otp, setOtp] = useState('');
-  const [focused, setFocused] = useState(false);
-  const [error, setError] = useState('');
+  const [otp, setOtp]                 = useState('');
+  const [focused, setFocused]         = useState(false);
+  const [error, setError]             = useState('');
   const [resendTimer, setResendTimer] = useState(RESEND_COOLDOWN);
-  const [resending, setResending] = useState(false);
+  const [resending, setResending]     = useState(false);
 
   const inputRef = useRef<TextInput | null>(null);
   const autoFilledRef = useRef(false);
-  const sliderRef = useRef<SlideButtonHandle>(null);
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
     return () => { clearError(); };
   }, []);
 
+  // ── Auto-fetch OTP ──────────────────────────────────────────────────────────
+  // 1) Hands-free SMS auto-read (Android SMS Retriever), 2) clipboard fallback.
+  // OS autofill props on the boxes (oneTimeCode / sms-otp) cover the rest.
   const submitOtp = useCallback(async (code: string) => {
     if (code.length !== OTP_LENGTH) return;
     setError('');
     try {
       await verifyOtp(mobile, code, undefined, confirmSwitch);
     } catch {
-      autoFilledRef.current = false;
-      sliderRef.current?.reset();
+      autoFilledRef.current = false; // allow re-fill on failure
+      // error displayed via authError from store
     }
   }, [mobile, confirmSwitch, verifyOtp]);
 
@@ -211,11 +77,12 @@ const OTPVerification = () => {
     setOtp(digits);
     setError('');
     Keyboard.dismiss();
+    // Auto-submit once the code arrives on its own.
     setTimeout(() => submitOtp(digits), 250);
   }, [submitOtp]);
 
   useEffect(() => {
-    logOtpHash();
+    logOtpHash(); // dev: prints the hash to append to the OTP SMS
     const stop = startOtpAutoRead(fillOtp);
     const t = setTimeout(async () => {
       const fromClip = await readOtpFromClipboard();
@@ -230,6 +97,9 @@ const OTPVerification = () => {
     return () => clearInterval(id);
   }, [resendTimer]);
 
+  // Single source of truth: one input holds the whole code. Autofill / SMS
+  // auto-read / clipboard / manual typing all flow through here, and the visual
+  // boxes render from `otp`, so a fetched code always shows.
   const handleChange = (text: string) => {
     const cleaned = text.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH);
     setOtp(cleaned);
@@ -239,14 +109,10 @@ const OTPVerification = () => {
 
   const isComplete = otp.length === OTP_LENGTH;
 
-  const handleVerify = useCallback(async () => {
-    if (!isComplete) {
-      setError('Please enter the 6-digit OTP');
-      sliderRef.current?.reset();
-      return;
-    }
+  const handleVerify = async () => {
+    if (!isComplete) { setError('Please enter the 6-digit OTP'); return; }
     await submitOtp(otp);
-  }, [isComplete, otp, submitOtp]);
+  };
 
   const handleResend = async () => {
     if (resendTimer > 0 || resending) return;
@@ -259,81 +125,91 @@ const OTPVerification = () => {
       setResendTimer(RESEND_COOLDOWN);
       setTimeout(() => inputRef.current?.focus(), 100);
     } catch {
-      // authError from store shown below
+      // error displayed via authError from store
     } finally {
       setResending(false);
     }
   };
 
-  const displayError = error || authError || '';
-
   return (
-    <View style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <LinearGradient
-        colors={['#1A1DB9', '#131699', '#0D1080']}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0.3, y: 0 }}
-        end={{ x: 0.7, y: 1 }}
-      />
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#1E22AD" translucent={false} />
 
-      {/* Background decorations */}
-      <View style={[s.circle, s.circleTR]} />
-      <View style={[s.circle, s.circleTL]} />
-      <View style={[s.circle, s.circleBL]} />
+      {/* Hero — absolutely pinned, unaffected by keyboard */}
+      <View style={styles.hero} pointerEvents="none">
+        <Image
+          source={require('../../assets/images/oto_screen.jpeg')}
+          style={styles.heroImage}
+          resizeMode="contain"
+        />
+        <View style={styles.heroOverlay} />
+        <View style={styles.heroCircleTop} />
+        <View style={styles.heroCircleBottom} />
+        <View style={styles.heroLineAccent} />
+      </View>
 
-      <SafeAreaView style={s.safeArea} edges={['top', 'bottom']}>
-        <KeyboardAvoidingView
-          style={s.flex1}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+      {/* KAV wraps only the form card, starts just below the hero */}
+      <KeyboardAvoidingView
+        style={[styles.kavWrapper, { marginTop: HERO_HEIGHT - CARD_OVERLAP }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.formCard}>
+          <LinearGradient
+            colors={['#2563EB25', 'transparent']}
+            style={styles.cardGradient}
+          />
           <ScrollView
-            style={s.flex1}
-            contentContainerStyle={s.scroll}
+            contentContainerStyle={styles.scroll}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Top row */}
-            <View style={s.topRow}>
-              <TouchableOpacity style={s.iconBtn} onPress={() => navigation.goBack()} activeOpacity={0.75}>
-                <MaterialIcons name="arrow-back" size={ms(20)} color="#FFFFFF" />
-              </TouchableOpacity>
-              <View style={[s.iconBtn, { backgroundColor: 'rgba(255,255,255,0.10)' }]}>
-                <MaterialIcons name="phone-iphone" size={ms(20)} color="#FFFFFF" />
-              </View>
-            </View>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Image
+                source={require('../../assets/images/back.png')}
+                style={styles.backIcon}
+              />
+              <Text style={styles.backText}>Back</Text>
+            </TouchableOpacity>
 
-            {/* Heading */}
-            <Text style={s.heading}>Verify your{'\n'}phone</Text>
-            <Text style={s.subheading}>Enter the 6-digit code sent to</Text>
-            <View style={s.phoneBadge}>
-              <Text style={s.phoneBadgeText}>{mobile}</Text>
-            </View>
+            <Text style={styles.title}>Verify OTP</Text>
+            <Text style={styles.subtitle}>
+              We sent a 6-digit OTP to{'\n'}
+              <Text style={styles.phoneText}>{mobile}</Text>
+            </Text>
 
-            {/* OTP boxes */}
-            <Text style={s.otpLabel}>Enter 6-digit code</Text>
+            <Text style={styles.label}>Enter OTP</Text>
+
+            {/* One real input (transparent, full-width) behind 6 visual boxes.
+                Tapping anywhere focuses it; autofill / SMS auto-read fill it and
+                the boxes render each digit from `otp`. */}
             <TouchableOpacity
               activeOpacity={1}
-              style={s.boxRow}
+              style={styles.boxRow}
               onPress={() => inputRef.current?.focus()}
             >
               {Array(OTP_LENGTH).fill(null).map((_, i) => {
                 const char = otp[i] ?? '';
-                const isActive = focused && (
-                  i === otp.length || (otp.length === OTP_LENGTH && i === OTP_LENGTH - 1)
-                );
+                const isActive = focused && (i === otp.length || (otp.length === OTP_LENGTH && i === OTP_LENGTH - 1));
                 return (
                   <View
                     key={i}
-                    style={[s.digitBox, isActive && s.digitBoxFocused, char ? s.digitBoxFilled : null]}
+                    style={[
+                      styles.digitBox,
+                      isActive && styles.digitBoxFocused,
+                      char ? styles.digitBoxFilled : null,
+                    ]}
                   >
-                    <Text style={s.digitText}>{char}</Text>
+                    <Text style={styles.digitText}>{char}</Text>
                   </View>
                 );
               })}
+
               <TextInput
                 ref={inputRef}
-                style={s.hiddenInput}
+                style={styles.hiddenInput}
                 value={otp}
                 onChangeText={handleChange}
                 onFocus={() => setFocused(true)}
@@ -350,243 +226,296 @@ const OTPVerification = () => {
               />
             </TouchableOpacity>
 
-            {/* Progress dots */}
-            <View style={s.dotsRow}>
-              {Array(OTP_LENGTH).fill(null).map((_, i) => (
-                <View key={i} style={[s.dot, i < otp.length && s.dotFilled]} />
-              ))}
-            </View>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
 
-            {!!displayError && <Text style={s.errorText}>{displayError}</Text>}
-
-            {/* Resend */}
             <TouchableOpacity
-              style={[s.resendBtn, resendTimer > 0 && s.resendBtnDisabled]}
-              onPress={handleResend}
-              disabled={resendTimer > 0 || resending}
-              activeOpacity={0.75}
+              style={[styles.verifyButton, !isComplete && styles.verifyButtonDisabled]}
+              onPress={handleVerify}
+              activeOpacity={isComplete ? 0.8 : 1}
+              disabled={!isComplete || isLoading}
             >
-              <MaterialIcons
-                name="timer"
-                size={ms(16)}
-                color={resendTimer > 0 ? 'rgba(255,255,255,0.45)' : '#FFFFFF'}
-              />
-              <Text style={[s.resendText, resendTimer > 0 && s.resendTextDisabled]}>
-                {resendTimer > 0
-                  ? `Resend available in ${resendTimer}s`
-                  : resending ? 'Sending…' : 'Resend OTP'}
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.verifyButtonText}>Verify OTP</Text>
+                  <Image
+                    source={require('../../assets/images/arrow.png')}
+                    style={styles.arrowIcon}
+                  />
+                </>
+              )}
             </TouchableOpacity>
 
-            <View style={s.spacer} />
-
-            {/* Slide to verify — no border/line above it */}
-            <SlideButton
-              ref={sliderRef}
-              onSlideComplete={handleVerify}
-              disabled={!isComplete}
-              loading={isLoading}
-            />
-
-            {/* Wrong number */}
-            <TouchableOpacity style={s.wrongRow} onPress={() => navigation.goBack()} activeOpacity={0.75}>
-              <MaterialIcons name="edit" size={ms(13)} color="rgba(255,255,255,0.55)" />
-              <Text style={s.wrongText}>
-                Wrong number?{' '}
-                <Text style={s.wrongChange}>Change</Text>
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.resendRow}>
+              <Text style={styles.resendLabel}>Didn't receive the OTP? </Text>
+              {resendTimer > 0 ? (
+                <Text style={styles.resendTimer}>Resend in {resendTimer}s</Text>
+              ) : (
+                <TouchableOpacity onPress={handleResend} disabled={resending}>
+                  <Text style={styles.resendLink}>
+                    {resending ? 'Sending...' : 'Resend OTP'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1 },
-  flex1: { flex: 1 },
-  safeArea: { flex: 1 },
+const arrowIconSize = ms(20);
 
-  circle: {
-    position: 'absolute',
-    borderRadius: 9999,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#1E22AD',
   },
-  circleTR: { width: ms(220), height: ms(220), top: -ms(70), right: -ms(60) },
-  circleTL: { width: ms(120), height: ms(120), top: ms(50), left: -ms(45), backgroundColor: 'rgba(255,255,255,0.05)' },
-  circleBL: { width: ms(180), height: ms(180), bottom: ms(70), left: -ms(80), backgroundColor: 'rgba(255,255,255,0.05)' },
 
+  // ── Hero ────────────────────────────────────────────────────────────────────
+  hero: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HERO_HEIGHT,
+    backgroundColor: '#0E2F9C',
+    zIndex: 0,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.15)',
+  },
+  heroCircleTop: {
+    position: 'absolute',
+    top: -vs(30),
+    right: -ms(30),
+    width: ms(110),
+    height: ms(110),
+    borderRadius: ms(55),
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  heroCircleBottom: {
+    position: 'absolute',
+    bottom: -vs(20),
+    left: -ms(20),
+    width: ms(90),
+    height: ms(90),
+    borderRadius: ms(45),
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  heroLineAccent: {
+    position: 'absolute',
+    top: '40%',
+    left: '20%',
+    right: '20%',
+    height: vs(5),
+    borderRadius: ms(3),
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    transform: [{ rotate: '0deg' }],
+  },
+
+  // ── Form card ───────────────────────────────────────────────────────────────
+  kavWrapper: {
+    flex: 1,
+    zIndex: 1,
+  },
+  formCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: CARD_RADIUS,
+    borderTopRightRadius: CARD_RADIUS,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
+  },
+  cardGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: vs(100),
+    borderTopLeftRadius: CARD_RADIUS,
+    borderTopRightRadius: CARD_RADIUS,
+  },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: hs(24),
-    paddingTop: vs(14),
-    paddingBottom: vs(32),
+    paddingHorizontal: hs(22),
+    paddingTop: vs(24),
+    paddingBottom: vs(28),
   },
 
-  topRow: {
+  // ── Back button ──────────────────────────────────────────────────────────────
+  backButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: vs(28),
-  },
-  iconBtn: {
-    width: ms(44),
-    height: ms(44),
-    borderRadius: ms(12),
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  heading: {
-    fontSize: fs(34),
-    fontWeight: '800',
-    color: '#FFFFFF',
-    fontFamily: 'Poppins-Regular',
-    lineHeight: fs(42),
-    marginBottom: vs(10),
-  },
-  subheading: {
-    fontSize: fs(14),
-    color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Poppins-Regular',
-    marginBottom: vs(10),
-  },
-  phoneBadge: {
+    gap: hs(6),
+    marginBottom: vs(16),
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: ms(20),
-    paddingHorizontal: hs(16),
-    paddingVertical: vs(6),
-    marginBottom: vs(30),
   },
-  phoneBadgeText: {
-    color: '#FFFFFF',
-    fontSize: fs(14),
-    fontWeight: '700',
+  backIcon: {
+    width: ms(20),
+    height: ms(20),
+    tintColor: '#64748B',
+  },
+  backText: {
+    fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
+    color: '#64748B',
+    fontWeight: '500',
   },
 
-  otpLabel: {
-    fontSize: fs(13),
+  // ── Typography ───────────────────────────────────────────────────────────────
+  title: {
+    fontSize: fs(22),
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.85)',
     fontFamily: 'Poppins-Regular',
-    marginBottom: vs(14),
+    color: '#0F172A',
+    marginBottom: vs(4),
   },
+  subtitle: {
+    fontSize: fs(13),
+    fontFamily: 'Poppins-Regular',
+    color: '#64748B',
+    marginBottom: vs(20),
+    lineHeight: fs(20),
+  },
+  phoneText: {
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  label: {
+    fontSize: fs(12),
+    fontFamily: 'Poppins-Regular',
+    color: '#475569',
+    fontWeight: '600',
+    marginBottom: vs(12),
+  },
+
+  // ── OTP boxes ────────────────────────────────────────────────────────────────
   boxRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: hs(8),
     position: 'relative',
-    marginBottom: vs(14),
   },
   digitBox: {
     flex: 1,
     aspectRatio: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: ms(14),
+    backgroundColor: '#F8FAFC',
+    borderRadius: ms(12),
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.22)',
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  digitBoxFocused: {
-    borderColor: '#FFFFFF',
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  digitBoxFilled: {
-    borderColor: 'rgba(255,255,255,0.75)',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   digitText: {
-    fontSize: fs(22),
+    fontSize: fs(20),
     fontWeight: '700',
-    color: '#FFFFFF',
     fontFamily: 'Poppins-Regular',
+    color: '#0F172A',
   },
   hiddenInput: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    opacity: 0.02,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    textAlign: 'center',
     color: 'transparent',
     backgroundColor: 'transparent',
     fontSize: fs(20),
+    opacity: 0.02, // keep it focusable/visible to autofill without showing text
+  },
+  digitBoxFocused: {
+    borderColor: '#2563EB',
+    borderWidth: 2,
+    backgroundColor: '#EFF6FF',
+  },
+  digitBoxFilled: {
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: fs(11),
+    fontFamily: 'Poppins-Regular',
+    marginTop: vs(10),
+    marginBottom: vs(2),
   },
 
-  dotsRow: {
+  // ── Verify button ─────────────────────────────────────────────────────────────
+  verifyButton: {
+    backgroundColor: '#2563EB',
+    borderRadius: ms(12),
+    paddingVertical: vs(14),
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: hs(8),
-    marginBottom: vs(6),
+    alignItems: 'center',
+    marginTop: vs(24),
+    marginBottom: vs(8),
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.20,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
-  dot: {
-    width: ms(8),
-    height: ms(8),
-    borderRadius: ms(4),
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.35)',
+  verifyButtonDisabled: {
+    backgroundColor: '#93C5FD',
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  dotFilled: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
+  verifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: fs(15),
+    fontWeight: '700',
+    fontFamily: 'Poppins-Regular',
+    marginRight: hs(8),
+  },
+  arrowIcon: {
+    width: arrowIconSize,
+    height: arrowIconSize,
+    tintColor: '#eaecf1',
   },
 
-  errorText: {
-    color: '#FCA5A5',
+  // ── Resend row ────────────────────────────────────────────────────────────────
+  resendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: vs(8),
+  },
+  resendLabel: {
     fontSize: fs(12),
     fontFamily: 'Poppins-Regular',
-    textAlign: 'center',
-    marginTop: vs(6),
-    marginBottom: vs(4),
+    color: '#64748B',
   },
-
-  resendBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: hs(8),
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    borderRadius: ms(50),
-    paddingVertical: vs(14),
-    paddingHorizontal: hs(24),
-    marginTop: vs(16),
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+  resendTimer: {
+    fontSize: fs(12),
+    fontFamily: 'Poppins-Regular',
+    color: '#94A3B8',
   },
-  resendBtnDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderColor: 'rgba(255,255,255,0.10)',
-  },
-  resendText: {
-    color: '#FFFFFF',
-    fontSize: fs(14),
+  resendLink: {
+    fontSize: fs(12),
+    fontFamily: 'Poppins-Regular',
+    color: '#2563EB',
     fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-  },
-  resendTextDisabled: { color: 'rgba(255,255,255,0.45)' },
-
-  spacer: { flex: 1, minHeight: vs(28) },
-
-  wrongRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: hs(6),
-    marginTop: vs(18),
-    paddingVertical: vs(6),
-  },
-  wrongText: {
-    fontSize: fs(13),
-    color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Poppins-Regular',
-  },
-  wrongChange: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
 });
 
