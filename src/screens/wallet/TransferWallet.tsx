@@ -8,6 +8,8 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { showAlert } from '../../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -148,10 +150,12 @@ const TransferToWalletScreen = () => {
           <View style={{ width: ms(40) }} />
         </View>
 
+        <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Balance Card */}
           <View style={styles.balanceCardContainer}>
@@ -293,6 +297,7 @@ const TransferToWalletScreen = () => {
             </View>
           </View>
         </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
 
       {/* Success Modal */}
@@ -374,6 +379,8 @@ const styles = StyleSheet.create({
     fontSize: fs(15),
     color: '#64748B',
   },
+
+  flex1: { flex: 1 },
 
   // ── Scroll ──
   scrollView: {

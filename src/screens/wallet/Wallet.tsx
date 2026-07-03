@@ -10,6 +10,7 @@ import {
   TextInput,
   Platform,
   RefreshControl,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { showAlert } from '../../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -262,7 +263,9 @@ const Wallet = () => {
         animationType="slide"
         transparent
         onRequestClose={() => !adding && setShowAddMoney(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalSheet}>
             {/* Handle */}
             <View style={styles.modalHandle} />
@@ -342,7 +345,7 @@ const Wallet = () => {
 
             <Text style={styles.poweredBy}>Powered by Razorpay</Text>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

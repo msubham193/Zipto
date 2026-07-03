@@ -7,6 +7,8 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { showAlert } from '../../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -114,6 +116,10 @@ const WriteReview = () => {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <KeyboardAvoidingView
+          style={styles.flex1}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
 
         {/* Header */}
         <View style={styles.header}>
@@ -226,6 +232,7 @@ const WriteReview = () => {
           </TouchableOpacity>
         </View>
 
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
@@ -234,6 +241,7 @@ const WriteReview = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   safeArea: { flex: 1 },
+  flex1: { flex: 1 },
 
   // ── Header ──
   header: {
