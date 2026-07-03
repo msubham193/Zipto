@@ -36,7 +36,7 @@ const SOCIAL_LINKS = [
     xLogo:    false,
     iconBg:   '#E8F0FE',
     iconColor:'#0A66C2',
-    url:      'https://www.linkedin.com/company/bookfleet-com/',
+    url:      'https://www.linkedin.com/company/bookfleet-in/',
   },
   {
     id:       'instagram',
@@ -47,16 +47,6 @@ const SOCIAL_LINKS = [
     iconBg:   '#FDF2F8',
     iconColor:'#C2185B',
     url:      'https://www.instagram.com/bookfleet.in?utm_source=qr&igsh=ZDNldGp6YjN2YXZx',
-  },
-  {
-    id:       'twitter',
-    label:    'X (Twitter)',
-    handle:   '@bookfleet',
-    icon:     null,
-    xLogo:    true,
-    iconBg:   '#000000',
-    iconColor:'#FFFFFF',
-    url:      'https://x.com/Bookfleet',
   },
 ];
 
