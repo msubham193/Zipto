@@ -111,10 +111,12 @@ const Profile = () => {
         { id: 10, title: 'About Us',     icon: 'info', color: '#6366F1', onPress: () => navigation.navigate('AboutUs') },
         { id: 11, title: 'Rate Our App', icon: 'star', color: '#F59E0B', onPress: () => {
           if (Platform.OS === 'ios') {
-            Linking.openURL('https://apps.apple.com/app/bookfleet/id6738934498');
+            const iosUrl = 'itms-apps://itunes.apple.com/in/app/id6777178625?action=write-review';
+            const iosFallback = 'https://apps.apple.com/in/app/id6777178625';
+            Linking.openURL(iosUrl).catch(() => Linking.openURL(iosFallback));
           } else {
-            const url = 'market://details?id=com.bookfleet.customer';
-            const fallback = 'https://play.google.com/store/apps/details?id=com.bookfleet.customer';
+            const url = 'market://details?id=com.ridezipto.customer';
+            const fallback = 'https://play.google.com/store/apps/details?id=com.ridezipto.customer';
             Linking.canOpenURL(url)
               .then(supported => Linking.openURL(supported ? url : fallback))
               .catch(() => Linking.openURL(fallback));
