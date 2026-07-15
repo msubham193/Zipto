@@ -40,6 +40,10 @@ const MapLocationPicker = () => {
   const [isDragging, setIsDragging] = useState(false);
   const regionRef = useRef<Region>(initialRegion);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against out-of-order network responses: if the map is dragged again
+  // before an in-flight reverse-geocode call resolves, its (now stale) result
+  // must not overwrite the address for the newer drag position.
+  const requestIdRef = useRef(0);
 
   const onRegionChange = useCallback(() => {
     setIsDragging(true);
@@ -51,12 +55,14 @@ const MapLocationPicker = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setResolving(true);
     setAddress('');
+    const myRequestId = ++requestIdRef.current;
     debounceRef.current = setTimeout(async () => {
       try {
         const addr = await googleMapsApi.reverseGeocode(r.latitude, r.longitude);
+        if (myRequestId !== requestIdRef.current) return; // superseded by a newer drag
         setAddress(addr || '');
       } finally {
-        setResolving(false);
+        if (myRequestId === requestIdRef.current) setResolving(false);
       }
     }, 400);
   }, []);

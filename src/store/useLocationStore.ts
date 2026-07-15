@@ -10,6 +10,21 @@ const ERROR_RETRY_MS = 20 * 1000;  // retry after error in 20 sec (GPS warms up 
 const COORD_THRESHOLD = 0.0005;    // ~50m — skip geocode if barely moved
 const STORAGE_KEY = '@bookfleet_location_v1';
 
+// Sentinel strings the store writes into `address` when it couldn't resolve a
+// real one (permission/GPS/geocode failure). These must never be treated as a
+// real address by consumers — check with isPlaceholderAddress() before using
+// or persisting an `address` value elsewhere in the app.
+const PLACEHOLDER_ADDRESSES = new Set([
+  'Current Location',
+  'Detecting address…',
+  'Location permission denied',
+  'Location services disabled',
+]);
+
+export function isPlaceholderAddress(address: string | null | undefined): boolean {
+  return !address || PLACEHOLDER_ADDRESSES.has(address);
+}
+
 interface LocationState {
   address: string;
   latitude: number | null;
@@ -85,11 +100,15 @@ export const useLocationStore = create<LocationState>((set, get) => {
           const state = get();
           // Only restore if store is still empty (nothing fetched yet)
           if (!state.address) {
+            // A placeholder ('Current Location', etc.) may have been persisted by
+            // an older app version — don't resurrect it as if it were real, and
+            // force a fresh fetch (fetchedAt: null => isStale() === true) instead.
+            const restoredIsPlaceholder = isPlaceholderAddress(saved.address);
             set({
-              address: saved.address,
+              address: restoredIsPlaceholder ? '' : saved.address,
               latitude: saved.latitude,
               longitude: saved.longitude,
-              fetchedAt: saved.fetchedAt,
+              fetchedAt: restoredIsPlaceholder ? null : saved.fetchedAt,
             });
           }
         } catch {}
@@ -118,11 +137,7 @@ export const useLocationStore = create<LocationState>((set, get) => {
 
       const state = get();
 
-      const isFailedState =
-        state.address === 'Current Location' ||
-        state.address === 'Detecting address…' ||
-        state.address === 'Location permission denied' ||
-        state.address === 'Location services disabled';
+      const isFailedState = isPlaceholderAddress(state.address);
 
       // Use error-retry window: if last fetch failed, don't hammer — wait ERROR_RETRY_MS
       if (!force && state.fetchedAt && isFailedState) {
@@ -147,7 +162,7 @@ export const useLocationStore = create<LocationState>((set, get) => {
 
           // Skip reverse geocode if device barely moved — reuse existing address
           const current = get();
-          if (!force && current.address && current.address !== 'Current Location' &&
+          if (!force && current.address && !isPlaceholderAddress(current.address) &&
               !coordsMoved(current.latitude, current.longitude, latitude, longitude)) {
             set({ latitude, longitude, fetchedAt: Date.now(), loading: false });
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, latitude, longitude, fetchedAt: Date.now() })).catch(() => {});
@@ -158,8 +173,11 @@ export const useLocationStore = create<LocationState>((set, get) => {
           // Reverse geocoding runs in the background and updates the address quietly.
           set({ latitude, longitude, loading: false, address: get().address || 'Detecting address…' });
 
-          // Reverse geocode
-          let address = 'Current Location';
+          // Reverse geocode. If it fails, fall back to the raw coordinates rather
+          // than a misleading label — that way the coords are still usable as a
+          // real pickup/drop address instead of getting filtered out as a
+          // placeholder later.
+          let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
           try {
             const raw = await googleMapsApi.reverseGeocode(latitude, longitude);
             const isFallback = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(raw?.trim() ?? '');
@@ -167,7 +185,7 @@ export const useLocationStore = create<LocationState>((set, get) => {
               address = raw.split(',').slice(0, 2).join(', ');
             }
           } catch {
-            // Geocode failed — keep address as 'Current Location', still cache coords
+            // Geocode failed — address stays as the raw-coordinates fallback above
           }
 
           const next = { address, latitude, longitude, fetchedAt: Date.now() };

@@ -35,7 +35,7 @@ import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi as mapboxApi } from '../../api/googleMaps';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useLocationStore } from '../../store/useLocationStore';
+import { useLocationStore, isPlaceholderAddress } from '../../store/useLocationStore';
 import { horizontalScale as hs, verticalScale as vs, moderateScale as ms, fontScale as fs } from '../../utils/metrics';
 
 // ─── Parse lat/lon from a shared maps link or plain "lat,lon" text ────────────
@@ -378,7 +378,7 @@ const PickupDropSelection = () => {
           coords: { latitude: number; longitude: number };
           cachedAt: number;
         };
-        if (Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+        if (Date.now() - cached.cachedAt < CACHE_TTL_MS && !isPlaceholderAddress(cached.address)) {
           setPickup(cached.address);
           setPickupCoords(cached.coords);
           setActiveInput('drop');
@@ -423,7 +423,7 @@ const PickupDropSelection = () => {
     try {
       // Use cached location if fresh (avoids GPS round-trip)
       const { address: cachedAddr, latitude: cachedLat, longitude: cachedLon, isStale } = locationStore;
-      if (cachedAddr && cachedLat && cachedLon && !isStale()) {
+      if (cachedAddr && !isPlaceholderAddress(cachedAddr) && cachedLat && cachedLon && !isStale()) {
         setPickup(cachedAddr);
         setPickupCoords({ latitude: cachedLat, longitude: cachedLon });
         setActiveInput('drop');
@@ -435,7 +435,7 @@ const PickupDropSelection = () => {
       // Cache miss or stale — fetch fresh from GPS
       await locationStore.fetch(true);
       const { address, latitude, longitude } = useLocationStore.getState();
-      if (address && latitude && longitude) {
+      if (address && !isPlaceholderAddress(address) && latitude && longitude) {
         setPickup(address);
         setPickupCoords({ latitude, longitude });
         setActiveInput('drop');
@@ -493,6 +493,17 @@ const PickupDropSelection = () => {
   };
 
   const validateMobileNumber = (n: string) => n.replace(/\D/g, '').length === 10;
+
+  // activeInput is '' once both fields are filled — resolve which field a
+  // "Choose from Map"/"Import Shared Link" tap should target instead of
+  // always falling back to 'pickup' (which used to silently overwrite an
+  // already-correct pickup when the user meant to fix the drop location).
+  const resolveTargetField = (): 'pickup' | 'drop' => {
+    if (activeInput === 'pickup' || activeInput === 'drop') return activeInput;
+    if (!pickupCoords) return 'pickup';
+    if (!dropCoords) return 'drop';
+    return 'drop';
+  };
 
   const openImport = (field: 'pickup' | 'drop') => {
     setImportText('');
@@ -758,13 +769,14 @@ const PickupDropSelection = () => {
               <TouchableOpacity
                 style={styles.mapStopsBtn}
                 activeOpacity={0.7}
-                onPress={() =>
+                onPress={() => {
+                  const targetField = resolveTargetField();
                   navigation.navigate('MapLocationPicker', {
-                    field: activeInput === 'drop' ? 'drop' : 'pickup',
-                    initialLat: (activeInput === 'drop' ? dropCoords?.latitude : pickupCoords?.latitude) ?? undefined,
-                    initialLon: (activeInput === 'drop' ? dropCoords?.longitude : pickupCoords?.longitude) ?? undefined,
-                  })
-                }
+                    field: targetField,
+                    initialLat: (targetField === 'drop' ? dropCoords?.latitude : pickupCoords?.latitude) ?? undefined,
+                    initialLon: (targetField === 'drop' ? dropCoords?.longitude : pickupCoords?.longitude) ?? undefined,
+                  });
+                }}
               >
                 <MaterialIcons name="map" size={ms(16)} color={C.accent} />
                 <Text style={styles.mapStopsBtnText}>Choose from Map</Text>
@@ -775,7 +787,7 @@ const PickupDropSelection = () => {
               <TouchableOpacity
                 style={styles.mapStopsBtn}
                 activeOpacity={0.7}
-                onPress={() => openImport(activeInput === 'drop' ? 'drop' : 'pickup')}
+                onPress={() => openImport(resolveTargetField())}
               >
                 <MaterialIcons name="link" size={ms(16)} color={C.accent} />
                 <Text style={styles.mapStopsBtnText}>Import Shared Link</Text>
