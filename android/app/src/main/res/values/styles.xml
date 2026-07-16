@@ -7,8 +7,13 @@
     </style>
 
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:windowBackground">@color/zipto_splash_bg</item>
-        <item name="android:statusBarColor">@color/zipto_splash_bg</item>
+        <!-- Neutral, not the splash blue: this is the Activity's window background
+             for the app's entire lifetime (not just boot), and briefly shows through
+             whenever RN tears down/remounts a screen faster than it can paint (e.g.
+             navigation.reset() into a heavy screen) — a blue flash there read as a
+             bug. Keep zipto_splash_bg reserved for BootTheme only. -->
+        <item name="android:windowBackground">@color/app_window_bg</item>
+        <item name="android:statusBarColor">@color/app_window_bg</item>
         <item name="android:windowIsTranslucent">false</item>
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>

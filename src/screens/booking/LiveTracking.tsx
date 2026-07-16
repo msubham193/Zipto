@@ -14,6 +14,7 @@ import {
   TextInput,
   ScrollView,
   PanResponder,
+  AppState,
 } from 'react-native';
 import { showAlert } from '../../components/CustomAlert';
 import MapView, { Marker, MarkerAnimated, AnimatedRegion, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -199,6 +200,11 @@ const LiveTracking = () => {
   const [liveFare, setLiveFare] = useState<number>(fare);
   const [fareIncreasing, setFareIncreasing] = useState(false);
   const [searchCountdown, setSearchCountdown] = useState(60);
+  // Wall-clock anchor for the countdown above — recomputed from this on every
+  // tick (and on app-foreground resume) instead of decremented, so a
+  // backgrounded app can't freeze the displayed number (see the two effects
+  // below, near the other 'searching' effects).
+  const searchStartRef = useRef<number>(Date.now());
   const hasShownSuccessRef = useRef(false);
   const successScale = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
@@ -526,13 +532,34 @@ const LiveTracking = () => {
     return () => clearInterval(interval);
   }, [bookingStatus, paymentDone, realBookingId, bookingId]);
 
-  // 60-second countdown while searching
+  // 60-second countdown while searching. Recomputed from the wall-clock
+  // searchStartRef each tick (not decremented from the previous value) —
+  // RN timers are throttled/paused while the app is backgrounded, so a naive
+  // `prev => prev - 1` chain freezes and then resumes from the wrong number.
+  // Recomputing from Date.now() self-corrects the instant a tick fires again.
   useEffect(() => {
     if (bookingStatus !== 'searching') return;
-    if (searchCountdown <= 0) return; // Stop at 0; backend timed_out triggers retry modal via polling
-    const timer = setTimeout(() => setSearchCountdown(prev => prev - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [bookingStatus, searchCountdown]);
+    const recompute = () => {
+      const remaining = Math.max(0, 60 - Math.floor((Date.now() - searchStartRef.current) / 1000));
+      setSearchCountdown(remaining);
+    };
+    recompute();
+    const interval = setInterval(recompute, 1000);
+    return () => clearInterval(interval);
+  }, [bookingStatus]);
+
+  // Resync immediately when the app returns to the foreground, instead of
+  // waiting for the next 1s tick above (which itself was paused).
+  useEffect(() => {
+    if (bookingStatus !== 'searching') return;
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (nextState === 'active') {
+        const remaining = Math.max(0, 60 - Math.floor((Date.now() - searchStartRef.current) / 1000));
+        setSearchCountdown(remaining);
+      }
+    });
+    return () => subscription.remove();
+  }, [bookingStatus]);
 
   // Fetch road route once — googleMapsApi internally caches for 5 min
   const routeFetchedRef = useRef(false);
@@ -602,6 +629,7 @@ const LiveTracking = () => {
       setCurrentFare(suggestedFare);
       setLiveFare(suggestedFare);
       setRetryCount(prev => prev + 1);
+      searchStartRef.current = Date.now();
       setSearchCountdown(60);
     } catch (err: any) {
       showAlert('Error', err?.response?.data?.message || 'Could not retry. Please try again.');
