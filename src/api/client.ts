@@ -261,6 +261,15 @@ export const authApi = {
     return response.data;
   },
 
+  /**
+   * Foreground-only "app is open here" ping — powers the driver-facing live
+   * demand heatmap. Ephemeral server-side (2 min TTL), never persisted.
+   */
+  updatePresence: async (latitude: number, longitude: number) => {
+    const response = await client.put('/customer/presence', { latitude, longitude });
+    return response.data;
+  },
+
   logout: async () => {
     const response = await client.post('/auth/logout');
     return response.data;

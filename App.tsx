@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from './src/store/useAuthStore';
 import { notificationApi, authApi } from './src/api/client';
 import { navigationRef } from './src/navigation/navigationRef';
+import { useLocationStore } from './src/store/useLocationStore';
 import {
   InAppNotificationBanner,
   NotificationPayload,
@@ -21,6 +22,8 @@ import {
   getInitialNotification,
   onTokenRefresh,
 } from './src/services/fcmService';
+
+const PRESENCE_PING_INTERVAL_MS = 30 * 1000;
 
 const defaultFontFamily =
   Platform.select({ ios: 'Poppins', android: 'Poppins-Regular' }) ||
@@ -165,6 +168,59 @@ function SessionGuard() {
   return null;
 }
 
+/**
+ * Pings the customer's current location while the app is in the foreground —
+ * powers the driver-facing live demand heatmap ("where do customers have the
+ * app open right now"). Foreground-only by design: the interval itself is
+ * stopped (not just left to be throttled by the OS) the moment the app
+ * backgrounds, so no location is ever reported while the app isn't in use.
+ * Reuses whatever useLocationStore already has (no separate permission
+ * request/GPS call of its own) — if the customer hasn't granted location
+ * permission, latitude/longitude stay null and this simply never pings.
+ */
+function PresenceReporter() {
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const pingIfPossible = () => {
+      const { latitude, longitude } = useLocationStore.getState();
+      if (latitude == null || longitude == null) return;
+      authApi.updatePresence(latitude, longitude).catch(() => {});
+    };
+
+    const start = () => {
+      if (interval) return;
+      pingIfPossible();
+      interval = setInterval(pingIfPossible, PRESENCE_PING_INTERVAL_MS);
+    };
+
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    if (AppState.currentState === 'active') start();
+
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') start();
+      else stop();
+    });
+
+    return () => {
+      stop();
+      sub.remove();
+    };
+  }, [isAuthenticated]);
+
+  return null;
+}
+
 function App() {
   const [notification, setNotification] =
     useState<NotificationPayload | null>(null);
@@ -180,6 +236,7 @@ function App() {
       <SafeAreaProvider>
         <RootNavigator />
         <SessionGuard />
+        <PresenceReporter />
         <FcmInitializer onNotification={setNotification} />
         <InAppNotificationBanner
           notification={notification}
