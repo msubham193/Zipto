@@ -2285,9 +2285,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: SCREEN_HEIGHT * 0.78,
-    overflow: 'hidden',
+    flex: 0,
   },
   cancelModalScroll: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
