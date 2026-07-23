@@ -1196,8 +1196,14 @@ const LiveTracking = () => {
         </Animated.View>
       </SafeAreaView>
 
-      {/* ── Fare Increase / Retry Modal ── */}
-      <Modal visible={retryModalVisible} transparent animationType="fade">
+      {/* ── Fare Increase / Retry Modal ──
+          NOTE: each Modal below is conditionally MOUNTED (not just toggled via
+          `visible`). React Native can't reliably present a <Modal> when sibling
+          <Modal>s are also mounted — with all three always mounted, tapping
+          Cancel set the flag but the cancel modal never appeared. Mounting one
+          at a time fixes it. */}
+      {retryModalVisible && (
+      <Modal visible transparent animationType="fade">
         <View style={styles.retryOverlay}>
           <View style={styles.retryCard}>
             <View style={styles.retryIconBox}>
@@ -1238,8 +1244,10 @@ const LiveTracking = () => {
           </View>
         </View>
       </Modal>
+      )}
 
-      <Modal visible={successModal} transparent animationType="none">
+      {successModal && (
+      <Modal visible transparent animationType="none">
         <View style={styles.successOverlay}>
           <Animated.View
             style={[
@@ -1292,9 +1300,11 @@ const LiveTracking = () => {
           </Animated.View>
         </View>
       </Modal>
+      )}
 
+      {cancelModalVisible && (
       <Modal
-        visible={cancelModalVisible}
+        visible
         transparent
         animationType="slide"
         onRequestClose={() => !cancelling && setCancelModalVisible(false)}
@@ -1430,6 +1440,7 @@ const LiveTracking = () => {
           </View>
         </View>
       </Modal>
+      )}
 
       {/* Rate the rider after a completed delivery */}
       <RatingModal
